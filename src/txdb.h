@@ -17,6 +17,8 @@
 
 #include <boost/function.hpp>
 
+#include <validation.h> // temp
+
 class CBlockIndex;
 class CCoinsViewDBCursor;
 class uint256;
@@ -69,11 +71,15 @@ protected:
 public:
     CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
 
-    bool GetCoins(const uint256 &txid, CCoins &coins) const;
-    bool HaveCoins(const uint256 &txid) const;
-    uint256 GetBestBlock() const;
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
-    CCoinsViewCursor *Cursor() const;
+    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
+    bool HaveCoin(const COutPoint &outpoint) const override;
+    uint256 GetBestBlock() const override;
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    CCoinsViewCursor *Cursor() const override;
+
+    //! Attempt to update from an older database format. Returns whether an error occurred.
+    bool Upgrade();
+    size_t EstimateSize() const override;
 };
 
 /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
@@ -82,8 +88,8 @@ class CCoinsViewDBCursor: public CCoinsViewCursor
 public:
     ~CCoinsViewDBCursor() {}
 
-    bool GetKey(uint256 &key) const;
-    bool GetValue(CCoins &coins) const;
+    bool GetKey(COutPoint &key) const;
+    bool GetValue(Coin &coin) const;
     unsigned int GetValueSize() const;
 
     bool Valid() const;
@@ -93,7 +99,7 @@ private:
     CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn):
         CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {}
     std::unique_ptr<CDBIterator> pcursor;
-    std::pair<char, uint256> keyTmp;
+    std::pair<char, COutPoint> keyTmp;
 
     friend class CCoinsViewDB;
 };
@@ -117,6 +123,21 @@ public:
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);
     bool LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256&)> insertBlockIndex);
+    
+    
+    bool WriteHeightIndex(const CHeightTxIndexKey &heightIndex, const std::vector<uint256>& hash);
+    bool ReadHeightIndex(const unsigned int &high, const unsigned int &low, std::vector<std::vector<uint256>> &hashes,
+                                    std::set<dev::h160> addresses);
+    bool EraseHeightIndex(const unsigned int &height);
+    bool WipeHeightIndex();
+
+
+    bool WriteStakeIndex(unsigned int height, uint160 address);
+    bool ReadStakeIndex(unsigned int height, uint160& address);
+    bool ReadStakeIndex(unsigned int high, unsigned int low, std::vector<uint160> addresses);
+    bool EraseStakeIndex(unsigned int height);
+
+    
 };
 
 #endif // BITCOIN_TXDB_H

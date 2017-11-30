@@ -24,6 +24,30 @@ namespace Consensus { struct Params; };
 
 static const bool DEFAULT_PRINTPRIORITY = false;
 
+static const bool DEFAULT_STAKE = true;
+
+static const bool DEFAULT_STAKE_CACHE = true;
+
+//How many seconds to look ahead and prepare a block for staking
+//Look ahead up to 3 "timeslots" in the future, 48 seconds
+//Reduce this to reduce computational waste for stakers, increase this to increase the amount of time available to construct full blocks
+static const int32_t MAX_STAKE_LOOKAHEAD = 16 * 3;
+
+//Will not add any more contracts when GetAdjustedTime() >= nTimeLimit-BYTECODE_TIME_BUFFER
+//This does not affect non-contract transactions
+static const int32_t BYTECODE_TIME_BUFFER = 6;
+
+//Will not attempt to add more transactions when GetAdjustedTime() >= nTimeLimit
+//And nTimeLimit = StakeExpirationTime - STAKE_TIME_BUFFER
+static const int32_t STAKE_TIME_BUFFER = 2;
+
+//How often to try to stake blocks in milliseconds
+//Note this is overridden for regtest mode
+static const int32_t STAKER_POLLING_PERIOD = 5000;
+
+//How much time to spend trying to process transactions when using the generate RPC call
+static const int32_t POW_MINER_MAX_TIME = 60;
+
 struct CBlockTemplate
 {
     CBlock block;
@@ -162,10 +186,13 @@ private:
     int lastFewTxs;
     bool blockFinished;
 
+    //When GetAdjustedTime() exceeds this, no more transactions will attempt to be added
+    int32_t nTimeLimit;
 public:
     BlockAssembler(const CChainParams& chainparams);
     /** Construct a new block template with coinbase to scriptPubKeyIn */
-    std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn);
+    std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn, bool fProofOfStake=false, int64_t* pTotalFees = 0, int32_t nTime=0, int32_t nTimeLimit=0);
+    std::unique_ptr<CBlockTemplate> CreateEmptyBlock(const CScript& scriptPubKeyIn, bool fProofOfStake=false, int64_t* pTotalFees = 0, int32_t nTime=0);
 
 private:
     // utility functions
@@ -183,6 +210,10 @@ private:
     // helper function for addPriorityTxs
     /** Test if tx will still "fit" in the block */
     bool TestForBlock(CTxMemPool::txiter iter);
+    /** Test if block is already full - returns true if block is fuller than allowed by consensus  */
+    bool CheckBlockBeyondFull();
+    /** Rebuild the coinbase/coinstake transaction to account for new gas refunds **/
+    void RebuildRefundTransaction();
     /** Test if tx still has unconfirmed parents not yet in block */
     bool isStillDependent(CTxMemPool::txiter iter);
 
@@ -205,6 +236,9 @@ private:
       * state updated assuming given transactions are inBlock. */
     void UpdatePackagesForAdded(const CTxMemPool::setEntries& alreadyAdded, indexed_modified_transaction_set &mapModifiedTx);
 };
+
+/** Generate a new block, without valid proof-of-work */
+void StakeClams(bool fStake, CWallet *pwallet);
 
 /** Modify the extranonce in a block */
 void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned int& nExtraNonce);

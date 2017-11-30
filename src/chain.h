@@ -161,6 +161,9 @@ public:
 
     //! pointer to the index of the predecessor of this block
     CBlockIndex* pprev;
+	
+    //! pointer to the index of the successor of this block
+    CBlockIndex* pnext;
 
     //! pointer to the index of some further predecessor of this block
     CBlockIndex* pskip;
@@ -198,6 +201,13 @@ public:
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
+    // block signature - proof-of-stake protect the block by signing the block using a stake holder private key
+    std::vector<unsigned char> vchBlockSig;
+    uint256 nStakeModifier;
+    // proof-of-stake specific fields
+    COutPoint prevoutStake;
+    uint256 hashProof; 
+    uint64_t nMoneySupply;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -209,6 +219,7 @@ public:
     {
         phashBlock = NULL;
         pprev = NULL;
+        pnext = NULL;
         pskip = NULL;
         nHeight = 0;
         nFile = 0;
@@ -226,6 +237,11 @@ public:
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
+        vchBlockSig.clear();
+        nStakeModifier = uint256();
+        hashProof = uint256();
+        prevoutStake.SetNull();
+        nMoneySupply = 0;
     }
 
     CBlockIndex()
@@ -242,6 +258,11 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
+        nMoneySupply   = 0;
+        nStakeModifier = uint256();
+        hashProof = uint256(); 
+        prevoutStake   = block.prevoutStake; 
+        vchBlockSig    = block.vchBlockSig; 
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -272,6 +293,8 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+        block.vchBlockSig    = vchBlockSig;
+        block.prevoutStake   = prevoutStake;
         return block;
     }
 
@@ -304,6 +327,16 @@ public:
 
         std::sort(pbegin, pend);
         return pbegin[(pend - pbegin)/2];
+    }
+
+    bool IsProofOfWork() const // qtum
+    {
+        return !IsProofOfStake();
+    }
+
+    bool IsProofOfStake() const
+    {
+        return !prevoutStake.IsNull();
     }
 
     std::string ToString() const
@@ -380,6 +413,7 @@ public:
             READWRITE(VARINT(nDataPos));
         if (nStatus & BLOCK_HAVE_UNDO)
             READWRITE(VARINT(nUndoPos));
+        READWRITE(VARINT(nMoneySupply));
 
         // block header
         READWRITE(this->nVersion);
@@ -388,6 +422,10 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+        READWRITE(nStakeModifier);
+        READWRITE(prevoutStake);
+        READWRITE(hashProof);
+        READWRITE(vchBlockSig); 
     }
 
     uint256 GetBlockHash() const
@@ -399,6 +437,8 @@ public:
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;
+        block.vchBlockSig     = vchBlockSig;
+        block.prevoutStake    = prevoutStake;
         return block.GetHash();
     }
 

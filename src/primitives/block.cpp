@@ -15,6 +15,11 @@ uint256 CBlockHeader::GetHash() const
     return SerializeHash(*this);
 }
 
+uint256 CBlockHeader::GetHashWithoutSign() const
+{
+    return SerializeHash(*this, SER_GETHASH | SER_WITHOUT_SIGNATURE);
+}
+
 std::string CBlock::ToString() const
 {
     std::stringstream s;
@@ -24,6 +29,9 @@ std::string CBlock::ToString() const
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
+        HexStr(vchBlockSig),
+        IsProofOfStake() ? "PoS" : "PoW",
+        prevoutStake.ToString(),
         vtx.size());
     for (unsigned int i = 0; i < vtx.size(); i++)
     {
