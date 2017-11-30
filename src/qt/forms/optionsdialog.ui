@@ -118,6 +118,46 @@
         </layout>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="horizontalLayoutReserveBalance">
+         <item>
+          <widget class="QLabel" name="reserveBalanceLabel">
+           <property name="text">
+            <string>Reserve</string>
+           </property>
+           <property name="textFormat">
+            <enum>Qt::PlainText</enum>
+           </property>
+           <property name="buddy">
+            <cstring>reserveBalance</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="BitcoinAmountField" name="reserveBalance"/>
+         </item>
+         <item>
+          <spacer name="horizontalSpacerReserveBalance">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="logEvents">
+         <property name="text">
+          <string>Enable  log &amp;events</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer_Main">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
