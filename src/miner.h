@@ -186,6 +186,8 @@ private:
     int lastFewTxs;
     bool blockFinished;
 
+    // The original constructed reward tx (either coinbase or coinstake) 
+    CMutableTransaction originalRewardTx;
     //When GetAdjustedTime() exceeds this, no more transactions will attempt to be added
     int32_t nTimeLimit;
 public:

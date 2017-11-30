@@ -729,6 +729,12 @@ void BlockAssembler::addPriorityTxs()
         if (!fIncludeWitness && iter->GetTx().HasWitness())
             continue;
 
+
+        if(nTimeLimit != 0 && GetAdjustedTime() >= nTimeLimit)
+        {
+            break;
+        }
+
         // If tx is dependent on other mempool txs which haven't yet been included
         // then put it in the waitSet
         if (isStillDependent(iter)) {
