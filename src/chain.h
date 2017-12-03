@@ -208,6 +208,11 @@ public:
     COutPoint prevoutStake;
     uint256 hashProof; 
     uint64_t nMoneySupply;
+    uint64_t nMint;
+    uint64_t nDigsupply;
+    uint64_t nStakeSupply;
+
+    std::vector<CClamour> vClamour;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -241,7 +246,10 @@ public:
         nStakeModifier = uint256();
         hashProof = uint256();
         prevoutStake.SetNull();
+        nMint = 0;
         nMoneySupply = 0;
+        nDigsupply = 0;
+        nStakeSupply = 0;
     }
 
     CBlockIndex()
@@ -258,7 +266,10 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
-        nMoneySupply   = 0;
+        nMint = 0;
+        nMoneySupply = 0;
+        nDigsupply = 0;
+        nStakeSupply = 0;
         nStakeModifier = uint256();
         hashProof = uint256(); 
         prevoutStake   = block.prevoutStake; 
@@ -311,6 +322,14 @@ public:
     int64_t GetBlockTimeMax() const
     {
         return (int64_t)nTimeMax;
+    }
+
+    int64_t GetPastTimeLimit() const
+    {
+        if (IsProtocolV2(nHeight))
+            return GetBlockTime();
+        else
+            return GetMedianTimePast();
     }
 
     enum { nMedianTimeSpan=11 };
@@ -413,7 +432,12 @@ public:
             READWRITE(VARINT(nDataPos));
         if (nStatus & BLOCK_HAVE_UNDO)
             READWRITE(VARINT(nUndoPos));
-        READWRITE(VARINT(nMoneySupply));
+        READWRITE(nMint);
+        READWRITE(nMoneySupply);
+        READWRITE(nDigsupply);
+        READWRITE(nStakeSupply);
+        READWRITE(vClamour);
+        
 
         // block header
         READWRITE(this->nVersion);

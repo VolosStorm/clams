@@ -1267,19 +1267,6 @@ bool ReadFromDisk(CMutableTransaction& tx, CDiskTxPos& txindex, CBlockTreeDB& tx
     return true;
 }
 
-CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
-{
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
-    // Force block reward to zero when right shift is undefined.
-    if (halvings >= 64)
-        return 0;
-
-    CAmount nSubsidy = 50 * COIN;
-    // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
-    nSubsidy >>= halvings;
-    return nSubsidy;
-}
-
 bool IsInitialBlockDownload()
 {
     const CChainParams& chainParams = Params();
@@ -1982,7 +1969,6 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     std::vector<int> prevheights;
     CAmount nFees = 0;
-    CAmount nActualStakeReward = 0;
     int nInputs = 0;
     int64_t nSigOpsCost = 0;
     CDiskTxPos pos(pindex->GetBlockPos(), GetSizeOfCompactSize(block.vtx.size()));
@@ -1992,8 +1978,14 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     std::map<dev::Address, std::pair<CHeightTxIndexKey, std::vector<uint256>>> heightIndexes;
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
-    uint64_t nValueOut=0;
-    uint64_t nValueIn=0;
+    CAmount nValueOut=0;
+    CAmount nValueIn=0;
+    CAmount nValueDig = 0;
+    CAmount nValueStake = 0;
+    CAmount nValueBurned = 0;
+    CAmount nStakeReward = 0;
+
+
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = *(block.vtx[i]);
@@ -2030,27 +2022,33 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                              REJECT_INVALID, "bad-blk-sigops");
 
         txdata.emplace_back(tx);
-        if (!tx.IsCoinBase())
+
+
+        if (tx.IsCoinBase())
+            nValueOut += tx.GetValueOut();
+        else
         {
-            if (tx.IsCoinStake())
-                nActualStakeReward = tx.GetValueOut()-view.GetValueIn(tx);
-            else
-                nFees += view.GetValueIn(tx)-tx.GetValueOut();
-                    
+            bool fInvalid;
+            CAmount nDigs = 0;
             std::vector<CScriptCheck> vChecks;
             bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
-            if (!CheckInputs(tx, state, view, fScriptChecks, flags, fCacheResults, txdata[i], nScriptCheckThreads ? &vChecks : NULL))
+            
+            if (!CheckInputs(tx, state, view, fScriptChecks, flags, fCacheResults, txdata[i], nScriptCheckThreads ? &vChecks : NULL, nDigs))
                 return error("ConnectBlock(): CheckInputs on %s failed with %s",
                     tx.GetHash().ToString(), FormatStateMessage(state));
             control.Add(vChecks);
-        }
-        if(tx.IsCoinBase()){
-            nValueOut += tx.GetValueOut();
-        }else{
-            int64_t nTxValueIn = view.GetValueIn(tx);
-            int64_t nTxValueOut = tx.GetValueOut();
+
+            CAmount nTxValueIn = view.GetValueIn(tx);
+            CAmount nTxValueOut = tx.GetValueOut();
             nValueIn += nTxValueIn;
             nValueOut += nTxValueOut;
+            nValueDig += nDigs;
+            if (!tx.IsCoinStake())
+                nFees += nTxValueIn - nTxValueOut;
+            if (tx.IsCoinStake())
+                nStakeReward = nTxValueOut - nTxValueIn;
+
+
         }
 
         CTxUndo undoDummy;
@@ -2061,16 +2059,46 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
         vPos.push_back(std::make_pair(tx.GetHash(), pos));
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
+
+        // check for burned coins (sent to xCLAMBURNXXXXXXXXXXXXXXXXXXX1HaxZH)
+        BOOST_FOREACH(CTxOut& txout, tx.vout)
+            if (HexStr(txout.scriptPubKey.begin(), txout.scriptPubKey.end()) == "76a9142c2a57256197df6a1c7d6f14daccf4c3dcf4de4288ac") {
+                LogPrintf("BURN: %s\n", FormatMoney(txout.nValue));
+                nValueBurned += txout.nValue;
+            }
     }
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint("bench", "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs]\n", (unsigned)block.vtx.size(), 0.001 * (nTime3 - nTime2), 0.001 * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : 0.001 * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * 0.000001);
 
-    CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
-    if (block.vtx[0]->GetValueOut() > blockReward)
-        return state.DoS(100,
-                         error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
-                               block.vtx[0]->GetValueOut(), blockReward),
-                               REJECT_INVALID, "bad-cb-amount");
+    CAmount blockReward; 
+    if (block.IsProofOfStake())
+    {
+        
+        uint64_t nCoinAge = 0;
+        //avoid the additional coinage checks when we've syncing anything past the lottery
+        // only supported due to legacy code
+        if(pindex->nHeight < consensusParams.LOTTERY_START) { 
+            if (!vtx[1].GetCoinAge(pindex->pprev, chainparams, nCoinAge))
+                return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString());
+        }
+
+        int64_t nCalculatedStakeReward = GetBlockSubsidy(pindex->pprev, nCoinAge, nFees);
+
+        if (nStakeReward > nCalculatedStakeReward)
+            return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
+
+        nValueStake = nStakeReward - nFees;
+
+    } else {
+        blockReward = nFees + GetBlockSubsidy(pindex->nHeight, 0, chainparams.GetConsensus());
+        
+        if (vtx[0].GetValueOut() > ( blockReward ))
+            return DoS(50, error("ConnectBlock() : coinbase reward exceeded (actual=%d vs calculated=%d)",
+                   vtx[0].GetValueOut(),
+                   nReward));
+        }
+    }
+
 
     if (!control.Wait())
         return state.DoS(100, false);
@@ -2080,15 +2108,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     if (fJustCheck)
         return true;
 
-    pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn;
-    //only start checking this error after block 5000 and only on testnet and mainnet, not regtest
-    if(pindex->nHeight > 5000 && !Params().GetConsensus().fPoSNoRetargeting) {
-        //sanity check in case an exploit happens that allows new coins to be minted
-        if(pindex->nMoneySupply > (uint64_t)(100000000 + ((pindex->nHeight - 5000) * 4)) * COIN){
-            return state.DoS(100, error("ConnectBlock(): Unknown error caused actual money supply to exceed expected money supply"),
-                             REJECT_INVALID, "incorrect-money-supply");
-        }
-    }
+    pindex->nMint = nValueOut - nValueIn + nFees;
+    pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn - nValueBurned;
+    pindex->nDigsupply = (pindex->pprev? pindex->pprev->nDigsupply : 0) + nValueDig;
+    pindex->nStakeSupply = (pindex->pprev? pindex->pprev->nStakeSupply : 0) + nValueStake;
+
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull() || !pindex->IsValid(BLOCK_VALID_SCRIPTS))
     {
@@ -2150,6 +2174,21 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     if (fLogEvents)
         storageRes.commitResults();
+
+    // scan for CLAMspeech registering CLAMour petitions
+    string strHash, strURL;
+    
+    BOOST_FOREACH(CTransaction& tx, vtx)
+        if (tx.IsCreateClamour(strHash, strURL)) {
+            LogPrintf("found 'create clamour' with '%s' and '%s'\n", strHash, strURL);
+            string pid = strHash.substr(0, 8);
+            map<string, CClamour*>::iterator mi = mapClamour.find(pid);
+            if (mi == mapClamour.end())
+                pindex->vClamour.push_back(*(mapClamour[pid] = new CClamour(pindex->nHeight, tx.GetHash(), strHash, strURL)));
+            else
+                LogPrintf("duplicate clamour with pid %s: %s\n", pid, tx.strCLAMSpeech.substr(0, MAX_TX_COMMENT_LEN));
+        }
+
 
     return true;
 }
@@ -3051,7 +3090,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
             pblock->prevoutStake = pblock->vtx[1]->vin[0].prevout;
 
             // Check timestamp against prev
-            if(pblock->GetBlockTime() <= pindexBestHeader->GetBlockTime() || FutureDrift(pblock->GetBlockTime()) < pindexBestHeader->GetBlockTime())
+            if(pblock->GetBlockTime() <= pindexBestHeader->GetBlockTime() || FutureDrift(pblock->GetBlockTime(), chainActive.Height() + 1) < pindexBestHeader->GetBlockTime())
             {
                 return false;
             }
@@ -3135,6 +3174,103 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
     return true;
 }
 
+bool CheckReward(const CBlock& block, CValidationState& state, int nHeight, const Consensus::Params& consensusParams, CAmount nFees, CAmount nActualStakeReward, const std::vector<CTxOut>& vouts)
+{
+    size_t offset = block.IsProofOfStake() ? 1 : 0;
+    // Check block reward
+    if (block.IsProofOfWork())
+    {
+        // Check proof-of-work reward - only for inital distrubution
+        CAmount blockReward = nFees + GetDistrubutionBlockSubsidy(nHeight, consensusParams);
+        if (block.vtx[offset]->GetValueOut() > blockReward)
+            return state.DoS(100,
+                             error("CheckReward(): coinbase pays too much (actual=%d vs limit=%d)",
+                                   block.vtx[offset]->GetValueOut(), blockReward),
+                             REJECT_INVALID, "bad-cb-amount");
+    }
+    else
+    {
+        // Check full reward
+        CAmount blockReward = nFees + GetBlockSubsidy(nHeight, consensusParams);
+        if (nActualStakeReward > blockReward)
+            return state.DoS(100,
+                             error("CheckReward(): coinstake pays too much (actual=%d vs limit=%d)",
+                                   nActualStakeReward, blockReward),
+                             REJECT_INVALID, "bad-cs-amount");
+
+
+    }
+
+    return true;
+}
+
+CAmount GetBlockSubsidy(int nHeight, uint64_t nCoinAge, const Consensus::Params& consensusParams)
+{
+    if(pindex->nHeight < consensusParams.LOTTERY_START){
+
+            CAmount nSubsidy = nCoinAge * consensusParams.COIN_YEAR_REWARD * 33 / (365 * 33 + 8);
+
+            return nSubsidy + nFees;
+
+    } else if (pindex->nHeight > consensusParams.LOTTERY_END) {
+
+        CAmount nSubsidy = 1 * COIN;
+        return nSubsidy + nFees;
+
+    } else {
+
+        const CAmount randSpan = 2147483647; //Big Number, its unclear but possable correlates to the amount of clams that have ever existed.
+        const CAmount maxReward = 1000 * COIN; //1000 CLAMS
+        const CAmount minReward = 10000000; //.1 CLAM
+        double multFactor = 3000; //Exponential Curve Factor
+ 
+        //Randomize based on blockHash
+        uint256 hash = pindex->GetBlockHash();
+        std::string cseed_str = hash.ToString().substr(12,7);
+        const char* cseed = cseed_str.c_str();
+        long seed = hex2long(cseed);
+        int random = generateMTRandom(seed, randSpan);
+ 
+        //Create our reward coEfficient
+        double randCoefficient = (double)random / (double)randSpan;
+        double nCoefficient = pow(randCoefficient, multFactor);
+ 
+        CAmount nSubsidy = ceil(((maxReward - minReward) * nCoefficient) + minReward);
+ 
+        //Sanity Checks, If they happen: "We're All Going To Die"
+        if(nSubsidy < minReward){
+            //If less than minReward, == 1 CLAM
+            nSubsidy = minReward;
+        } else if(nSubsidy > maxReward) {
+            //If more than maxReward, == 1 CLAM
+            nSubsidy = minReward;
+        } else {
+            nSubsidy = ceil(nSubsidy);
+        }
+ 
+        //Return the block reward plus fees.
+        return nSubsidy + nFees;
+     
+    }
+    
+}
+
+
+CAmount GetDistrubutionBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
+{
+    CAmount nSubsidy;
+
+    nSubsidy = 2.15652173 * COIN;
+    if (nHeight < 4551  ) {
+        nSubsidy = 3284 * COIN;
+    } else if (nHeight < 9551) {
+        nSubsidy = 2.15652173 * COIN;    
+    }
+
+    return nSubsidy;
+}
+
+
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig)
 {
     // These are checks that are independent of context.
@@ -3147,7 +3283,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
-    if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime()))
+    if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1))
         return error("CheckBlock() : block timestamp too far in the future");
 
     // Check the merkle root.
@@ -3310,14 +3446,15 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "block's timestamp is too early");
 
     // Check timestamp
-    if (block.IsProofOfStake() && block.GetBlockTime() > FutureDrift(nAdjustedTime))
+    if (block.IsProofOfStake() && block.GetBlockTime() > FutureDrift(nAdjustedTime), chainActive.Height() + 1)
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
 
     // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
     // check for version 2, 3 and 4 upgrades
     if((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||
        (block.nVersion < 3 && nHeight >= consensusParams.BIP66Height) ||
-       (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
+       (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height) || 
+       (block.nVersion < 7 && nHeight >= consensusParams.CIP1Height)) 
             return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
                                  strprintf("rejected nVersion=0x%08x block", block.nVersion));
 
@@ -3402,7 +3539,7 @@ static bool UpdateHashProof(const CBlock& block, CValidationState& state, const 
     uint256 hash = block.GetHash();
 
     //reject proof of work at height consensusParams.nLastPOWBlock
-    if (block.IsProofOfWork() && nHeight > consensusParams.nLastPOWBlock)
+    if (block.IsProofOfWork() && nHeight > consensusParams.LAST_POW_BLOCK)
         return state.DoS(100, error("UpdateHashProof() : reject proof-of-work at height %d", nHeight));
     
     // Check coinstake timestamp
@@ -3540,16 +3677,12 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
     if (block.IsProofOfWork() && nHeight > chainparams.GetConsensus().nLastPOWBlock)
         return state.DoS(100, error("AcceptBlock() : reject proof-of-work at height %d", nHeight));
 
-    // Check that the block satisfies synchronized checkpoint
-    if (!Checkpoints::CheckSync(nHeight))
-        return error("AcceptBlock() : rejected by synchronized checkpoint");
-
     // Check timestamp against prev
-    if (pindexPrev && block.IsProofOfStake() && (block.GetBlockTime() <= pindexPrev->GetBlockTime() || FutureDrift(block.GetBlockTime()) < pindexPrev->GetBlockTime()))
+    if (pindexPrev && block.IsProofOfStake() && (block.GetBlockTime() <= pindexPrev->GetBlockTime() || FutureDrift(block.GetBlockTime(), chainActive.Height() + 1) < pindexPrev->GetBlockTime()))
         return error("AcceptBlock() : block's timestamp is too early");
 
     // Check timestamp
-    if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime()))
+    if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1))
         return error("AcceptBlock() : block timestamp too far in the future");
 
     // Enforce rule that the coinbase starts with serialized block height

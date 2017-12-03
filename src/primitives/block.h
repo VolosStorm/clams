@@ -23,12 +23,14 @@ class CBlockHeader
 {
 public:
     // header
+    static const int CURRENT_VERSION=7;
     int32_t nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
+
 
     // proof-of-stake specific fields
     COutPoint prevoutStake;
@@ -70,13 +72,33 @@ public:
         return (nBits == 0);
     }
 
-    uint256 GetHash() const;
+    uint256 GetHash() const
+    {
+        if (nVersion > 6)
+            return Hash(BEGIN(nVersion), END(nNonce));
+        else
+            return GetPoWHash();
+    }
+
+    uint256 GetPoWHash() const
+    {
+        return scrypt_blockhash(CVOIDBEGIN(nVersion));
+    }
 
     uint256 GetHashWithoutSign() const;
 
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;
+    }
+
+        // entropy bit for stake modifier if chosen by modifier
+    unsigned int GetStakeEntropyBit() const
+    {
+        // Take last bit of block hash as entropy bit
+        unsigned int nEntropyBit = ((GetHash().Get64()) & 1llu);
+        LogPrint("stakemodifier", "GetStakeEntropyBit: hashBlock=%s nEntropyBit=%u\n", GetHash().ToString(), nEntropyBit);
+        return nEntropyBit;
     }
     
     // ppcoin: two types of block: proof-of-work or proof-of-stake
@@ -90,14 +112,13 @@ public:
         return !IsProofOfStake();
     }
     
-    virtual uint32_t StakeTime() const
+    // ppcoin: get max transaction timestamp
+    int64_t GetMaxTransactionTime() const
     {
-        uint32_t ret = 0;
-        if(IsProofOfStake())
-        {
-            ret = nTime;
-        }
-        return ret;
+        int64_t maxTransactionTime = 0;
+        BOOST_FOREACH(const CTransaction& tx, vtx)
+            maxTransactionTime = std::max(maxTransactionTime, (int64_t)tx.nTime);
+        return maxTransactionTime;
     }
 
     CBlockHeader& operator=(const CBlockHeader& other) //qtum

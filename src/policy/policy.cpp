@@ -92,6 +92,12 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason, const bool witnes
         }
     }
 
+    // Disallow large transaction comments
+    if (tx.strCLAMSpeech.length() > MAX_TX_COMMENT_LEN) {
+        reason = "tx-comment-too-large";
+        return false;
+    }
+
     unsigned int nDataOut = 0;
     txnouttype whichType;
     BOOST_FOREACH(const CTxOut& txout, tx.vout) {
