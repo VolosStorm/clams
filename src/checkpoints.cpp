@@ -30,28 +30,5 @@ namespace Checkpoints {
         }
         return NULL;
     }
-
-    // Automatically select a suitable sync-checkpoint 
-    const CBlockIndex* AutoSelectSyncCheckpoint()
-    {
-        const CBlockIndex *pindexBest = chainActive.Tip();
-        const CBlockIndex *pindex = pindexBest;
-        // Search backward for a block within max span and maturity window
-        while (pindex->pprev && pindex->nHeight + nCheckpointSpan > pindexBest->nHeight)
-            pindex = pindex->pprev;
-        return pindex;
-    }
-
-    // Check against synchronized checkpoint
-    bool CheckSync(int nHeight)
-    {
-        const CBlockIndex* pindexSync;
-        if(nHeight)
-            pindexSync = AutoSelectSyncCheckpoint();
-
-        if(nHeight && nHeight <= pindexSync->nHeight)
-            return false;
-        return true;
-    }
 	
 } // namespace Checkpoints

@@ -9,10 +9,14 @@
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 #include "crypto/common.h"
+#include "crypto/scrypt.h"
 
 uint256 CBlockHeader::GetHash() const
 {
-    return SerializeHash(*this);
+    if (nVersion > 6)
+        return SerializeHash(*this);
+    else
+        return scrypt_blockhash(((const void*)&(nVersion))); 
 }
 
 uint256 CBlockHeader::GetHashWithoutSign() const

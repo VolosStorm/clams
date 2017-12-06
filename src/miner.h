@@ -214,8 +214,6 @@ private:
     bool TestForBlock(CTxMemPool::txiter iter);
     /** Test if block is already full - returns true if block is fuller than allowed by consensus  */
     bool CheckBlockBeyondFull();
-    /** Rebuild the coinbase/coinstake transaction to account for new gas refunds **/
-    void RebuildRefundTransaction();
     /** Test if tx still has unconfirmed parents not yet in block */
     bool isStillDependent(CTxMemPool::txiter iter);
 

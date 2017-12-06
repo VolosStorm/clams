@@ -14,6 +14,7 @@
 #include "config/bitcoin-config.h"
 #endif
 
+//#include "clamspeech.h"
 #include "compat.h"
 #include "tinyformat.h"
 #include "utiltime.h"
@@ -28,6 +29,12 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/signals2/signal.hpp>
 #include <boost/thread/exceptions.hpp>
+
+#ifndef WIN32
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 
 static const bool DEFAULT_LOGTIMEMICROS = false;
 static const bool DEFAULT_LOGIPS        = false;
@@ -67,6 +74,7 @@ inline std::string _(const char* psz)
 
 void SetupEnvironment();
 bool SetupNetworking();
+void CSLoad();
 
 /** Return true if log accepts specified category */
 bool LogAcceptCategory(const char* category);
@@ -113,6 +121,17 @@ boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 void OpenDebugLog();
 void ShrinkDebugFile();
 void runCommand(const std::string& strCommand);
+
+long hex2long(const char* hexString);
+bool LoadClamSpeech();
+bool SaveClamSpeech();
+bool LoadClamourClamSpeech();
+bool SaveClamourClamSpeech();
+std::string GetDefaultClamSpeech();
+std::string GetDefaultClamourClamSpeech();
+std::string GetRandomClamourClamSpeech();
+boost::filesystem::path GetClamSpeechFile();
+boost::filesystem::path GetQuoteFile();
 
 inline bool IsSwitchChar(char c)
 {
@@ -202,6 +221,30 @@ std::string HelpMessageOpt(const std::string& option, const std::string& message
  * when boost is newer than 1.56.
  */
 int GetNumCores();
+
+#ifdef WIN32
+inline void SetThreadPriority(int nPriority)
+{
+    SetThreadPriority(GetCurrentThread(), nPriority);
+}
+#else
+
+#define THREAD_PRIORITY_LOWEST          PRIO_MAX
+#define THREAD_PRIORITY_BELOW_NORMAL    2
+#define THREAD_PRIORITY_NORMAL          0
+#define THREAD_PRIORITY_ABOVE_NORMAL    0
+
+inline void SetThreadPriority(int nPriority)
+{
+    // It's unclear if it's even possible to change thread priorities on Linux,
+    // but we really and truly need it for the generation threads.
+#ifdef PRIO_THREAD
+    setpriority(PRIO_THREAD, 0, nPriority);
+#else
+    setpriority(PRIO_PROCESS, 0, nPriority);
+#endif
+}
+#endif
 
 void RenameThread(const char* name);
 

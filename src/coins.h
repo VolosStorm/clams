@@ -16,6 +16,8 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include <unordered_map>
+
 /**
  * A UTXO entry.
  *
@@ -32,8 +34,8 @@ public:
     //! whether transaction is a coinbase
      unsigned int fCoinBase : 1;
      unsigned int fCoinStake : 1;
-	
-	//! at which height this containing transaction was included in the active block chain
+    
+    //! at which height this containing transaction was included in the active block chain
     uint32_t nHeight : 30;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
@@ -266,8 +268,8 @@ public:
      * Note that lightweight clients may not know anything besides the hash of previous transactions,
      * so may not be able to calculate this.
      *
-     * @param[in] tx	transaction for which we are checking input total
-     * @return	Sum of value of all inputs (scriptSigs)
+     * @param[in] tx    transaction for which we are checking input total
+     * @return  Sum of value of all inputs (scriptSigs)
      */
     CAmount GetValueIn(const CTransaction& tx) const;
 

@@ -300,7 +300,7 @@ RES_ICONS = \
   qt/res/icons/verify.png \
   qt/res/icons/staking_on.png \
   qt/res/icons/staking_off.png \
-  qt/res/icons/lock_staking.png \
+  qt/res/icons/lock_staking.png
 
 BITCOIN_QT_BASE_CPP = \
   qt/bantablemodel.cpp \

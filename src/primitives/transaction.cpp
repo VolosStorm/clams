@@ -9,6 +9,7 @@
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 
+
 std::string COutPoint::ToString() const
 {
     return strprintf("COutPoint(%s, %u)", hash.ToString().substr(0,10), n);
@@ -54,8 +55,8 @@ std::string CTxOut::ToString() const
     return strprintf("CTxOut(nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
 }
 
-CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0) {}
-CMutableTransaction::CMutableTransaction(const CTransaction& tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime) {}
+CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nTime(), nLockTime(0), strClamSpeech(){}
+CMutableTransaction::CMutableTransaction(const CTransaction& tx) : nVersion(tx.nVersion), nTime(tx.nTime), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime) , strClamSpeech(tx.strClamSpeech) {}
 
 uint256 CMutableTransaction::GetHash() const
 {
@@ -73,9 +74,9 @@ uint256 CTransaction::GetWitnessHash() const
 }
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
-CTransaction::CTransaction() : nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), hash() {}
-CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), hash(ComputeHash()) {}
-CTransaction::CTransaction(CMutableTransaction &&tx) : nVersion(tx.nVersion), vin(std::move(tx.vin)), vout(std::move(tx.vout)), nLockTime(tx.nLockTime), hash(ComputeHash()) {}
+CTransaction::CTransaction() : nVersion(CTransaction::CURRENT_VERSION), nTime(), vin(), vout(), nLockTime(0), strClamSpeech(), hash() {}
+CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), nTime(tx.nTime), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), strClamSpeech(tx.strClamSpeech), hash(ComputeHash()) {}
+CTransaction::CTransaction(CMutableTransaction &&tx) : nVersion(tx.nVersion), nTime(tx.nTime), vin(std::move(tx.vin)), vout(std::move(tx.vout)), nLockTime(tx.nLockTime), strClamSpeech(tx.strClamSpeech), hash(ComputeHash()) {}
 
 CAmount CTransaction::GetValueOut() const
 {
@@ -123,14 +124,13 @@ unsigned int CTransaction::GetTotalSize() const
 std::string CTransaction::ToString() const
 {
     std::string str;
-    str += strprintf("CTransaction(hash=%s, ver=%d, nTime=%d, vin.size=%u, vout.size=%u, nLockTime=%u, clamSpeech=%s)\n",
+    str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%u, vout.size=%u, nTime= %u nLockTime=%u)\n",
         GetHash().ToString().substr(0,10),
         nVersion,
-        nTime, 
         vin.size(),
         vout.size(),
-        nLockTime, 
-        strCLAMSpeech);
+        nTime, 
+        nLockTime);
     for (unsigned int i = 0; i < vin.size(); i++)
         str += "    " + vin[i].ToString() + "\n";
     for (unsigned int i = 0; i < vin.size(); i++)
@@ -145,75 +145,26 @@ int64_t GetTransactionWeight(const CTransaction& tx)
     return ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (WITNESS_SCALE_FACTOR -1) + ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 }
 
-// ppcoin: total coin age spent in transaction, in the unit of coin-days.
-// Only those coins meeting minimum age requirement counts. As those
-// transactions not in main chain are not currently indexed so we
-// might not find out about their coin age. Older transactions are 
-// guaranteed to be in main chain by sync-checkpoint. This rule is
-// introduced to help nodes establish a consistent view of the coin
-// age (trust score) of competing branches.
-
-bool CTransaction::GetCoinAge(CBlockIndex* pindex, const Consensus::Params& consensusParams, uint64_t& nCoinAge) const
+bool IsCreateClamour(const CTransaction& tx, std::string& strHash, std::string& strURL)
 {
-    CAmount bnCentSecond = 0;  // coin age in the unit of cent-seconds
-    nCoinAge = 0;
+    size_t len = tx.strClamSpeech.length();
 
-    if (IsCoinBase())
-        return true;
-
-    BOOST_FOREACH(const CTxIn& txin, vin)
-    {
-        // First try finding the previous transaction in database
-        Coin coinPrev;
-
-        if(!view.GetCoin(txin.prevout, coinPrev)){
-            return state.DoS(100, error("CheckProofOfStake() : Stake prevout does not exist %s", txin.prevout.hash.ToString()));
-        }
-
-        CBlockIndex* blockFrom = pindexPrev->GetAncestor(coinPrev.nHeight);
-        if(!blockFrom) {
-            return state.DoS(100, error("CheckProofOfStake() : Block at height %i for prevout can not be loaded", coinPrev.nHeight));
-        }
-
-        if (nTime < coinPrev.nTime)
-            return false;  // Transaction timestamp violation
-        if (block.GetBlockTime() + consensusParams.nStakeMinAge > nTime)
-            continue; // only count coins meeting min age requirement
-
-        CAmount nValueIn = coinPrev.vout[txin.prevout.n].nValue;
-        bnCentSecond +=nValueIn * nTime-txPrev.nTime / 1000000;
-
-        LogPrintf("coinage", "coin age nValueIn=%d nTimeDiff=%d bnCentSecond=%s\n", nValueIn, nTime - txPrev.nTime, bnCentSecond.ToString());
-    }
-
-    CAmount bnCoinDay = bnCentSecond * 1000000 / 100000000 / (24 * 60 * 60);
-    LogPrintf("coinage", "coin age bnCoinDay=%s\n", bnCoinDay.ToString());
-    nCoinAge = bnCoinDay.getuint64();
-    return true;
-}
-
-
-
-bool CTransaction::IsCreateClamour(string& strHash, string& strURL) const
-{
-    size_t len = strCLAMSpeech.length();
-
-    if (strCLAMSpeech.substr(0, 15) == "create clamour ")
-        LogPrintf("checking speech length %d : %s\n", len, strCLAMSpeech);
+    //if (tx.strClamSpeech.substr(0, 15) == "create clamour ")
+    //    LogPrintf("checking speech length %d : %s\n", len, tx.strClamSpeech);
 
     // "create clamour ..." speech must begin with those 15 characters, and have a 64 character hash after it
-    if (len < 15+64 || strCLAMSpeech.substr(0, 15) != "create clamour ")
+    if (len < 15+64 || tx.strClamSpeech.substr(0, 15) != "create clamour ")
         return false;
 
     strURL = "";
     strHash = "";
 
-    size_t pos = strCLAMSpeech.find_first_not_of("0123456789abcdef", 15);
+    size_t pos = tx.strClamSpeech.find_first_not_of("0123456789abcdef", 15);
 
     // if the hex goes all the way to the end, there's no URL comment, and the length must be exactly 15+64 or the hex is too long
-    if (pos == string::npos) {
+    if (pos == std::string::npos) {
         if (len == 15+64) {
-            strHash = strCLAMSpeech.substr(15, 64);
+            strHash = tx.strClamSpeech.substr(15, 64);
             return true;
         }
 
@@ -223,15 +174,16 @@ bool CTransaction::IsCreateClamour(string& strHash, string& strURL) const
     if (pos != 15+64)
         return false;
 
-    strHash = strCLAMSpeech.substr(15, 64);
+    strHash = tx.strClamSpeech.substr(15, 64);
 
     // optional URL is separated from the hash by a single space
-    if (strCLAMSpeech[pos] != ' ')
+    if (tx.strClamSpeech[pos] != ' ')
         return true;
 
     // and ended by whitespace
-    size_t pos2 = strCLAMSpeech.find_first_of(" \t\n\r", ++pos);
+    size_t pos2 = tx.strClamSpeech.find_first_of(" \t\n\r", ++pos);
 
-    strURL = strCLAMSpeech.substr(pos, pos2 == string::npos ? string::npos : pos2 - pos);
+    strURL = tx.strClamSpeech.substr(pos, pos2 == std::string::npos ? std::string::npos : pos2 - pos);
     return true;
 }
+

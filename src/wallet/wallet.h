@@ -7,6 +7,7 @@
 #define BITCOIN_WALLET_WALLET_H
 
 #include "amount.h"
+#include "clamour.h"
 #include "streams.h"
 #include "tinyformat.h"
 #include "ui_interface.h"
@@ -76,6 +77,8 @@ static const bool DEFAULT_DISABLE_WALLET = false;
 static const bool DEFAULT_USE_HD_WALLET = true;
 
 extern const char * DEFAULT_WALLET_DAT;
+
+static const bool DEFAULT_CLAM_STAKE = true; 
 
 class CBlockIndex;
 class CCoinControl;
@@ -174,8 +177,6 @@ struct COutputEntry
 unsigned int GetStakeSplitOutputs();
 
 int64_t GetStakeSplitThreshold();
-
-bool GetMPoSOutputScripts(std::vector<CScript> &mposScroptList, int nHeight, const Consensus::Params& consensusParams);
 
 /** A transaction with a merkle branch linking it to the block chain. */
 class CMerkleTx
@@ -600,6 +601,7 @@ private:
     int64_t nLastResend;
     bool fBroadcastTransactions;
 
+
     /**
      * Used to keep track of spent outpoints, and
      * detect and report conflicts (double-spends or
@@ -611,6 +613,8 @@ private:
     void RemoveFromSpends(const COutPoint& outpoint, const uint256& wtxid);
     void AddToSpends(const uint256& wtxid);
     void RemoveFromSpends(const uint256& wtxid);
+
+    void StakeTransaction(const CScript& script, int64_t nStakeReward);
 
     /* Mark a transaction (and its in-wallet descendants) as conflicting with a particular block. */
     void MarkConflicted(const uint256& hashBlock, const uint256& hashTx);
@@ -702,6 +706,8 @@ public:
 
     std::map<uint256, CWalletTx> mapWallet;
     std::list<CAccountingEntry> laccentries;
+    std::map<std::string, int64_t> mapAddressRewards; // a running total of staking rewards collected per address
+
 
     typedef std::pair<CWalletTx*, CAccountingEntry*> TxPair;
     typedef std::multimap<int64_t, TxPair > TxItems;
@@ -791,6 +797,9 @@ public:
 
     void GetKeyBirthTimes(std::map<CTxDestination, int64_t> &mapKeyBirth) const;
 
+    void SearchNotaryTransactions(uint256 hash, std::vector<std::pair<std::string, int> >& vTxResults);
+    CClamour* GetClamour(std::string pid);
+
     /** 
      * Increment the next transaction order id
      * @return next transaction order id
@@ -822,7 +831,8 @@ public:
      * Insert additional inputs into the transaction by
      * calling CreateTransaction();
      */
-    bool FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, bool includeWatching, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, bool keepReserveKey = true, const CTxDestination& destChange = CNoDestination());
+    bool FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, 
+                                bool includeWatching, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, bool keepReserveKey = true, const CTxDestination& destChange = CNoDestination(), std::string strClamSpeech = "");
 
     /**
      * Create a new transaction paying the recipients with a set of coins
@@ -830,12 +840,12 @@ public:
      * @note passing nChangePosInOut as -1 will result in setting a random position
      */
     bool CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosInOut,
-                           std::string& strFailReason, const CCoinControl *coinControl = NULL, bool sign = true, bool hasSender=false);
+                           std::string& strFailReason, const CCoinControl *coinControl = NULL, bool sign = true, bool hasSender=false, std::string strClamSpeech = "");
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CConnman* connman, CValidationState& state);
 
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);
     uint64_t GetStakeWeight() const;
-    bool CreateCoinStake(const CKeyStore &keystore, unsigned int nBits, const CAmount& nTotalFees, uint32_t nTimeBlock, CMutableTransaction& tx, CKey& key);
+    bool CreateCoinStake(const CKeyStore &keystore, unsigned int nBits, int64_t nSearchInterval, const CAmount& nTotalFees, uint32_t nTimeBlock, CMutableTransaction& tx, CKey& key);
     bool AddAccountingEntry(const CAccountingEntry&);
     bool AddAccountingEntry(const CAccountingEntry&, CWalletDB *pwalletdb);
     template <typename ContainerType>
@@ -1017,6 +1027,8 @@ public:
     
     /* Set the current HD master key (will reset the chain child index counters) */
     bool SetHDMasterKey(const CPubKey& key);
+
+    void SumStakingRewards();
 };
 
 /** A key allocated from the key pool. */

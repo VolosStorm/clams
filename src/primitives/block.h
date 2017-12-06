@@ -9,6 +9,9 @@
 #include "primitives/transaction.h"
 #include "serialize.h"
 #include "uint256.h"
+#include "crypto/scrypt.h"
+
+
 
 static const int SER_WITHOUT_SIGNATURE = 1 << 3;
 
@@ -72,18 +75,7 @@ public:
         return (nBits == 0);
     }
 
-    uint256 GetHash() const
-    {
-        if (nVersion > 6)
-            return Hash(BEGIN(nVersion), END(nNonce));
-        else
-            return GetPoWHash();
-    }
-
-    uint256 GetPoWHash() const
-    {
-        return scrypt_blockhash(CVOIDBEGIN(nVersion));
-    }
+    uint256 GetHash() const;
 
     uint256 GetHashWithoutSign() const;
 
@@ -96,8 +88,8 @@ public:
     unsigned int GetStakeEntropyBit() const
     {
         // Take last bit of block hash as entropy bit
-        unsigned int nEntropyBit = ((GetHash().Get64()) & 1llu);
-        LogPrint("stakemodifier", "GetStakeEntropyBit: hashBlock=%s nEntropyBit=%u\n", GetHash().ToString(), nEntropyBit);
+        unsigned int nEntropyBit = ((GetHash().GetCheapHash()) & 1llu);
+        //LogPrint("stakemodifier", "GetStakeEntropyBit: hashBlock=%s nEntropyBit=%u\n", GetHash().ToString(), nEntropyBit);
         return nEntropyBit;
     }
     
@@ -111,15 +103,6 @@ public:
     {
         return !IsProofOfStake();
     }
-    
-    // ppcoin: get max transaction timestamp
-    int64_t GetMaxTransactionTime() const
-    {
-        int64_t maxTransactionTime = 0;
-        BOOST_FOREACH(const CTransaction& tx, vtx)
-            maxTransactionTime = std::max(maxTransactionTime, (int64_t)tx.nTime);
-        return maxTransactionTime;
-    }
 
     CBlockHeader& operator=(const CBlockHeader& other) //qtum
     {
@@ -131,8 +114,6 @@ public:
             this->nTime          = other.nTime;
             this->nBits          = other.nBits;
             this->nNonce         = other.nNonce;
-            this->hashStateRoot  = other.hashStateRoot;
-            this->hashUTXORoot   = other.hashUTXORoot;
             this->vchBlockSig    = other.vchBlockSig;
             this->prevoutStake   = other.prevoutStake;
         }
@@ -174,6 +155,16 @@ public:
         CBlockHeader::SetNull();
         vtx.clear();
         fChecked = false;
+    }
+
+    // ppcoin: get max transaction timestamp
+    int64_t GetMaxTransactionTime() const
+    {
+        int64_t maxTransactionTime = 0;
+        for (const auto& tx : vtx) {
+            maxTransactionTime = std::max(maxTransactionTime, (int64_t)tx->nTime);
+        }
+        return maxTransactionTime;
     }
 
     std::pair<COutPoint, unsigned int> GetProofOfStake() const //qtum

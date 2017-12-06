@@ -80,7 +80,7 @@ double GetDifficulty(const CBlockIndex* blockindex)
 
 double GetPoWMHashPS()
 {
-    if (pindexBestHeader->nHeight >= Params().GetConsensus().nLastPOWBlock)//toniqtum edit
+    if (pindexBestHeader->nHeight >= Params().GetConsensus().LAST_POW_BLOCK)//toniqtum edit
         return 0;
 
     int nPoWInterval = 72;
@@ -169,7 +169,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 		
     result.push_back(Pair("flags", strprintf("%s", blockindex->IsProofOfStake()? "proof-of-stake" : "proof-of-work")));
     result.push_back(Pair("proofhash", blockindex->hashProof.GetHex()));
-    result.push_back(Pair("modifier", blockindex->nStakeModifier.GetHex()));
+    result.push_back(Pair("modifier", blockindex->nStakeModifier));
 
     return result;
 }
@@ -218,7 +218,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 
     result.push_back(Pair("flags", strprintf("%s", blockindex->IsProofOfStake()? "proof-of-stake" : "proof-of-work")));
     result.push_back(Pair("proofhash", blockindex->hashProof.GetHex()));
-    result.push_back(Pair("modifier", blockindex->nStakeModifier.GetHex()));
+    result.push_back(Pair("modifier", blockindex->nStakeModifier));
 
     if (block.IsProofOfStake())
         result.push_back(Pair("signature", HexStr(block.vchBlockSig.begin(), block.vchBlockSig.end())));	

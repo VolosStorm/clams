@@ -23,8 +23,12 @@ class CBlockIndex;
 class CCoinsViewDBCursor;
 class uint256;
 
+//! Compensate for extra memory peak (x1.5-x1.9) at flush time.
+static constexpr int DB_PEAK_USAGE_FACTOR = 2;
+//! No need to periodic flush if at least this much space still available.
+static constexpr int MAX_BLOCK_COINSDB_USAGE = 10 * DB_PEAK_USAGE_FACTOR;
 //! -dbcache default (MiB)
-static const int64_t nDefaultDbCache = 300;
+static const int64_t nDefaultDbCache = 450;
 //! max. -dbcache (MiB)
 static const int64_t nMaxDbCache = sizeof(void*) > 4 ? 16384 : 1024;
 //! min. -dbcache (MiB)
@@ -126,8 +130,21 @@ public:
     
     
     bool WriteHeightIndex(const CHeightTxIndexKey &heightIndex, const std::vector<uint256>& hash);
-    bool ReadHeightIndex(const unsigned int &high, const unsigned int &low, std::vector<std::vector<uint256>> &hashes,
-                                    std::set<dev::h160> addresses);
+
+    /**
+     * Iterates through blocks by height, starting from low.
+     *
+     * @param low start iterating from this block height
+     * @param high end iterating at this block height (ignored if <= 0)
+     * @param minconf stop iterating of the block height does not have enough confirmations (ignored if <= 0)
+     * @param blocksOfHashes transaction hashes in blocks iterated are collected into this vector.
+     * @param addresses filter out a block unless it matches one of the addresses in this set.
+     *
+     * @return the height of the latest block iterated. 0 if no block is iterated.
+     */
+    size_t ReadHeightIndex(size_t low, size_t high, size_t minconf,
+            std::vector<std::vector<uint256>> &blocksOfHashes,
+            uint256 const &addresses);
     bool EraseHeightIndex(const unsigned int &height);
     bool WipeHeightIndex();
 

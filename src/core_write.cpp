@@ -151,7 +151,10 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry)
     entry.pushKV("txid", tx.GetHash().GetHex());
     entry.pushKV("hash", tx.GetWitnessHash().GetHex());
     entry.pushKV("version", tx.nVersion);
+    entry.pushKV("ntime", (int64_t)tx.nTime);
     entry.pushKV("locktime", (int64_t)tx.nLockTime);
+    if(tx.nVersion > 1)
+        entry.pushKV("strClamSpeech", (std::string)tx.strClamSpeech);
 
     UniValue vin(UniValue::VARR);
     for (unsigned int i = 0; i < tx.vin.size(); i++) {

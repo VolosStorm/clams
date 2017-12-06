@@ -7,9 +7,12 @@
 #define BITCOIN_PRIMITIVES_TRANSACTION_H
 
 #include "amount.h"
+#include "consensus/params.h"
 #include "script/script.h"
 #include "serialize.h"
 #include "uint256.h"
+
+class CBlockIndex;
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 
@@ -247,11 +250,10 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 
     s >> tx.nVersion;
     unsigned char flags = 0;
-    tx.nTime.clear();
     tx.vin.clear();
     tx.vout.clear();
 
-    s >> tx.nTime
+    s >> tx.nTime;
     /* Try to read the vin. In case the dummy is there, this will be read as an empty vector. */
     s >> tx.vin;
     if (tx.vin.size() == 0 && fAllowWitness) {
@@ -279,7 +281,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     s >> tx.nLockTime;
     if (tx.nVersion > 1)
     {
-        s >> strCLAMSpeech;
+        s >> tx.strClamSpeech;
     }
 }
 
@@ -302,7 +304,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         s << vinDummy;
         s << flags;
     }
-    s << tx.nTime
+    s << tx.nTime;
     s << tx.vin;
     s << tx.vout;
     if (flags & 1) {
@@ -313,7 +315,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     s << tx.nLockTime;
     if (tx.nVersion > 1)
     {
-        s << strCLAMSpeech;
+        s << tx.strClamSpeech;
     }
 }
 
@@ -339,11 +341,11 @@ public:
     // and bypass the constness. This is safe, as they update the entire
     // structure, including the hash.
     const int32_t nVersion;
-    unsigned int nTime;
+    const unsigned int nTime;
     const std::vector<CTxIn> vin;
     const std::vector<CTxOut> vout;
-     std::string strCLAMSpeech;
     const uint32_t nLockTime;
+    const std::string strClamSpeech;
 
 private:
     /** Memory only. */
@@ -409,8 +411,6 @@ public:
         return (vin.size() > 0 && (!vin[0].prevout.IsNull()) && vout.size() >= 2 && vout[0].IsEmpty());
     }
 
-    bool IsCreateClamour(std::string& strHash, std::string& strURL) const;
-
     bool IsNormalTx() const
     {
         // not coin base or coin stake transaction
@@ -444,10 +444,11 @@ public:
 struct CMutableTransaction
 {
     int32_t nVersion;
+    unsigned int nTime;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     uint32_t nLockTime;
-     std::string strCLAMSpeech;
+    std::string strClamSpeech;
 
     CMutableTransaction();
     CMutableTransaction(const CTransaction& tx);
@@ -495,5 +496,6 @@ template <typename Tx> static inline CTransactionRef MakeTransactionRef(Tx&& txI
 
 /** Compute the weight of a transaction, as defined by BIP 141 */
 int64_t GetTransactionWeight(const CTransaction &tx);
+bool IsCreateClamour(const CTransaction& tx, std::string& strHash, std::string& strURL);
 
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

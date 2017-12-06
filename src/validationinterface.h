@@ -15,6 +15,7 @@ class CBlockIndex;
 struct CBlockLocator;
 class CBlockIndex;
 class CConnman;
+class CScript;
 class CReserveScript;
 class CTransaction;
 class CValidationInterface;
@@ -34,6 +35,7 @@ class CValidationInterface {
 protected:
     virtual void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) {}
     virtual void SyncTransaction(const CTransaction &tx, const CBlockIndex *pindex, int posInBlock) {}
+    virtual void StakeTransaction(const CScript& script, int64_t nStakeReward, int posInBlock) {}
     virtual void SetBestChain(const CBlockLocator &locator) {}
     virtual void UpdatedTransaction(const uint256 &hash) {}
     virtual void Inventory(const uint256 &hash) {}
@@ -61,6 +63,8 @@ struct CMainSignals {
      * removal was due to conflict from connected block), or appeared in a
      * disconnected block.*/
     boost::signals2::signal<void (const CTransaction &, const CBlockIndex *pindex, int posInBlock)> SyncTransaction;
+    // Notifies listeners of updated staking reward (passing receiving script, reward amount, and whether the reward is being added or taken away).
+    boost::signals2::signal<void (const CScript &, int64_t, bool)> StakeTransaction;
     /** Notifies listeners of an updated transaction without new data (for now: a coinbase potentially becoming visible). */
     boost::signals2::signal<void (const uint256 &)> UpdatedTransaction;
     /** Notifies listeners of a new active block chain. */

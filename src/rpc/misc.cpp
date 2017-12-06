@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "base58.h"
+#include "clamspeech.h"
 #include "clientversion.h"
 #include "init.h"
 #include "validation.h"
@@ -25,6 +26,9 @@
 #include <univalue.h>
 
 using namespace std;
+
+typedef map<string, CClamour*> mapClamour_t;
+extern  mapClamour_t mapClamour;
 
 /**
  * @note Do not add or change anything in the information returned by this

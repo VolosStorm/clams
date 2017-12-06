@@ -7,6 +7,7 @@
 #define BITCOIN_CHAIN_H
 
 #include "arith_uint256.h"
+#include "clamour.h"
 #include "primitives/block.h"
 #include "pow.h"
 #include "tinyformat.h"
@@ -203,7 +204,6 @@ public:
     unsigned int nNonce;
     // block signature - proof-of-stake protect the block by signing the block using a stake holder private key
     std::vector<unsigned char> vchBlockSig;
-    uint256 nStakeModifier;
     // proof-of-stake specific fields
     COutPoint prevoutStake;
     uint256 hashProof; 
@@ -212,6 +212,15 @@ public:
     uint64_t nDigsupply;
     uint64_t nStakeSupply;
 
+    unsigned int nFlags; 
+    enum  
+    {
+        BLOCK_PROOF_OF_STAKE = (1 << 0), // is proof-of-stake block
+        BLOCK_STAKE_ENTROPY  = (1 << 1), // entropy bit for stake modifier
+        BLOCK_STAKE_MODIFIER = (1 << 2), // regenerated stake modifier
+    };
+
+    uint64_t nStakeModifier; // hash modifier for proof-of-stake
     std::vector<CClamour> vClamour;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
@@ -243,7 +252,7 @@ public:
         nBits          = 0;
         nNonce         = 0;
         vchBlockSig.clear();
-        nStakeModifier = uint256();
+        nStakeModifier = 0;
         hashProof = uint256();
         prevoutStake.SetNull();
         nMint = 0;
@@ -270,7 +279,7 @@ public:
         nMoneySupply = 0;
         nDigsupply = 0;
         nStakeSupply = 0;
-        nStakeModifier = uint256();
+        nStakeModifier = 0;
         hashProof = uint256(); 
         prevoutStake   = block.prevoutStake; 
         vchBlockSig    = block.vchBlockSig; 
@@ -326,7 +335,7 @@ public:
 
     int64_t GetPastTimeLimit() const
     {
-        if (IsProtocolV2(nHeight))
+        if (nHeight > 203500)
             return GetBlockTime();
         else
             return GetMedianTimePast();
@@ -350,12 +359,37 @@ public:
 
     bool IsProofOfWork() const // qtum
     {
-        return !IsProofOfStake();
+        return !(nFlags & BLOCK_PROOF_OF_STAKE);
     }
 
     bool IsProofOfStake() const
     {
-        return !prevoutStake.IsNull();
+        return (nFlags & BLOCK_PROOF_OF_STAKE);
+    }
+
+        unsigned int GetStakeEntropyBit() const
+    {
+        return ((nFlags & BLOCK_STAKE_ENTROPY) >> 1);
+    }
+
+    bool SetStakeEntropyBit(unsigned int nEntropyBit)
+    {
+        if (nEntropyBit > 1)
+            return false;
+        nFlags |= (nEntropyBit? BLOCK_STAKE_ENTROPY : 0);
+        return true;
+    }
+
+    bool GeneratedStakeModifier() const
+    {
+        return (nFlags & BLOCK_STAKE_MODIFIER);
+    }
+
+    void SetStakeModifier(uint64_t nModifier, bool fGeneratedStakeModifier)
+    {
+        nStakeModifier = nModifier;
+        if (fGeneratedStakeModifier)
+            nFlags |= BLOCK_STAKE_MODIFIER;
     }
 
     std::string ToString() const

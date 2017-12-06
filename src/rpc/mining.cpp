@@ -53,7 +53,7 @@ UniValue GetNetworkHashPS(int lookup, int height) {
 
     // If lookup is -1, then use blocks since last difficulty change.
     if (lookup <= 0)
-        lookup = pb->nHeight % Params().GetConsensus().DifficultyAdjustmentInterval() + 1;
+        lookup = pb->nHeight % Params().GetConsensus().nTargetStakeSpacing;
 
     // If lookup is larger than chain, then set it to chain length.
     if (lookup > pb->nHeight)
@@ -230,7 +230,8 @@ UniValue getsubsidy(const JSONRPCRequest& request)
     if (nTarget < 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
     const Consensus::Params& consensusParams = Params().GetConsensus();
-    return (uint64_t)GetBlockSubsidy(nTarget, consensusParams);
+    CBlockIndex *pb = chainActive.Tip();
+    return (uint64_t)GetBlockSubsidy(pb, 0, consensusParams, 0);
 }
 
 UniValue getmininginfo(const JSONRPCRequest& request)
@@ -260,6 +261,8 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     UniValue obj(UniValue::VOBJ);
+    UniValue diff(UniValue::VOBJ);
+    UniValue weight(UniValue::VOBJ);
     obj.push_back(Pair("blocks",           (int)chainActive.Height()));
     obj.push_back(Pair("currentblocksize", (uint64_t)nLastBlockSize));
     obj.push_back(Pair("currentblockweight", (uint64_t)nLastBlockWeight));
@@ -271,7 +274,8 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("difficulty",       diff));
 
     const Consensus::Params& consensusParams = Params().GetConsensus();
-    obj.push_back(Pair("blockvalue",    (uint64_t)GetBlockSubsidy(chainActive.Height(), consensusParams)));
+    CBlockIndex *pb = chainActive.Tip();
+    obj.push_back(Pair("blockvalue",    (uint64_t)GetBlockSubsidy(pb, 0, consensusParams, 0)));
 
     obj.push_back(Pair("netmhashps",       GetPoWMHashPS()));
     obj.push_back(Pair("netstakeweight",   GetPoSKernelPS()));
@@ -313,7 +317,7 @@ UniValue getstakinginfo(const JSONRPCRequest& request)
     uint64_t nNetworkWeight = GetPoSKernelPS();
     bool staking = nLastCoinStakeSearchInterval && nWeight;
     const Consensus::Params& consensusParams = Params().GetConsensus();
-    int64_t nTargetSpacing = consensusParams.nPowTargetSpacing;
+    int64_t nTargetSpacing = consensusParams.nTargetStakeSpacing;
     uint64_t nExpectedTime = staking ? (nTargetSpacing * nNetworkWeight / nWeight) : 0;
 
     UniValue obj(UniValue::VOBJ);

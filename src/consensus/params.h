@@ -46,10 +46,6 @@ struct Params {
     int BIP65Height;
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
-
-    /** Block height at which CIP1 becomes active */
-    int CIP1Height; 
-
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
@@ -62,7 +58,7 @@ struct Params {
     uint256 powLimit;
     uint256 posLimit;
     bool fPowAllowMinDifficultyBlocks;
-    int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
+    bool fPowNoRetargeting;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 
@@ -70,17 +66,15 @@ struct Params {
     unsigned int nTargetStakeSpacing; 
     unsigned int nStakeMinAge; 
     unsigned int nStakeMaxAge; 
-    unsigned int nModifierInterval; 
-    int64_t nTargetTimespan;  
-    
+    unsigned int nModifierInterval;
+    int64_t nTargetTimespan; 
+
     int DISTRIBUTION_END;
     int LAST_POW_BLOCK;
     int LAST_TESTNET_POW_BLOCK;
     int64_t COIN_YEAR_REWARD; 
     int LOTTERY_START;
     int LOTTERY_END;
-
-
 };
 } // namespace Consensus
 

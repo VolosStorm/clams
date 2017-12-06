@@ -33,6 +33,8 @@
 #include <boost/filesystem/path.hpp>
 #include "consensus/consensus.h"
 
+using valtype = std::vector<unsigned char>;
+
 class CBlockIndex;
 class CBlockTreeDB;
 class CBloomFilter;
@@ -135,6 +137,7 @@ static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
 static const bool DEFAULT_PERMIT_BAREMULTISIG = true;
 static const bool DEFAULT_CHECKPOINTS_ENABLED = true;
 static const bool DEFAULT_TXINDEX = false;
+static const bool DEFAULT_LOGEVENTS = false;
 static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 
 /** Default for -mempoolreplacement */
@@ -216,8 +219,16 @@ static const unsigned int DEFAULT_CHECKLEVEL = 3;
 // one 128MB block file + added 15% undo data = 147MB greater for a total of 545MB
 // Setting the target to > than 550MB will make it likely we can respect the target.
 static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 550 * 1024 * 1024;
+static const unsigned int MAX_TX_COMMENT_LEN = 140; // 128 bytes + little extra
 
 inline int64_t FutureDrift(uint32_t nTime) { return nTime + 15; }
+
+inline int64_t PastDrift(int64_t nTime, int nHeight)   { return nHeight > 203500 ? nTime      : nTime - 10 * 60; }
+
+inline int64_t FutureDriftV1(int64_t nTime) { return nTime + 10 * 60; }
+inline int64_t FutureDriftV2(int64_t nTime) { return nTime + 15; }
+inline int64_t FutureDrift(int64_t nTime, int nHeight) { return nHeight > 203500 ? FutureDriftV2(nTime) : FutureDriftV1(nTime); }
+
 
 /** 
  * Process an incoming block. This only returns after the best known valid
@@ -282,9 +293,10 @@ bool IsInitialBlockDownload();
 std::string GetWarnings(const std::string& strFor);
 /** Retrieve a transaction (from memory pool, or from disk, if possible) */
 bool GetTransaction(const uint256 &hash, CTransactionRef &tx, const Consensus::Params& params, uint256 &hashBlock, bool fAllowSlow = false);
+bool GetCoinAge(const CTransaction& tx, CBlockIndex* pindex, CCoinsViewCache& view, CValidationState& state, const Consensus::Params& consensusParams, uint64_t& nCoinAge);
 /** Find the best known block, and make it the tip of the block chain */
 bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock = std::shared_ptr<const CBlock>());
-CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
+CAmount GetBlockSubsidy(CBlockIndex* pindex, uint64_t nCoinAge, const Consensus::Params& consensusParams, int64_t nFees);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, CBlockIndex* pindex);
@@ -375,7 +387,7 @@ struct CHeightTxIndexIteratorKey {
 
 struct CHeightTxIndexKey {
     unsigned int height;
-    dev::h160 address;
+    uint256 address;
 
     size_t GetSerializeSize(int nType, int nVersion) const {
         return 24;
@@ -383,17 +395,17 @@ struct CHeightTxIndexKey {
     template<typename Stream>
     void Serialize(Stream& s) const {
         ser_writedata32be(s, height);
-        s << address.asBytes();
+        s << address;
     }
     template<typename Stream>
     void Unserialize(Stream& s) {
         height = ser_readdata32be(s);
         valtype tmp;
         s >> tmp;
-        address = dev::h160(tmp);
+        address = uint256(tmp);
     }
 
-    CHeightTxIndexKey(unsigned int _height, dev::h160 _address) {
+    CHeightTxIndexKey(unsigned int _height, uint256 _address) {
         height = _height;
         address = _address;
     }
@@ -404,7 +416,7 @@ struct CHeightTxIndexKey {
 
     void SetNull() {
         height = 0;
-        address.clear();
+        address = uint256();
     }
 };
 
@@ -444,7 +456,7 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
  * instead of being performed inline.
  */
 bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &view, bool fScriptChecks,
-                 unsigned int flags, bool cacheStore, PrecomputedTransactionData& txdata, std::vector<CScriptCheck> *pvChecks = NULL);
+                 unsigned int flags, bool cacheStore, PrecomputedTransactionData& txdata, std::vector<CScriptCheck> *pvChecks = NULL, int64_t* nDigs = NULL);
 
 /** Apply the effects of this transaction on the UTXO set represented by view */
 void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, int nHeight);
@@ -598,7 +610,7 @@ bool RewindBlockIndex(const CChainParams& params);
 void UpdateUncommittedBlockStructures(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
 
 /** Produce the necessary coinbase commitment for a block (modifies the hash, don't call for mined blocks). */
-std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
+std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams, bool fProofOfStake=false);
 
 /** RAII wrapper for VerifyDB: Verify consistency of the block and coin databases */
 class CVerifyDB {

@@ -12,12 +12,6 @@ extern std::vector<std::string> clamSpeech;
 extern std::vector<std::string> clamourClamSpeech;
 extern std::vector<std::string> quoteList;
 
-class CWeightedSpeech;
-
-extern CWeightedSpeech weightedStakeSpeech;
-
-void CSLoad();
-
 class CWeightedSpeech
 {
 public:
@@ -44,17 +38,19 @@ public:
 
     std::string select(unsigned long nRandom) {
         unsigned long  nRemainder = nRandom % nTotal;
-        LogPrintf("selecting random speech with nRandom %016x %% %ld = %ld\n", nRandom, nTotal, nRemainder);
+        //LogPrintf("selecting random speech with nRandom %016x %% %ld = %ld\n", nRandom, nTotal, nRemainder);
 
         BOOST_FOREACH(const pair_t& pair, vSpeech)
         {
             if (nRemainder < pair.first) {
-                LogPrintf("selected random speech: '%s'\n", pair.second);
+                //LogPrintf("selected random speech: '%s'\n", pair.second);
                 return pair.second;
             }
         }
 
-        LogPrintf("this never happens\n");
+        //LogPrintf("this never happens\n");
         return "";
     }
 };
+
+extern CWeightedSpeech weightedStakeSpeech;
