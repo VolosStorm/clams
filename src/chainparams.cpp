@@ -77,8 +77,9 @@ public:
         consensus.BIP34Hash = uint256S("0x00000c3ce6b3d823a35224a39798eca9ad889966aeb5a9da7b960ffb9869db35");
         consensus.BIP65Height = 0; // 
         consensus.BIP66Height = 0; // 
-        consensus.powLimit = uint256S("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.posLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        //consensus.powLimit = uint256S("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = 0x1E0FFFFF;
+        consensus.posLimit = 0x1E0FFFFF;
 
 
         consensus.fPowAllowMinDifficultyBlocks = false;
@@ -196,8 +197,8 @@ public:
         consensus.BIP34Hash = uint256S("0x0000e803ee215c0684ca0d2f9220594d3f828617972aad66feb2ba51f5e14222");
         consensus.BIP65Height = 0; // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
         consensus.BIP66Height = 0; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
-        consensus.powLimit = uint256S("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.posLimit = uint256S("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = 0x1E0FFFFF;
+        consensus.posLimit = 0x1E0FFFFF;
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
@@ -283,8 +284,8 @@ public:
         consensus.BIP34Hash = uint256S("0x00001924120e93f445dd4adb9d90e0020350b8c6c2b08e1a4950372a37f8bcc8");
         consensus.BIP65Height = 0; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 0; // BIP66 activated on regtest (Used in rpc activation tests)
-        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.posLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = 0x1E0FFFFF;
+        consensus.posLimit = 0x1E0FFFFF;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains

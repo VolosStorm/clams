@@ -206,6 +206,8 @@ public:
     std::vector<unsigned char> vchBlockSig;
     // proof-of-stake specific fields
     COutPoint prevoutStake;
+    unsigned int nStakeTime;
+
     uint256 hashProof; 
     uint64_t nMoneySupply;
     uint64_t nMint;
@@ -222,6 +224,9 @@ public:
 
     uint64_t nStakeModifier; // hash modifier for proof-of-stake
     std::vector<CClamour> vClamour;
+
+    mutable bool fSupportChecked; // did we check the speech of the staking transaction for 'clamour' support yet?
+    mutable std::set<std::string> setSupport; // CLAMour pid strings supported by this block
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -259,6 +264,9 @@ public:
         nMoneySupply = 0;
         nDigsupply = 0;
         nStakeSupply = 0;
+        nFlags = 0;
+
+ 	fSupportChecked = false;
     }
 
     CBlockIndex()
@@ -280,9 +288,10 @@ public:
         nDigsupply = 0;
         nStakeSupply = 0;
         nStakeModifier = 0;
+        nFlags = 0;
         hashProof = uint256(); 
-        prevoutStake   = block.prevoutStake; 
-        vchBlockSig    = block.vchBlockSig; 
+        prevoutStake   = block.prevoutStake; // qtum
+        vchBlockSig    = block.vchBlockSig; // qtum
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -357,17 +366,17 @@ public:
         return pbegin[(pend - pbegin)/2];
     }
 
-    bool IsProofOfWork() const // qtum
+    bool IsProofOfWork() const
     {
-        return !(nFlags & BLOCK_PROOF_OF_STAKE);
+        return !IsProofOfStake();
     }
 
     bool IsProofOfStake() const
     {
-        return (nFlags & BLOCK_PROOF_OF_STAKE);
+        return !prevoutStake.IsNull();
     }
 
-        unsigned int GetStakeEntropyBit() const
+    unsigned int GetStakeEntropyBit() const
     {
         return ((nFlags & BLOCK_STAKE_ENTROPY) >> 1);
     }
@@ -471,7 +480,17 @@ public:
         READWRITE(nDigsupply);
         READWRITE(nStakeSupply);
         READWRITE(vClamour);
-        
+        READWRITE(nFlags);
+        if (IsProofOfStake())
+        {
+            READWRITE(prevoutStake);
+            READWRITE(nStakeTime);
+        }
+        else 
+        {
+            const_cast<CDiskBlockIndex*>(this)->prevoutStake.SetNull();
+            const_cast<CDiskBlockIndex*>(this)->nStakeTime = 0;
+        }
 
         // block header
         READWRITE(this->nVersion);
@@ -481,7 +500,6 @@ public:
         READWRITE(nBits);
         READWRITE(nNonce);
         READWRITE(nStakeModifier);
-        READWRITE(prevoutStake);
         READWRITE(hashProof);
         READWRITE(vchBlockSig); 
     }

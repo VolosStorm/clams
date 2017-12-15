@@ -989,6 +989,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
         if (pfrom->fPauseSend)
             break;
 
+        LogPrintf("2");
         const CInv &inv = *it;
         {
             if (interruptMsgProc)
@@ -998,6 +999,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
 
             if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK || inv.type == MSG_CMPCT_BLOCK || inv.type == MSG_WITNESS_BLOCK)
             {
+                LogPrintf("3");
                 bool send = false;
                 BlockMap::iterator mi = mapBlockIndex.find(inv.hash);
                 if (mi != mapBlockIndex.end())
@@ -1032,6 +1034,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                         }
                     }
                 }
+                LogPrintf("4");
                 // disconnect node in case we have reached the outbound limit for serving historical blocks
                 // never disconnect whitelisted nodes
                 static const int nOneWeek = 7 * 24 * 60 * 60; // assume > 1 week = historical
@@ -1043,10 +1046,12 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                     pfrom->fDisconnect = true;
                     send = false;
                 }
+                LogPrintf("5");
                 // Pruned nodes may have deleted the block, so check whether
                 // it's available before trying to send.
                 if (send && (mi->second->nStatus & BLOCK_HAVE_DATA))
                 {
+                    LogPrintf("6");
                     // Send block from disk
                     CBlock block;
                     if (!ReadBlockFromDisk(block, (*mi).second, consensusParams))
@@ -1140,6 +1145,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
         }
     }
 
+    LogPrintf("7");
     pfrom->vRecvGetData.erase(pfrom->vRecvGetData.begin(), it);
 
     if (!vNotFound.empty()) {
@@ -1381,7 +1387,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         // If the peer is old enough to have the old alert system, send it the final alert.
         if (pfrom->nVersion <= 70012) {
-            CDataStream finalAlert(ParseHex("60010000000000000000000000ffffff7f00000000ffffff7ffeffff7f01ffffff7f00000000ffffff7f00ffffff7f002f555247454e543a20416c657274206b657920636f6d70726f6d697365642c2075706772616465207265717569726564004630440220653febd6410f470f6bae11cad19c48413becb1ac2c17f908fd0fd53bdc3abd5202206d0e9c96fe88d4a0f01ed9dedae2b6f9e00da94cad0fecaae66ecf689bf71b50"), SER_NETWORK, PROTOCOL_VERSION);
+            CDataStream finalAlert(ParseHex("0486bce1bac0d543f104cbff2bd23680056a3b9ea05e1137d2ff90eeb5e08472eb500322593a2cb06fbf8297d7beb6cd30cb90f98153b5b7cce1493749e41e0284"), SER_NETWORK, PROTOCOL_VERSION);
             connman.PushMessage(pfrom, CNetMsgMaker(nSendVersion).Make("alert", finalAlert));
         }
 
@@ -2241,9 +2247,16 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return error("headers message size = %u", nCount);
         }
         headers.resize(nCount);
+        //LogPrintf("1b %d\n", vRecv.size());
         for (unsigned int n = 0; n < nCount; n++) {
+            //LogPrintf("1b %d %d\n", nCount, n);
+            //LogPrintf("22 %s", vRecv.str());
+            //LogPrintf("2a %d\n", vRecv.size() );
             vRecv >> headers[n];
-            ReadCompactSize(vRecv); // ignore tx count; assume it is 0.
+            //LogPrintf("count=%d,  %s\n", n, headers[n].ToString());
+            // ignore tx count; assume it is 0.
+            //LogPrintf("2b %d\n", vRecv.size() );
+            //ReadCompactSize(vRecv);
         }
 
         if (nCount == 0) {
@@ -2381,7 +2394,26 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     else if (strCommand == NetMsgType::BLOCK && !fImporting && !fReindex) // Ignore blocks received while importing
     {
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
-        vRecv >> *pblock;
+
+        if(pfrom->nVersion <= 70012) {
+            LogPrint("net", "Incomming Block from old client, attempting to convert\n");
+            std::shared_ptr<CBlockLegacy> lblock = std::make_shared<CBlockLegacy>();
+            vRecv >> *lblock;
+
+            //Convert block structure from old client to one from new client 
+            pblock->nVersion = lblock->nVersion;
+            pblock->hashPrevBlock = lblock->hashPrevBlock; 
+            pblock->hashMerkleRoot = lblock->hashMerkleRoot; 
+            pblock->nTime = lblock->nTime; 
+            pblock->nBits = lblock->nBits; 
+            pblock->nNonce = lblock->nNonce;  
+            pblock->nVersion = lblock->nVersion;
+            pblock->vchBlockSig = lblock->vchBlockSig;
+            pblock->vtx  =   lblock->vtx;
+
+        } else { 
+            vRecv >> *pblock;
+        }
 
         LogPrint("net", "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
 

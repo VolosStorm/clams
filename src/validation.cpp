@@ -1795,29 +1795,26 @@ int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
 
 static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& state, const CBlockIndex* pindex, CCoinsViewCache& view, bool* pfClean)
 {
-    assert(pindex->GetBlockHash() == view.GetBestBlock());
-
-    if (pfClean)
-        *pfClean = false;
-
     bool fClean = true;
 
+    LogPrintf("xploited Dissconnect 1\n");
     CBlockUndo blockUndo;
     CDiskBlockPos pos = pindex->GetUndoPos();
     if (pos.IsNull()) {
         error("DisconnectBlock(): no undo data available");
         return DISCONNECT_FAILED;
     }
+    LogPrintf("xploited Dissconnect 2\n");
     if (!UndoReadFromDisk(blockUndo, pos, pindex->pprev->GetBlockHash())) {
         error("DisconnectBlock(): failure reading undo data");
         return DISCONNECT_FAILED;
     }
-
+    LogPrintf("xploited Dissconnect 3\n");
     if (blockUndo.vtxundo.size() + 1 != block.vtx.size()) {
         error("DisconnectBlock(): block and undo data inconsistent");
         return DISCONNECT_FAILED;
     }
-
+    
     // undo transactions in reverse order
     for (int i = block.vtx.size() - 1; i >= 0; i--) {
         const CTransaction &tx = *(block.vtx[i]);
@@ -1831,6 +1828,7 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
                 Coin coin;
                 view.SpendCoin(out, &coin);
                 if (tx.vout[o] != coin.out) {
+                    LogPrintf("xploited Dissconnect 44444\n");
                     fClean = false; // transaction output mismatch
                 }
             }
@@ -1851,22 +1849,24 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
             }
         }
     }
-
+    LogPrintf("xploited Dissconnect 5\n");
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
-
-    if(pfClean == NULL && fLogEvents){
-        boost::filesystem::path stateDir = GetDataDir() / "stateQtum";
+    LogPrintf("xploited Dissconnect 6\n");
+    if(pfClean == NULL){
+        LogPrintf("xploited Dissconnect 55555\n");
         pblocktree->EraseHeightIndex(pindex->nHeight);
     }
+    LogPrintf("xploited Dissconnect 7\n");
     pblocktree->EraseStakeIndex(pindex->nHeight);
-
+    LogPrintf("xploited Dissconnect 8\n");
     //if (pfClean) {
     //    *pfClean = fClean;
     //    return true;
     //}
 
+    LogPrintf("xploited dissconnect %s\n", fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN);
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
@@ -2214,6 +2214,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         nValueStake = nStakeReward - nFees;
 
     } else {
+        LogPrintf("xploited block reward %d %d\n", pindex->nHeight, GetBlockSubsidy(pindex, 0, chainparams.GetConsensus(), nFees));
         blockReward = nFees + GetBlockSubsidy(pindex, 0, chainparams.GetConsensus(), nFees);
         const CTransaction &tx = *(block.vtx[0]);
         if (tx.GetValueOut() > ( blockReward ))
@@ -2996,13 +2997,14 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
     // Construct new block index object
     CBlockIndex* pindexNew = new CBlockIndex(block);
     assert(pindexNew);
+
     // We assign the sequence id to blocks only when the full data is available,
     // to avoid miners withholding blocks but broadcasting headers, to get a
     // competitive advantage.
     pindexNew->nSequenceId = 0;
     BlockMap::iterator mi = mapBlockIndex.insert(std::make_pair(hash, pindexNew)).first;
     if (pindexNew->IsProofOfStake())
-        setStakeSeen.insert(std::make_pair(pindexNew->prevoutStake, pindexNew->nTime));
+        setStakeSeen.insert(std::make_pair(pindexNew->prevoutStake, pindexNew->nStakeTime));
     pindexNew->phashBlock = &((*mi).first);
     BlockMap::iterator miPrev = mapBlockIndex.find(block.hashPrevBlock);
     if (miPrev != mapBlockIndex.end())
@@ -3229,6 +3231,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
                 pblock->vtx[1] = MakeTransactionRef(std::move(txCoinStake));
                 pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
                 pblock->prevoutStake = pblock->vtx[1]->vin[0].prevout;
+                pblock->nStakeTime = pblock->vtx[1]->nTime;
 
                 // Check timestamp against prev
                 if(pblock->GetBlockTime() <= pindexBestHeader->GetBlockTime() || FutureDrift(pblock->GetBlockTime(), chainActive.Height() + 1) < pindexBestHeader->GetBlockTime())
@@ -3311,6 +3314,7 @@ bool CheckBlockSignature(const CBlock& block)
 
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW)
 {
+    //LogPrintf("xploited CheckBlockHeader %s\n", block.ToString());
     // Check proof of work matches claimed amount
     if (fCheckPOW && block.IsProofOfWork() && !CheckHeaderPoW(block, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
@@ -3330,70 +3334,57 @@ int generateMTRandom(unsigned int s, int range)
 
 CAmount GetBlockSubsidy(CBlockIndex* pindex, uint64_t nCoinAge, const Consensus::Params& consensusParams, int64_t nFees)
 {
-    if(pindex->nHeight < consensusParams.LOTTERY_START){
+    if(pindex->nHeight > consensusParams.LAST_POW_BLOCK) { 
+        if(pindex->nHeight < consensusParams.LOTTERY_START){
+                CAmount nSubsidy = nCoinAge * consensusParams.COIN_YEAR_REWARD * 33 / (365 * 33 + 8);
 
-            CAmount nSubsidy = nCoinAge * consensusParams.COIN_YEAR_REWARD * 33 / (365 * 33 + 8);
-
+                return nSubsidy + nFees;
+        } else if (pindex->nHeight > consensusParams.LOTTERY_END) {
+            CAmount nSubsidy = 1 * COIN;
             return nSubsidy + nFees;
 
-    } else if (pindex->nHeight > consensusParams.LOTTERY_END) {
-
-        CAmount nSubsidy = 1 * COIN;
-        return nSubsidy + nFees;
-
-    } else {
-
-        const CAmount randSpan = 2147483647; //Big Number, its unclear but possable correlates to the amount of clams that have ever existed.
-        const CAmount maxReward = 1000 * COIN; //1000 CLAMS
-        const CAmount minReward = 10000000; //.1 CLAM
-        double multFactor = 3000; //Exponential Curve Factor
- 
-        //Randomize based on blockHash
-        uint256 hash = pindex->GetBlockHash();
-        std::string cseed_str = hash.ToString().substr(12,7);
-        const char* cseed = cseed_str.c_str();
-        long seed = hex2long(cseed);
-        int random = generateMTRandom(seed, randSpan);
- 
-        //Create our reward coEfficient
-        double randCoefficient = (double)random / (double)randSpan;
-        double nCoefficient = pow(randCoefficient, multFactor);
- 
-        CAmount nSubsidy = ceil(((maxReward - minReward) * nCoefficient) + minReward);
- 
-        //Sanity Checks, If they happen: "We're All Going To Die"
-        if(nSubsidy < minReward){
-            //If less than minReward, == 1 CLAM
-            nSubsidy = minReward;
-        } else if(nSubsidy > maxReward) {
-            //If more than maxReward, == 1 CLAM
-            nSubsidy = minReward;
         } else {
-            nSubsidy = ceil(nSubsidy);
-        }
- 
-        //Return the block reward plus fees.
-        return nSubsidy + nFees;
+            const CAmount randSpan = 2147483647; //Big Number, its unclear but possable correlates to the amount of clams that have ever existed.
+            const CAmount maxReward = 1000 * COIN; //1000 CLAMS
+            const CAmount minReward = 10000000; //.1 CLAM
+            double multFactor = 3000; //Exponential Curve Factor
      
-    }
-    
+            //Randomize based on blockHash
+            uint256 hash = pindex->GetBlockHash();
+            std::string cseed_str = hash.ToString().substr(12,7);
+            const char* cseed = cseed_str.c_str();
+            long seed = hex2long(cseed);
+            int random = generateMTRandom(seed, randSpan);
+     
+            //Create our reward coEfficient
+            double randCoefficient = (double)random / (double)randSpan;
+            double nCoefficient = pow(randCoefficient, multFactor);
+     
+            CAmount nSubsidy = ceil(((maxReward - minReward) * nCoefficient) + minReward);
+     
+            //Sanity Checks, If they happen: "We're All Going To Die"
+            if(nSubsidy < minReward){
+                //If less than minReward, == 1 CLAM
+                nSubsidy = minReward;
+            } else if(nSubsidy > maxReward) {
+                //If more than maxReward, == 1 CLAM
+                nSubsidy = minReward;
+            } else {
+                nSubsidy = ceil(nSubsidy);
+            }
+            //Return the block reward plus fees.
+            return nSubsidy + nFees;
+        }
+    } else { 
+        CAmount nSubsidy = 2.15652173 * COIN;
+        if (pindex->nHeight < 4551  ) {
+          nSubsidy = 3284 * COIN;
+        } else if (pindex->nHeight < 9551) {
+            nSubsidy = 2.15652173 * COIN;
+       }
+       return nSubsidy;
+    } 
 }
-
-
-CAmount GetDistrubutionBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
-{
-    CAmount nSubsidy;
-
-    nSubsidy = 2.15652173 * COIN;
-    if (nHeight < 4551  ) {
-        nSubsidy = 3284 * COIN;
-    } else if (nHeight < 9551) {
-        nSubsidy = 2.15652173 * COIN;    
-    }
-
-    return nSubsidy;
-}
-
 
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig)
 {
@@ -3402,21 +3393,21 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (block.fChecked)
         return true;
 
+    
     // Check that the header is valid (particularly PoW).  This is mostly
     // redundant with the call in AcceptBlockHeader.
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
+    
     if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1))
         return error("CheckBlock() : block timestamp too far in the future");
-
     // Check the merkle root.
     if (fCheckMerkleRoot) {
         bool mutated;
         uint256 hashMerkleRoot2 = BlockMerkleRoot(block, &mutated);
         if (block.hashMerkleRoot != hashMerkleRoot2)
-            return state.DoS(100, false, REJECT_INVALID, "bad-txnmrklroot", true, "hashMerkleRoot mismatch");
-
+            return error("bad-txnmrklroot hashMerkleRoot mismatch");
         // Check for merkle tree malleability (CVE-2012-2459): repeating sequences
         // of transactions in a block without affecting the merkle root of a block,
         // while still invalidating it.
@@ -3436,7 +3427,6 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     for (unsigned int i = 1; i < block.vtx.size(); i++)
         if (block.vtx[i]->IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
-
 
     // Second transaction must be coinbase in case of PoS block, the rest must not be
     if (block.IsProofOfStake())
@@ -3561,6 +3551,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
 {
     const int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
     // Check proof of work
+   
     if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams,block.IsProofOfStake()))
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect difficulty value");
 
@@ -3569,7 +3560,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "block's timestamp is too early");
 
     // Check timestamp
-    if (block.IsProofOfStake() && block.GetBlockTime() > FutureDrift(nAdjustedTime), chainActive.Height() + 1)
+    if (block.GetBlockTime() > FutureDriftV2(GetAdjustedTime()))
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
 
     // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
@@ -4337,15 +4328,18 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
         }
         // check level 3: check for inconsistencies during memory-only disconnect of tip blocks
         if (nCheckLevel >= 3 && pindex == pindexState && (coins.DynamicMemoryUsage() + pcoinsTip->DynamicMemoryUsage()) <= nCoinCacheUsage) {
-            bool fClean = true;
-            if (!DisconnectBlock(block, state, pindex, coins, &fClean))
+            bool fClean=true;
+            DisconnectResult res = DisconnectBlock(block, state, pindex, coins, &fClean);
+            if (res == DISCONNECT_FAILED) {
                 return error("VerifyDB(): *** irrecoverable inconsistency in block data at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
+            }
             pindexState = pindex->pprev;
-            if (!fClean) {
+            if (res == DISCONNECT_UNCLEAN) {
                 nGoodTransactions = 0;
                 pindexFailure = pindex;
-            } else
+            } else {
                 nGoodTransactions += block.vtx.size();
+            }
         }
         if (ShutdownRequested())
             return true;

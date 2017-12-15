@@ -19,16 +19,16 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
-inline arith_uint256 GetLimit(const Consensus::Params& params, bool fProofOfStake)
+inline uint32_t GetLimit(const Consensus::Params& params, bool fProofOfStake)
 {
-    return fProofOfStake ? UintToArith256(params.posLimit) : UintToArith256(params.powLimit);
+    return fProofOfStake ? params.posLimit : params.powLimit;
 }
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params, bool fProofOfStake)
 {
     // genesis block
-    if (pindexLast == NULL)
-        return GetLimit(params, fProofOfStake).GetCompact();
+//    if (pindexLast == NULL)
+//        return GetLimit(params, fProofOfStake).GetCompact();
 
     if (pindexLast->nHeight < params.DISTRIBUTION_END )
         return GetNextTargetRequiredV1(pindexLast, params, fProofOfStake);
@@ -41,7 +41,9 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 
 unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-    const arith_uint256 bnTargetLimit = GetLimit(params, fProofOfStake);
+    arith_uint256 bnTargetLimit;
+    bnTargetLimit.SetCompact(params.powLimit);
+    
     int64_t currentTargetSpacing = params.nTargetSpacing;
  
     if (pindexLast == NULL)
@@ -68,6 +70,7 @@ unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consen
  
     if (bnNew <= 0 || bnNew > bnTargetLimit)
         bnNew = bnTargetLimit;
+
  
     return bnNew.GetCompact();
  
@@ -75,7 +78,8 @@ unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consen
  
 unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-    const arith_uint256 bnTargetLimit = GetLimit(params, fProofOfStake);
+    arith_uint256 bnTargetLimit;
+    bnTargetLimit.SetCompact(params.powLimit);
     int64_t currentTargetSpacing = params.nTargetStakeSpacing;
  
     if (pindexLast == NULL)
@@ -108,7 +112,8 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
 
 unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-    const arith_uint256 bnTargetLimit = GetLimit(params, fProofOfStake);
+    arith_uint256 bnTargetLimit;
+    bnTargetLimit.SetCompact(params.powLimit);
  
     const CBlockIndex* pindex;
     const CBlockIndex* pindexPrevPrev = NULL;
@@ -171,8 +176,11 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
 
     bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
 
+    arith_uint256 limit;
+    limit.SetCompact(params.powLimit);
+
     // Check range
-    if (fNegative || bnTarget == 0 || fOverflow || bnTarget > GetLimit(params, fProofOfStake))
+    if (fNegative || bnTarget == 0 || fOverflow || bnTarget > limit)
         return false;
 
     // Check proof of work matches claimed amount

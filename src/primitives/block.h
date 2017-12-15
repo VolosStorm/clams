@@ -15,6 +15,71 @@
 
 static const int SER_WITHOUT_SIGNATURE = 1 << 3;
 
+class CBlockLegacy
+{
+public:
+    // header
+    static const int CURRENT_VERSION=7;
+    int32_t nVersion;
+    uint256 hashPrevBlock;
+    uint256 hashMerkleRoot;
+    uint32_t nTime;
+    uint32_t nBits;
+    uint32_t nNonce;
+
+    std::vector<CTransactionRef> vtx;
+
+    std::vector<unsigned char> vchBlockSig;
+
+    CBlockLegacy()
+    {
+        SetNull();
+    }
+
+    CBlockLegacy(const CBlockLegacy &block)
+    {
+        SetNull();
+        *((CBlockLegacy*)this) = block;
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(this->nVersion);
+        READWRITE(hashPrevBlock);
+        READWRITE(hashMerkleRoot);
+        READWRITE(nTime);
+        READWRITE(nBits);
+        READWRITE(nNonce);
+        if (!(s.GetType() & SER_WITHOUT_SIGNATURE)) {
+            READWRITE(vtx);
+            READWRITE(vchBlockSig);
+        }
+    }
+
+    void SetNull()
+    {
+        nVersion = 0;
+        hashPrevBlock.SetNull();
+        hashMerkleRoot.SetNull();
+        nTime = 0;
+        nBits = 0;
+        nNonce = 0;
+        vtx.clear();
+        vchBlockSig.clear();
+    }
+
+    bool IsNull() const
+    {
+        return (nBits == 0);
+    }
+
+    std::string ToString() const;
+};
+
+
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -37,6 +102,8 @@ public:
 
     // proof-of-stake specific fields
     COutPoint prevoutStake;
+    unsigned int nStakeTime;
+
     std::vector<unsigned char> vchBlockSig;
     CBlockHeader()
     {
@@ -104,7 +171,7 @@ public:
         return !IsProofOfStake();
     }
 
-    CBlockHeader& operator=(const CBlockHeader& other) //qtum
+    CBlockHeader& operator=(const CBlockHeader& other)
     {
         if (this != &other)
         {
@@ -119,6 +186,7 @@ public:
         }
         return *this;
     }
+    std::string ToString() const;
 };
 
 
@@ -140,6 +208,26 @@ public:
     {
         SetNull();
         *((CBlockHeader*)this) = header;
+    }
+
+    CBlock(const CBlockLegacy& block)
+    {
+        this->nVersion       = block.nVersion;
+        this->hashPrevBlock  = block.hashPrevBlock;
+        this->hashMerkleRoot = block.hashMerkleRoot;
+        this->nTime          = block.nTime;
+        this->nBits          = block.nBits;
+        this->nNonce         = block.nNonce;
+        for (unsigned int j = 0; j < block.vchBlockSig.size(); j++)
+        {
+            this->vchBlockSig[j] = block.vchBlockSig[j];
+        }
+        this->prevoutStake   = block.vtx[1]->vin[0].prevout;
+        for (unsigned int i = 0; i < block.vtx.size(); i++)
+        {
+            this->vtx[i] = block.vtx[i];
+        }
+        //vtx            = *block.vtx;
     }
 
     ADD_SERIALIZE_METHODS;

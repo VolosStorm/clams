@@ -256,18 +256,18 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     s >> tx.nTime;
     /* Try to read the vin. In case the dummy is there, this will be read as an empty vector. */
     s >> tx.vin;
-    //if (tx.vin.size() == 0 && fAllowWitness) {
-    //    /* We read a dummy or an empty vin. */
-    //    s >> flags;
-    //    if (flags != 0) {
-    //        s >> tx.vin;
-    //        s >> tx.vout;
-     //   }
-   // } else {
+    if (tx.vin.size() == 0 && fAllowWitness) {
+        /* We read a dummy or an empty vin. */
+        s >> flags;
+        if (flags != 0) {
+            s >> tx.vin;
+            s >> tx.vout;
+       }
+    } else {
         /* We read a non-empty vin. Assume a normal vout follows. */
         s >> tx.vout;
-    //}
-        /*
+    }
+        
     if ((flags & 1) && fAllowWitness) {
         flags ^= 1;
         for (size_t i = 0; i < tx.vin.size(); i++) {
@@ -277,11 +277,10 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     if (flags) {
         throw std::ios_base::failure("Unknown transaction optional data");
     }
-    */
+    
     s >> tx.nLockTime;
     if (tx.nVersion > 1)
     {
-        throw std::ios_base::failure("Unknown transaction optional data");
         s >> tx.strClamSpeech;
     }
 }
@@ -293,7 +292,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     s << tx.nVersion;
     unsigned char flags = 0;
     // Consistency check
-    /*
+    
     if (fAllowWitness) {
         if (tx.HasWitness()) {
             flags |= 1;
@@ -304,17 +303,17 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         s << vinDummy;
         s << flags;
     }
-    */
+    
     s << tx.nTime;
     s << tx.vin;
     s << tx.vout;
-    /*
+    
     if (flags & 1) {
         for (size_t i = 0; i < tx.vin.size(); i++) {
             s << tx.vin[i].scriptWitness.stack;
         }
     }
-    */
+    
     s << tx.nLockTime;
     if (tx.nVersion > 1)
     {

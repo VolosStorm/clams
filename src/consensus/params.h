@@ -55,8 +55,8 @@ struct Params {
     uint32_t nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     /** Proof of work parameters */
-    uint256 powLimit;
-    uint256 posLimit;
+    uint32_t powLimit;
+    uint32_t posLimit;
     bool fPowAllowMinDifficultyBlocks;
     bool fPowNoRetargeting;
     uint256 nMinimumChainWork;

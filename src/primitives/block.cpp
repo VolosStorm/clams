@@ -24,10 +24,24 @@ uint256 CBlockHeader::GetHashWithoutSign() const
     return SerializeHash(*this, SER_GETHASH | SER_WITHOUT_SIGNATURE);
 }
 
+std::string CBlockHeader::ToString() const
+{
+    std::stringstream s;
+    s << strprintf("CBlockHeader(ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, blockSig=%s, pos=%s, prevoutStake=%s)\n",
+        nVersion,
+        hashPrevBlock.ToString(),
+        hashMerkleRoot.ToString(),
+        nTime, nBits, nNonce,
+        HexStr(vchBlockSig),
+        IsProofOfStake() ? "PoS" : "PoW",
+        prevoutStake.ToString());
+    return s.str();
+}
+
 std::string CBlock::ToString() const
 {
     std::stringstream s;
-    s << strprintf("CBlock(hash=%s, ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%u)\n",
+    s << strprintf("CBlock(hash=%s, ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, blockSig=%s, proof=%s, prevoutStake=%s, vtx=%u)\n",
         GetHash().ToString(),
         nVersion,
         hashPrevBlock.ToString(),
@@ -36,6 +50,23 @@ std::string CBlock::ToString() const
         HexStr(vchBlockSig),
         IsProofOfStake() ? "PoS" : "PoW",
         prevoutStake.ToString(),
+        vtx.size());
+    for (unsigned int i = 0; i < vtx.size(); i++)
+    {
+        s << "  " << vtx[i]->ToString() << "\n";
+    }
+    return s.str();
+}
+
+std::string CBlockLegacy::ToString() const
+{
+    std::stringstream s;
+    s << strprintf("CBlockLegacy(ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, blockSig=%s, vtx=%u)\n",
+        nVersion,
+        hashPrevBlock.ToString(),
+        hashMerkleRoot.ToString(),
+        nTime, nBits, nNonce,
+        HexStr(vchBlockSig),
         vtx.size());
     for (unsigned int i = 0; i < vtx.size(); i++)
     {
