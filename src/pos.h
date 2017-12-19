@@ -20,9 +20,6 @@
 // Supposed to be 2^n-1
 static const int STAKE_TIMESTAMP_MASK = 15;
 
-// MODIFIER_INTERVAL: time to elapse before new modifier is computed
-extern unsigned int nModifierInterval;
-
 // MODIFIER_INTERVAL_RATIO:
 // ratio of group interval length between the last group and the first group
 static const int MODIFIER_INTERVAL_RATIO = 3;
@@ -39,7 +36,7 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
 //bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigned int nTimeBlockFrom, const CTransaction& txPrev, const COutPoint& prevout, unsigned int nTimeTx, uint256& hashProofOfStake, uint256& targetProofOfStake, bool fPrintProofOfStake = false);
 // Check kernel hash target and coinstake signature
 // Sets hashProofOfStake on success return
-bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const CTransaction& tx, unsigned int nBits, uint256& hashProofOfStake, uint256& targetProofOfStake, CCoinsViewCache& view, const Consensus::Params& consensusParams = Params().GetConsensus());
+bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const CTransaction& tx, unsigned int nBits, uint256& hashProofOfStake, uint256& targetProofOfStake, CCoinsViewCache& view, CBlockTreeDB& db, const Consensus::Params& consensusParams = Params().GetConsensus());
 
 // Check whether the coinstake timestamp meets protocol
 bool CheckCoinStakeTimestamp(int nHeight, int64_t nTimeBlock, int64_t nTimeTx);
@@ -50,6 +47,6 @@ int64_t GetWeight(const int64_t &nIntervalBeginning, const int64_t &nIntervalEnd
 // Wrapper around CheckStakeKernelHash()
 // Also checks existence of kernel input and min age
 // Convenient for searching a kernel
-bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& prevout, CCoinsViewCache& view);
+bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& prevout, CCoinsViewCache& view, CBlockTreeDB& db);
 
 #endif // QUANTUM_POS_H

@@ -48,13 +48,30 @@ public:
     friend inline bool operator!=(const base_blob& a, const base_blob& b) { return a.Compare(b) != 0; }
     friend inline bool operator<(const base_blob& a, const base_blob& b) { return a.Compare(b) < 0; }
 
-    base_blob& operator>>=(unsigned int shift);
+    base_blob& operator>>=(unsigned int shift)
+    {
+        base_blob a(*this);
+        for (int i = 0; i < WIDTH; i++)
+            data[i] = 0;
+        int k = shift / 32;
+        shift = shift % 32;
+        for (int i = 0; i < WIDTH; i++)
+        {
+            if (i-k-1 >= 0 && shift != 0)
+                data[i-k-1] |= (a.data[i] << (32-shift));
+            if (i-k >= 0)
+                data[i-k] |= (a.data[i] >> shift);
+        }
+        return *this;
+    }
+
     friend inline const base_blob operator>>(const base_blob& a, int shift) { return base_blob(a) >>= shift; }
 
     std::string GetHex() const;
     void SetHex(const char* psz);
     void SetHex(const std::string& str);
     std::string ToString() const;
+    uint64_t Get64(const int n=0);
 
     unsigned char* begin()
     {

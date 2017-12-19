@@ -989,7 +989,6 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
         if (pfrom->fPauseSend)
             break;
 
-        LogPrintf("2");
         const CInv &inv = *it;
         {
             if (interruptMsgProc)
@@ -999,7 +998,6 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
 
             if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK || inv.type == MSG_CMPCT_BLOCK || inv.type == MSG_WITNESS_BLOCK)
             {
-                LogPrintf("3");
                 bool send = false;
                 BlockMap::iterator mi = mapBlockIndex.find(inv.hash);
                 if (mi != mapBlockIndex.end())
@@ -1034,7 +1032,6 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                         }
                     }
                 }
-                LogPrintf("4");
                 // disconnect node in case we have reached the outbound limit for serving historical blocks
                 // never disconnect whitelisted nodes
                 static const int nOneWeek = 7 * 24 * 60 * 60; // assume > 1 week = historical
@@ -1046,12 +1043,10 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                     pfrom->fDisconnect = true;
                     send = false;
                 }
-                LogPrintf("5");
                 // Pruned nodes may have deleted the block, so check whether
                 // it's available before trying to send.
                 if (send && (mi->second->nStatus & BLOCK_HAVE_DATA))
                 {
-                    LogPrintf("6");
                     // Send block from disk
                     CBlock block;
                     if (!ReadBlockFromDisk(block, (*mi).second, consensusParams))
@@ -2253,6 +2248,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             //LogPrintf("22 %s", vRecv.str());
             //LogPrintf("2a %d\n", vRecv.size() );
             vRecv >> headers[n];
+            //LogPrintf("xploitedHEADER nTime=%d blockHash=%s\n", headers[n].nTime, headers[n].GetHash().ToString());
             //LogPrintf("count=%d,  %s\n", n, headers[n].ToString());
             // ignore tx count; assume it is 0.
             //LogPrintf("2b %d\n", vRecv.size() );
@@ -2400,6 +2396,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             std::shared_ptr<CBlockLegacy> lblock = std::make_shared<CBlockLegacy>();
             vRecv >> *lblock;
 
+            //make sure to include the preoutStake for the new clam header structure
+            COutPoint prevoutStake;
+            if(lblock->IsProofOfStake())
+                prevoutStake = lblock->vtx[1]->vin[0].prevout;
             //Convert block structure from old client to one from new client 
             pblock->nVersion = lblock->nVersion;
             pblock->hashPrevBlock = lblock->hashPrevBlock; 
@@ -2408,6 +2408,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             pblock->nBits = lblock->nBits; 
             pblock->nNonce = lblock->nNonce;  
             pblock->nVersion = lblock->nVersion;
+            pblock->prevoutStake = prevoutStake;
             pblock->vchBlockSig = lblock->vchBlockSig;
             pblock->vtx  =   lblock->vtx;
 
@@ -3397,9 +3398,11 @@ bool ProcessNetBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         if (!fReindex && !fImporting && pblock->IsProofOfStake() && (setStakeSeen.count(pblock->GetProofOfStake()) > 1) && !mapOrphanBlocksByPrev.count(hash))
             return error("ProcessNetBlock() : duplicate proof-of-stake (%s, %d) for block %s", pblock->GetProofOfStake().first.ToString(), pblock->GetProofOfStake().second, hash.ToString());
 
+
         // Check for the signiture encoding
         if (!CheckCanonicalBlockSignature(pblock)) 
         {
+            LogPrintf("xploited  netProcessing block=%s", pblock->ToString());
             if (pfrom)
                 Misbehaving(pfrom->GetId(), 100);
 

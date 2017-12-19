@@ -67,6 +67,12 @@ std::string base_blob<BITS>::ToString() const
     return (GetHex());
 }
 
+template <unsigned int BITS>
+uint64_t base_blob<BITS>::Get64(const int n)
+{
+    return data[2*n] | (uint64_t)data[2*n+1] << 32;
+}
+
 // Explicit instantiations for base_blob<160>
 template base_blob<160>::base_blob(const std::vector<unsigned char>&);
 template std::string base_blob<160>::GetHex() const;
@@ -78,5 +84,6 @@ template void base_blob<160>::SetHex(const std::string&);
 template base_blob<256>::base_blob(const std::vector<unsigned char>&);
 template std::string base_blob<256>::GetHex() const;
 template std::string base_blob<256>::ToString() const;
+template uint64_t base_blob<256>::Get64(const int n);
 template void base_blob<256>::SetHex(const char*);
 template void base_blob<256>::SetHex(const std::string&);

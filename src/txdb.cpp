@@ -10,6 +10,7 @@
 #include "pow.h"
 #include "uint256.h"
 #include "validation.h"
+#include "util.h"
 
 #include <stdint.h>
 
@@ -225,7 +226,7 @@ bool CBlockTreeDB::WriteHeightIndex(const CHeightTxIndexKey &heightIndex, const 
 
 size_t CBlockTreeDB::ReadHeightIndex(size_t low, size_t high, size_t minconf,
         std::vector<std::vector<uint256>> &blocksOfHashes,
-        uint256 const &addresses) {
+        std::set<uint160> const &addresses) {
 
     std::unique_ptr<CDBIterator> pcursor(NewIterator());
 
@@ -255,8 +256,7 @@ size_t CBlockTreeDB::ReadHeightIndex(size_t low, size_t high, size_t minconf,
 
         curheight = nextHeight;
 
-        // need to look into this
-        //auto address = key.second.address;
+        auto address = key.second.address;
         //if (!addresses.empty() && addresses.find(address) == addresses.end()) {
         //    continue;
         //}
@@ -402,30 +402,31 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
                 // Construct block index object
                 CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash());
                 pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev);
+                pindexNew->pnext          = InsertBlockIndex(diskindex.hashNext);
                 pindexNew->nHeight        = diskindex.nHeight;
+                pindexNew->nStatus        = diskindex.nStatus;
+                pindexNew->nTx            = diskindex.nTx;
                 pindexNew->nFile          = diskindex.nFile;
                 pindexNew->nDataPos       = diskindex.nDataPos;
                 pindexNew->nUndoPos       = diskindex.nUndoPos;
-                pindexNew->nVersion       = diskindex.nVersion;
-                pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
-                pindexNew->nTime          = diskindex.nTime;
-                pindexNew->nBits          = diskindex.nBits;
-                pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nMint          = diskindex.nMint;
         		pindexNew->nMoneySupply   = diskindex.nMoneySupply;
         		pindexNew->nDigsupply     = diskindex.nDigsupply;
         		pindexNew->nStakeSupply   = diskindex.nStakeSupply;
         		pindexNew->vClamour       = diskindex.vClamour;
-                pindexNew->nStatus        = diskindex.nStatus;
-                pindexNew->nTx            = diskindex.nTx;
                 pindexNew->nFlags         = diskindex.nFlags;
                 pindexNew->nStakeModifier = diskindex.nStakeModifier;
                 pindexNew->prevoutStake   = diskindex.prevoutStake;
         		pindexNew->hashProof      = diskindex.hashProof;
                 pindexNew->vchBlockSig    = diskindex.vchBlockSig; 
+                pindexNew->nVersion       = diskindex.nVersion;
+                pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
+                pindexNew->nTime          = diskindex.nTime;
+                pindexNew->nBits          = diskindex.nBits;
+                pindexNew->nNonce         = diskindex.nNonce;
 
                 if (!CheckIndexProof(*pindexNew, Params().GetConsensus()))
-                    return error("LoadBlockIndex(): CheckIndexProof failed: %s", pindexNew->ToString());
+                    return error("LoadBlockIndex(): CheckIndexProof failed: %s %s", pindexNew->ToString(), diskindex.GetBlockHash().ToString());
 
                 // NovaCoin: build setStakeSeen
                 if (pindexNew->IsProofOfStake())

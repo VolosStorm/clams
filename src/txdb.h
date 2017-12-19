@@ -45,6 +45,7 @@ static const int64_t nMaxCoinsDBCache = 8;
 struct CDiskTxPos : public CDiskBlockPos
 {
     unsigned int nTxOffset; // after header
+    unsigned int nTxPosLegacy; // for holding the old position of tx's 
 
     ADD_SERIALIZE_METHODS;
 
@@ -52,6 +53,7 @@ struct CDiskTxPos : public CDiskBlockPos
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(*(CDiskBlockPos*)this);
         READWRITE(VARINT(nTxOffset));
+        READWRITE(VARINT(nTxPosLegacy));
     }
 
     CDiskTxPos(const CDiskBlockPos &blockIn, unsigned int nTxOffsetIn) : CDiskBlockPos(blockIn.nFile, blockIn.nPos), nTxOffset(nTxOffsetIn) {
@@ -64,6 +66,7 @@ struct CDiskTxPos : public CDiskBlockPos
     void SetNull() {
         CDiskBlockPos::SetNull();
         nTxOffset = 0;
+        nTxPosLegacy = 0;
     }
 };
 
@@ -128,7 +131,7 @@ public:
     bool ReadFlag(const std::string &name, bool &fValue);
     bool LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256&)> insertBlockIndex);
     
-    
+    ////////////////////////////////////////////////////////////////////////////// // qtum
     bool WriteHeightIndex(const CHeightTxIndexKey &heightIndex, const std::vector<uint256>& hash);
 
     /**
@@ -144,7 +147,7 @@ public:
      */
     size_t ReadHeightIndex(size_t low, size_t high, size_t minconf,
             std::vector<std::vector<uint256>> &blocksOfHashes,
-            uint256 const &addresses);
+            std::set<uint160> const &addresses);
     bool EraseHeightIndex(const unsigned int &height);
     bool WipeHeightIndex();
 
@@ -153,7 +156,6 @@ public:
     bool ReadStakeIndex(unsigned int height, uint160& address);
     bool ReadStakeIndex(unsigned int high, unsigned int low, std::vector<uint160> addresses);
     bool EraseStakeIndex(unsigned int height);
-
     
 };
 

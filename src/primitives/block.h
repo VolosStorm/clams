@@ -23,9 +23,9 @@ public:
     int32_t nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+    unsigned int nTime;
+    unsigned int nBits;
+    unsigned int nNonce;
 
     std::vector<CTransactionRef> vtx;
 
@@ -75,6 +75,16 @@ public:
         return (nBits == 0);
     }
 
+    bool IsProofOfStake() const
+    {
+        return (vtx.size() > 1 && vtx[1]->IsCoinStake());
+    }
+
+    bool IsProofOfWork() const
+    {
+        return !IsProofOfStake();
+    }
+
     std::string ToString() const;
 };
 
@@ -95,9 +105,9 @@ public:
     int32_t nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+    unsigned int nTime;
+    unsigned int nBits;
+    unsigned int nNonce;
 
 
     // proof-of-stake specific fields
@@ -142,6 +152,7 @@ public:
         return (nBits == 0);
     }
 
+
     uint256 GetHash() const;
 
     uint256 GetHashWithoutSign() const;
@@ -151,12 +162,12 @@ public:
         return (int64_t)nTime;
     }
 
-        // entropy bit for stake modifier if chosen by modifier
+    // entropy bit for stake modifier if chosen by modifier
     unsigned int GetStakeEntropyBit() const
     {
         // Take last bit of block hash as entropy bit
-        unsigned int nEntropyBit = ((GetHash().GetCheapHash()) & 1llu);
-        //LogPrint("stakemodifier", "GetStakeEntropyBit: hashBlock=%s nEntropyBit=%u\n", GetHash().ToString(), nEntropyBit);
+        unsigned int nEntropyBit = ((GetHash().Get64()) & 1llu);
+        //LogPrintf("GetStakeEntropyBit: hashBlock=%s nEntropyBit=%u\n", GetHash().ToString(), nEntropyBit);
         return nEntropyBit;
     }
     
@@ -169,6 +180,16 @@ public:
     virtual bool IsProofOfWork() const
     {
         return !IsProofOfStake();
+    }
+
+    virtual uint32_t StakeTime() const
+    {
+        uint32_t ret = 0;
+        if(IsProofOfStake())
+        {
+            ret = nTime;
+        }
+        return ret;
     }
 
     CBlockHeader& operator=(const CBlockHeader& other)
@@ -272,6 +293,18 @@ public:
         block.vchBlockSig    = vchBlockSig;
         block.prevoutStake   = prevoutStake;
         return block;
+    }
+
+    //overloaded to deal with blocks of the old structure which 
+    // don't have prevoutStake set 
+    bool IsProofOfStake() const
+    {
+        return (vtx.size() > 1 && vtx[1]->IsCoinStake());
+    }
+
+    bool IsProofOfWork() const
+    {
+        return !IsProofOfStake();
     }
 
     std::string ToString() const;

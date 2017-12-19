@@ -181,6 +181,9 @@ public:
     //! Byte offset within rev?????.dat where this block's undo data is stored
     unsigned int nUndoPos;
 
+    // used for calculating old block positions, new positions are padded by 36 bytes
+    unsigned int nBlockPosLegacy;
+
     //! (memory only) Total amount of work (expected number of hashes) in the chain up to and including this block
     arith_uint256 nChainWork;
 
@@ -206,7 +209,6 @@ public:
     std::vector<unsigned char> vchBlockSig;
     // proof-of-stake specific fields
     COutPoint prevoutStake;
-    unsigned int nStakeTime;
 
     uint256 hashProof; 
     uint64_t nMoneySupply;
@@ -244,6 +246,7 @@ public:
         nFile = 0;
         nDataPos = 0;
         nUndoPos = 0;
+        nBlockPosLegacy = 0;
         nChainWork = arith_uint256();
         nTx = 0;
         nChainTx = 0;
@@ -290,8 +293,10 @@ public:
         nStakeModifier = 0;
         nFlags = 0;
         hashProof = uint256(); 
-        prevoutStake   = block.prevoutStake; // qtum
-        vchBlockSig    = block.vchBlockSig; // qtum
+        prevoutStake   = block.prevoutStake; 
+        vchBlockSig    = block.vchBlockSig;
+        if (block.IsProofOfStake())
+            SetProofOfStake();
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -376,6 +381,11 @@ public:
         return !prevoutStake.IsNull();
     }
 
+    void SetProofOfStake()
+    {
+        nFlags |= BLOCK_PROOF_OF_STAKE;
+    }
+
     unsigned int GetStakeEntropyBit() const
     {
         return ((nFlags & BLOCK_STAKE_ENTROPY) >> 1);
@@ -403,8 +413,12 @@ public:
 
     std::string ToString() const
     {
-        return strprintf("CBlockIndex(pprev=%p, nHeight=%d, merkle=%s, hashBlock=%s)",
-            pprev, nHeight,
+        return strprintf("CBlockIndex(nDataPos=%d, nUndoPos=%d, nBlockPosLegacy=%d, nHeight=%d, nTime=%d, nNonce=%d, nFlags=(%s)(%d)(%s), nStakeModifier=%016x, hashProof=%s, prevoutStake=(%s), merkle=%s, hashBlock=%s)",
+            nDataPos, nUndoPos, nBlockPosLegacy, nHeight, nTime, nNonce,
+            GeneratedStakeModifier() ? "MOD" : "-", GetStakeEntropyBit(), IsProofOfStake()? "PoS" : "PoW",
+            nStakeModifier,
+            hashProof.ToString(),
+            prevoutStake.ToString(),
             hashMerkleRoot.ToString(),
             GetBlockHash().ToString());
     }
@@ -449,13 +463,16 @@ class CDiskBlockIndex : public CBlockIndex
 {
 public:
     uint256 hashPrev;
+    uint256 hashNext;
 
     CDiskBlockIndex() {
         hashPrev = uint256();
+        hashNext = uint256();
     }
 
     explicit CDiskBlockIndex(const CBlockIndex* pindex) : CBlockIndex(*pindex) {
         hashPrev = (pprev ? pprev->GetBlockHash() : uint256());
+        hashNext = (pnext ? pnext->GetBlockHash() : uint256());
     }
 
     ADD_SERIALIZE_METHODS;
@@ -466,6 +483,7 @@ public:
         if (!(s.GetType() & SER_GETHASH))
             READWRITE(VARINT(nVersion));
 
+        READWRITE(hashNext);
         READWRITE(VARINT(nHeight));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
@@ -474,23 +492,17 @@ public:
         if (nStatus & BLOCK_HAVE_DATA)
             READWRITE(VARINT(nDataPos));
         if (nStatus & BLOCK_HAVE_UNDO)
-            READWRITE(VARINT(nUndoPos));
-        READWRITE(nMint);
-        READWRITE(nMoneySupply);
-        READWRITE(nDigsupply);
-        READWRITE(nStakeSupply);
+            READWRITE(VARINT(nUndoPos));   
+        READWRITE(VARINT(nMint));
+        READWRITE(VARINT(nMoneySupply));
+        READWRITE(VARINT(nDigsupply));
+        READWRITE(VARINT(nStakeSupply));
         READWRITE(vClamour);
         READWRITE(nFlags);
-        if (IsProofOfStake())
-        {
-            READWRITE(prevoutStake);
-            READWRITE(nStakeTime);
-        }
-        else 
-        {
-            const_cast<CDiskBlockIndex*>(this)->prevoutStake.SetNull();
-            const_cast<CDiskBlockIndex*>(this)->nStakeTime = 0;
-        }
+        READWRITE(nStakeModifier);
+        READWRITE(prevoutStake);
+        READWRITE(hashProof);
+        READWRITE(vchBlockSig); 
 
         // block header
         READWRITE(this->nVersion);
@@ -499,9 +511,9 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
-        READWRITE(nStakeModifier);
-        READWRITE(hashProof);
-        READWRITE(vchBlockSig); 
+        
+
+        
     }
 
     uint256 GetBlockHash() const
@@ -513,8 +525,6 @@ public:
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;
-        block.vchBlockSig     = vchBlockSig;
-        block.prevoutStake    = prevoutStake;
         return block.GetHash();
     }
 
