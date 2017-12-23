@@ -181,9 +181,6 @@ public:
     //! Byte offset within rev?????.dat where this block's undo data is stored
     unsigned int nUndoPos;
 
-    // used for calculating old block positions, new positions are padded by 36 bytes
-    unsigned int nBlockPosLegacy;
-
     //! (memory only) Total amount of work (expected number of hashes) in the chain up to and including this block
     arith_uint256 nChainWork;
 
@@ -246,7 +243,6 @@ public:
         nFile = 0;
         nDataPos = 0;
         nUndoPos = 0;
-        nBlockPosLegacy = 0;
         nChainWork = arith_uint256();
         nTx = 0;
         nChainTx = 0;
@@ -413,8 +409,8 @@ public:
 
     std::string ToString() const
     {
-        return strprintf("CBlockIndex(nDataPos=%d, nUndoPos=%d, nBlockPosLegacy=%d, nHeight=%d, nTime=%d, nNonce=%d, nFlags=(%s)(%d)(%s), nStakeModifier=%016x, hashProof=%s, prevoutStake=(%s), merkle=%s, hashBlock=%s)",
-            nDataPos, nUndoPos, nBlockPosLegacy, nHeight, nTime, nNonce,
+        return strprintf("CBlockIndex(nDataPos=%d, nUndoPos=%d, nHeight=%d, nTime=%d, nNonce=%d, nFlags=(%s)(%d)(%s), nStakeModifier=%016x, hashProof=%s, prevoutStake=(%s), merkle=%s, hashBlock=%s)",
+            nDataPos, nUndoPos, nHeight, nTime, nNonce,
             GeneratedStakeModifier() ? "MOD" : "-", GetStakeEntropyBit(), IsProofOfStake()? "PoS" : "PoW",
             nStakeModifier,
             hashProof.ToString(),

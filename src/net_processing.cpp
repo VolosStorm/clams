@@ -1140,7 +1140,6 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
         }
     }
 
-    LogPrintf("7");
     pfrom->vRecvGetData.erase(pfrom->vRecvGetData.begin(), it);
 
     if (!vNotFound.empty()) {
@@ -2242,17 +2241,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return error("headers message size = %u", nCount);
         }
         headers.resize(nCount);
-        //LogPrintf("1b %d\n", vRecv.size());
         for (unsigned int n = 0; n < nCount; n++) {
-            //LogPrintf("1b %d %d\n", nCount, n);
-            //LogPrintf("22 %s", vRecv.str());
-            //LogPrintf("2a %d\n", vRecv.size() );
             vRecv >> headers[n];
-            //LogPrintf("xploitedHEADER nTime=%d blockHash=%s\n", headers[n].nTime, headers[n].GetHash().ToString());
-            //LogPrintf("count=%d,  %s\n", n, headers[n].ToString());
-            // ignore tx count; assume it is 0.
-            //LogPrintf("2b %d\n", vRecv.size() );
-            //ReadCompactSize(vRecv);
         }
 
         if (nCount == 0) {
@@ -2393,9 +2383,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         if(pfrom->nVersion <= 70012) {
             LogPrint("net", "Incomming Block from old client, attempting to convert\n");
+
             std::shared_ptr<CBlockLegacy> lblock = std::make_shared<CBlockLegacy>();
             vRecv >> *lblock;
-
             //make sure to include the preoutStake for the new clam header structure
             COutPoint prevoutStake;
             if(lblock->IsProofOfStake())
@@ -3402,7 +3392,6 @@ bool ProcessNetBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         // Check for the signiture encoding
         if (!CheckCanonicalBlockSignature(pblock)) 
         {
-            LogPrintf("xploited  netProcessing block=%s", pblock->ToString());
             if (pfrom)
                 Misbehaving(pfrom->GetId(), 100);
 

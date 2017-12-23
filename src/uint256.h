@@ -46,8 +46,23 @@ public:
 
     friend inline bool operator==(const base_blob& a, const base_blob& b) { return a.Compare(b) == 0; }
     friend inline bool operator!=(const base_blob& a, const base_blob& b) { return a.Compare(b) != 0; }
-    friend inline bool operator<(const base_blob& a, const base_blob& b) { return a.Compare(b) < 0; }
+    
+    // changed the < operator back to bit by bit comparision
+    // required for sorting and compairing of hashses in clam pos consensus
+    friend inline bool operator<(const base_blob& a, const base_blob& b)
+    {
+        for (int i = base_blob::WIDTH-1; i >= 0; i--)
+        {
+            if (a.data[i] < b.data[i])
+                return true;
+            else if (a.data[i] > b.data[i])
+                return false;
+        }
+        return false;
+    }
 
+    // Added the >> operator to handle shifting required for pos consensus
+    // ref: line 93 of pos.cpp 
     base_blob& operator>>=(unsigned int shift)
     {
         base_blob a(*this);

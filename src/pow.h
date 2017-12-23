@@ -15,7 +15,7 @@ class CBlockIndex;
 class uint256;
 
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake);
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params&, bool fProofOfStake = false);
+unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params&, bool fProofOfStake = false);
 unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirstBlockTime, const Consensus::Params&, bool fProofOfStake = false);
 
 unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consensus::Params&, bool fProofOfStake = false);

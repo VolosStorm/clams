@@ -25,6 +25,9 @@ static const char DB_BLOCK_INDEX = 'b';
 
 static const char DB_HEIGHTINDEX = 'h';
 static const char DB_STAKEINDEX = 's';
+static const char DB_OFFSETINDEX = 'o';
+static const char DB_OFFSET_COMPLETE_FLAG = 'O';
+
 
 
 static const char DB_BEST_BLOCK = 'B';
@@ -205,6 +208,28 @@ bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos>
     return WriteBatch(batch);
 }
 
+
+bool CBlockTreeDB::ReadTxOffsetIndex(const int &nHeight, int &nTxOffset) {
+    return Read(std::make_pair(DB_OFFSETINDEX, nHeight), nTxOffset);
+}
+
+bool CBlockTreeDB::WriteTxOffsetIndex(const std::vector<std::pair<int, int> >&vect) {
+    CDBBatch batch(*this);
+    for (std::vector<std::pair<int,int> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
+        batch.Write(std::make_pair(DB_OFFSETINDEX, it->first), it->second);
+    return WriteBatch(batch);
+}
+
+bool CBlockTreeDB::ReadTxOffsetSet() {
+    return Exists(DB_OFFSET_COMPLETE_FLAG);
+}
+
+bool CBlockTreeDB::WriteTxOffsetSet() {
+    return Write(DB_OFFSET_COMPLETE_FLAG, '1');
+}
+
+
+
 bool CBlockTreeDB::WriteFlag(const std::string &name, bool fValue) {
     return Write(std::make_pair(DB_FLAG, name), fValue ? '1' : '0');
 }
@@ -256,7 +281,7 @@ size_t CBlockTreeDB::ReadHeightIndex(size_t low, size_t high, size_t minconf,
 
         curheight = nextHeight;
 
-        auto address = key.second.address;
+       // auto address = key.second.address;
         //if (!addresses.empty() && addresses.find(address) == addresses.end()) {
         //    continue;
         //}

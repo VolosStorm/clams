@@ -33,6 +33,7 @@
 #include "timedata.h"
 #include "txdb.h"
 #include "txmempool.h"
+#include "txoffset.h"
 #include "torcontrol.h"
 #include "ui_interface.h"
 #include "util.h"
@@ -1464,6 +1465,20 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                 if (!LoadBlockIndex(chainparams)) {
                     strLoadError = _("Error loading block database");
                     break;
+                }
+
+                if(!pblocktree->ReadTxOffsetSet()) { 
+                    LogPrintf("Importing legacy tx offset data ...\n");
+                    CTxOffsetData set;
+                    if(!pblocktree->WriteTxOffsetIndex(set.vTxOffsetData)){
+                        strLoadError = _("Error importing txOffset data");
+                        break;
+                    }
+                    if(!pblocktree->WriteTxOffsetSet()){
+                        strLoadError = _("Error finishing txOffset Import");
+                        break;
+                    }
+                    LogPrintf("Completed Import of legacy tx offset data\n");
                 }
 
                 // If the loaded chain has a wrong genesis, bail out immediately

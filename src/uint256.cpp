@@ -77,6 +77,7 @@ uint64_t base_blob<BITS>::Get64(const int n)
 template base_blob<160>::base_blob(const std::vector<unsigned char>&);
 template std::string base_blob<160>::GetHex() const;
 template std::string base_blob<160>::ToString() const;
+template uint64_t base_blob<160>::Get64(const int n);
 template void base_blob<160>::SetHex(const char*);
 template void base_blob<160>::SetHex(const std::string&);
 

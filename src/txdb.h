@@ -45,7 +45,6 @@ static const int64_t nMaxCoinsDBCache = 8;
 struct CDiskTxPos : public CDiskBlockPos
 {
     unsigned int nTxOffset; // after header
-    unsigned int nTxPosLegacy; // for holding the old position of tx's 
 
     ADD_SERIALIZE_METHODS;
 
@@ -53,7 +52,6 @@ struct CDiskTxPos : public CDiskBlockPos
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(*(CDiskBlockPos*)this);
         READWRITE(VARINT(nTxOffset));
-        READWRITE(VARINT(nTxPosLegacy));
     }
 
     CDiskTxPos(const CDiskBlockPos &blockIn, unsigned int nTxOffsetIn) : CDiskBlockPos(blockIn.nFile, blockIn.nPos), nTxOffset(nTxOffsetIn) {
@@ -66,7 +64,6 @@ struct CDiskTxPos : public CDiskBlockPos
     void SetNull() {
         CDiskBlockPos::SetNull();
         nTxOffset = 0;
-        nTxPosLegacy = 0;
     }
 };
 
@@ -127,6 +124,10 @@ public:
     bool ReadReindexing(bool &fReindex);
     bool ReadTxIndex(const uint256 &txid, CDiskTxPos &pos);
     bool WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> > &list);
+    bool ReadTxOffsetIndex(const int &nHeight, int &nTxOffset);
+    bool WriteTxOffsetIndex(const std::vector<std::pair<int,int> > &list);
+    bool ReadTxOffsetSet ();
+    bool WriteTxOffsetSet ();
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);
     bool LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256&)> insertBlockIndex);

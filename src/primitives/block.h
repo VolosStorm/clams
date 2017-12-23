@@ -112,7 +112,6 @@ public:
 
     // proof-of-stake specific fields
     COutPoint prevoutStake;
-    unsigned int nStakeTime;
 
     std::vector<unsigned char> vchBlockSig;
     CBlockHeader()

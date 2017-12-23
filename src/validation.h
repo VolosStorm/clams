@@ -137,7 +137,6 @@ static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
 static const bool DEFAULT_PERMIT_BAREMULTISIG = true;
 static const bool DEFAULT_CHECKPOINTS_ENABLED = true;
 static const bool DEFAULT_TXINDEX = true;
-static const bool DEFAULT_LOGEVENTS = false;
 static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 
 /** Default for -mempoolreplacement */
@@ -297,6 +296,7 @@ bool GetCoinAge(const CTransaction& tx, CBlockIndex* pindex, CCoinsViewCache& vi
 /** Find the best known block, and make it the tip of the block chain */
 bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock = std::shared_ptr<const CBlock>());
 CAmount GetBlockSubsidy(CBlockIndex* pindex, uint64_t nCoinAge, const Consensus::Params& consensusParams, int64_t nFees);
+CAmount GetPOWBlockSubsidy(CBlockIndex* pindex);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, CBlockIndex* pindex);

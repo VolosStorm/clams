@@ -19,17 +19,20 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
-inline uint32_t GetLimit(const Consensus::Params& params, bool fProofOfStake)
+inline arith_uint256 GetLimit(const Consensus::Params& params, bool fProofOfStake)
 {
-    return fProofOfStake ? params.posLimit : params.powLimit;
+    arith_uint256 bnTargetLimit;
+    if(fProofOfStake) 
+        return bnTargetLimit.SetCompact(params.posLimit);
+    else 
+        return bnTargetLimit.SetCompact(params.powLimit);
 }
 
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params, bool fProofOfStake)
+unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
     // genesis block
-//    if (pindexLast == NULL)
-//        return GetLimit(params, fProofOfStake).GetCompact();
-
+    if (pindexLast == NULL)
+        return GetLimit(params, fProofOfStake).GetCompact();
     if (pindexLast->nHeight < params.DISTRIBUTION_END )
         return GetNextTargetRequiredV1(pindexLast, params, fProofOfStake);
     else if (!(pindexLast->nHeight > 203500))

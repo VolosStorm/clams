@@ -13,10 +13,12 @@
 
 uint256 CBlockHeader::GetHash() const
 {
-    if (nVersion > 6)
-        return SerializeHash(*this);
-    else
+    if (nVersion > 6) {
+        return Hash(BEGIN(nVersion), END(nNonce));
+    }
+    else{
         return scrypt_blockhash(((const void*)&(nVersion))); 
+    }
 }
 
 uint256 CBlockHeader::GetHashWithoutSign() const

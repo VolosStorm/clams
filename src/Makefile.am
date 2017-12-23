@@ -147,6 +147,7 @@ BITCOIN_CORE_H = \
   torcontrol.h \
   txdb.h \
   txmempool.h \
+  txoffset.h \
   ui_interface.h \
   undo.h \
   util.h \
@@ -274,6 +275,7 @@ libbitcoin_consensus_a_SOURCES = \
   amount.h \
   arith_uint256.cpp \
   arith_uint256.h \
+  bignum.h \
   consensus/merkle.cpp \
   consensus/merkle.h \
   consensus/params.h \
