@@ -222,7 +222,7 @@ bool WalletModel::validateAddress(const QString &address)
     return addressParsed.IsValid();
 }
 
-WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransaction &transaction, const CCoinControl *coinControl)
+WalletModel::SendCoinsReturn WalletModel::prepareTransaction(const QString &clamspeech, WalletModelTransaction &transaction, const CCoinControl *coinControl)
 {
     CAmount total = 0;
     bool fSubtractFeeFromAmount = false;

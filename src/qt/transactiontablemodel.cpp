@@ -243,7 +243,7 @@ TransactionTableModel::TransactionTableModel(const PlatformStyle *_platformStyle
         fProcessingQueuedTransactions(false),
         platformStyle(_platformStyle)
 {
-    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Label") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
+    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Label") << tr("ClamSpeech") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
     priv->refreshWallet();
 
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
@@ -426,6 +426,31 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     }
 }
 
+QString TransactionTableModel::formatClamSpeech(const TransactionRecord *wtx, bool tooltip) const
+{
+    switch(wtx->type)
+    {
+    case TransactionRecord::RecvFromOther:
+        return QString::fromStdString(wtx->clamspeech);
+    case TransactionRecord::RecvWithAddress:
+        return QString::fromStdString(wtx->clamspeech);
+    case TransactionRecord::SendToAddress:
+        return QString::fromStdString(wtx->clamspeech);
+    case TransactionRecord::SendToOther:
+        return QString::fromStdString(wtx->clamspeech);
+    case TransactionRecord::SendToSelf:
+    case TransactionRecord::Notary:
+    case TransactionRecord::NotarySendToAddress:
+    case TransactionRecord::NotarySendToOther:
+    case TransactionRecord::CreateClamour:
+        return QString::fromStdString(wtx->clamspeech);
+    case TransactionRecord::Generated:
+         return "";
+      default:
+        return tr("(n/a)");
+    }
+}
+
 QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
 {
     // Show addresses without label in a less visible color
@@ -553,6 +578,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxToAddress(rec, false);
         case Amount:
             return formatTxAmount(rec, true, BitcoinUnits::separatorAlways);
+        case ClamSpeech:
+            return formatCLAMSpeech(rec, false);
         }
         break;
     case Qt::EditRole:
@@ -571,6 +598,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxToAddress(rec, true);
         case Amount:
             return qint64(rec->credit + rec->debit);
+        case ClamSpeech:
+             return formatCLAMSpeech(rec, false);
         }
         break;
     case Qt::ToolTipRole:
@@ -685,6 +714,8 @@ QVariant TransactionTableModel::headerData(int section, Qt::Orientation orientat
                 return tr("User-defined intent/purpose of the transaction.");
             case Amount:
                 return tr("Amount removed from or added to balance.");
+            case CLAMSpeech:
+                return tr("Transaction comment.");
             }
         }
     }

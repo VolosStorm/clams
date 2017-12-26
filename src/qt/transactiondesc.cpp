@@ -239,6 +239,8 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
         strHTML += "<br><b>" + tr("Message") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["message"], true) + "<br>";
     if (wtx.mapValue.count("comment") && !wtx.mapValue["comment"].empty())
         strHTML += "<br><b>" + tr("Comment") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["comment"], true) + "<br>";
+    if (!wtx.strClamSpeech.empty())
+        strHTML += "<br><b>" + tr("Clam Speech") + ":</b><br>" + wtx.strClamSpeech.c_str() + "<br>";
 
     strHTML += "<b>" + tr("Transaction ID") + ":</b> " + rec->getTxID() + "<br>";
     strHTML += "<b>" + tr("Transaction total size") + ":</b> " + QString::number(wtx.tx->GetTotalSize()) + " bytes<br>";

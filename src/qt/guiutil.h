@@ -18,6 +18,12 @@
 
 #include <boost/filesystem.hpp>
 
+// UI extern settings defined in optionsmodel.cpp
+extern bool fUseClamTheme;
+extern bool fUseClamSpeech;
+extern bool fUseClamSpeechRandom;
+extern int nClamSpeechIndex;
+
 class QValidatedLineEdit;
 class SendCoinsRecipient;
 

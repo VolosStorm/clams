@@ -41,6 +41,7 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     platformStyle(_platformStyle)
 {
     ui->setupUi(this);
+    this->loadClamSpeech();
     ui->groupBoxFee->setStyleSheet(STYLE_GROUPBOX);
     ui->groupBoxCoinControl->setStyleSheet(STYLE_GROUPBOX);
 
@@ -202,6 +203,8 @@ void SendCoinsDialog::on_sendButton_clicked()
     QList<SendCoinsRecipient> recipients;
     bool valid = true;
 
+    QString clamspeech = ui->clamQuotes->currentText();
+
     for(int i = 0; i < ui->entries->count(); ++i)
     {
         SendCoinsEntry *entry = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(i)->widget());
@@ -245,7 +248,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     else
         ctrl.nConfirmTarget = 0;
 
-    prepareStatus = model->prepareTransaction(currentTransaction, &ctrl);
+    prepareStatus = model->prepareTransaction(clamspeech, currentTransaction, &ctrl);
 
     // process prepareStatus and on error generate message shown to user
     processSendCoinsReturn(prepareStatus,
@@ -349,8 +352,28 @@ void SendCoinsDialog::on_sendButton_clicked()
     fNewRecipientAllowed = true;
 }
 
+void SendCoinsDialog::clamSpeechIndexChanged(const int &index)
+{
+    if ( index >= clamSpeechQuoteCount )
+    {
+        qDebug() << "New CLAMSpeech quote added at" << index;
+
+        // Add quote
+        quoteList.push_back( ui->clamQuotes->itemText(index).toStdString() );
+    }
+
+    clamSpeechQuoteCount = ui->clamQuotes->count();
+    nClamSpeechIndex = index;
+
+    qDebug() << "saving nClamSpeechIndex =" << index;
+    // Save to QSettings
+    QSettings settings;
+    settings.setValue( "nClamSpeechIndex", nClamSpeechIndex );
+}
+
 void SendCoinsDialog::clear()
 {
+    ui->clamQuotes->clear();
     // Remove entries until only one left
     while(ui->entries->count())
     {
@@ -496,6 +519,53 @@ void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& unconfir
         ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balance));
     }
 }
+
+void SendCoinsDialog::loadClamSpeech()
+{
+    if ( !fUseClamSpeech )
+        return;
+
+    // disconnect widget change signal to stop clashing
+    disconnect( ui->clamQuotes, SIGNAL(currentIndexChanged(int)), this, SLOT(clamSpeechIndexChanged(int)) );
+
+    // Load quotes from clamspeech.h
+    ui->clamQuotes->clear();
+    for ( ulong i = 0; i < clamSpeech.size(); i++ )
+        ui->clamQuotes->addItem( QString::fromStdString( clamSpeech.at(i) ) );
+
+    // Hold the index count to detect appending new quotes
+    clamSpeechQuoteCount = ui->clamQuotes->count();
+
+    if ( !clamSpeechQuoteCount )
+        return;
+
+    // Select a random index based on current time, if random option set
+    if ( fUseClamSpeechRandom && clamSpeechQuoteCount )
+    {
+        qDebug() << "Random quote selected";
+
+        qsrand( (QDateTime().toTime_t() * 1000) );
+        ui->clamQuotes->setCurrentIndex( qrand() % ui->clamQuotes->count() );
+    }
+    else // Fixed chosen quote
+    {
+        // Support out of bounds removal with already set index
+        if ( nClamSpeechIndex >= clamSpeechQuoteCount )
+            nClamSpeechIndex = clamSpeechQuoteCount -1;
+
+        ui->clamQuotes->setCurrentIndex( nClamSpeechIndex );
+    }
+
+    // Print debug info
+    qDebug() << clamSpeechQuoteCount << "CLAMSpeech quotes parsed.";
+    qDebug() << "fClamSpeechRandom =" << fUseClamSpeechRandom;
+    qDebug() << "nClamSpeechIndex =" << nClamSpeechIndex;
+    qDebug() << "CLAMSpeech selected index" << ui->clamQuotes->currentIndex();
+
+    // setup clamspeech widget change signal
+    connect( ui->clamQuotes, SIGNAL(currentIndexChanged(int)), this, SLOT(clamSpeechIndexChanged(int)) );
+}
+
 
 void SendCoinsDialog::updateDisplayUnit()
 {

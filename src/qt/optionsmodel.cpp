@@ -29,6 +29,12 @@
 #include <QSettings>
 #include <QStringList>
 
+// shared UI settings in guiutil.h
+bool fUseClamTheme;
+bool fUseClamSpeech;
+bool fUseClamSpeechRandom;
+int nClamSpeechIndex;
+
 OptionsModel::OptionsModel(QObject *parent, bool resetSettings) :
     QAbstractListModel(parent)
 {
@@ -160,6 +166,10 @@ void OptionsModel::Init(bool resetSettings)
         addOverriddenOption("-lang");
 
     language = settings.value("language").toString();
+
+    fUseClamSpeech = settings.value("fUseClamSpeech", true).toBool();
+    fUseClamSpeechRandom = settings.value("fUseClamSpeechRandom", true).toBool();
+    nClamSpeechIndex = settings.value("nClamSpeechIndex", 0).toInt();
 }
 
 void OptionsModel::Reset()
@@ -260,6 +270,12 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("nThreadsScriptVerif");
         case Listen:
             return settings.value("fListen");
+        case UseClamSpeech:
+            return QVariant(fUseClamSpeech);
+        case UseClamSpeechRandom:
+            return QVariant(fUseClamSpeechRandom);
+        case ClamSpeechIndex:
+            return QVariant(nClamSpeechIndex);
         default:
             return QVariant();
         }
@@ -412,6 +428,18 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 settings.setValue("fListen", value);
                 setRestartRequired(true);
             }
+            break;
+        case UseClamSpeech:
+            fUseClamSpeech = value.toBool();
+            settings.setValue("fUseClamSpeech", fUseClamSpeech);
+            break;
+        case UseClamSpeechRandom:
+            fUseClamSpeechRandom = value.toBool();
+            settings.setValue("fUseClamSpeechRandom", fUseClamSpeechRandom);
+            break;
+        case ClamSpeechIndex:
+            nClamSpeechIndex = value.toInt();
+            settings.setValue("nClamSpeechIndex", nClamSpeechIndex);
             break;
         default:
             break;
