@@ -389,7 +389,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
     if (!EnsureWalletIsAvailable(request.fHelp))
         return NullUniValue;
 
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 5)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 6)
         throw runtime_error(
             "sendtoaddress \"address\" amount ( \"comment\" \"comment_to\" subtractfeefromamount [tx-comment])\n"
             "\nSend an amount to a given address.\n"
@@ -431,18 +431,23 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
         wtx.mapValue["comment"] = request.params[2].get_str();
     if (request.params.size() > 3 && !request.params[3].isNull() && !request.params[3].get_str().empty())
         wtx.mapValue["to"]      = request.params[3].get_str();
-
+     
     bool fSubtractFeeFromAmount = false;
     if (request.params.size() > 4)
         fSubtractFeeFromAmount = request.params[4].get_bool();
 
-    std::string strClamSpeech = "";
-    if (request.params.size() > 5)
-        strClamSpeech = request.params[5].get_str();
+    // Transaction comment
+    std::string clamspeech;
+    if (request.params.size() > 5 && !request.params[5].isNull() && !request.params[5].get_str().empty())
+    {
+        clamspeech = request.params[5].get_str();
+        if (clamspeech.length() > MAX_TX_COMMENT_LEN)
+            clamspeech.resize(MAX_TX_COMMENT_LEN);
+     }
 
     EnsureWalletIsUnlocked();
 
-    SendMoney(address.Get(), nAmount, fSubtractFeeFromAmount, wtx, strClamSpeech);
+    SendMoney(address.Get(), nAmount, fSubtractFeeFromAmount, wtx, clamspeech);
 
     return wtx.GetHash().GetHex();
 }

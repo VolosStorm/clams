@@ -115,17 +115,15 @@ double GetPoSKernelPS()
     CBlockIndex* pindex = pindexBestHeader;
     CBlockIndex* pindexPrevStake = NULL;
 
-    while (pindex && nStakesHandled < nPoSInterval)
+    while (pindex && nStakesHandled <= nPoSInterval)
     {
         if (pindex->IsProofOfStake())
         {
-            if (pindexPrevStake)
-            {
-                dStakeKernelsTriedAvg += GetDifficulty(pindexPrevStake) * 4294967296.0;
-                nStakesTime += pindexPrevStake->nTime - pindex->nTime;
-                nStakesHandled++;
-            }
+            if (nStakesHandled < nPoSInterval)
+                dStakeKernelsTriedAvg += GetDifficulty(pindex) * 0x100000000;
+            nStakesTime += pindexPrevStake ? (pindexPrevStake->nTime - pindex->nTime) : 0;
             pindexPrevStake = pindex;
+            nStakesHandled++;
         }
 
         pindex = pindex->pprev;
@@ -135,8 +133,9 @@ double GetPoSKernelPS()
 
     if (nStakesTime)
         result = dStakeKernelsTriedAvg / nStakesTime;
-    
-    result *= STAKE_TIMESTAMP_MASK + 1;
+
+    if (pindexBestHeader->nHeight > 203500)
+        result *= STAKE_TIMESTAMP_MASK + 1;
 
     return result;
 }
@@ -154,6 +153,11 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("version", blockindex->nVersion));
     result.push_back(Pair("versionHex", strprintf("%08x", blockindex->nVersion)));
     result.push_back(Pair("merkleroot", blockindex->hashMerkleRoot.GetHex()));
+    result.push_back(Pair("mint", ValueFromAmount(blockindex->nMint)));
+    result.push_back(Pair("moneysupply", ValueFromAmount(blockindex->nMoneySupply)));
+    result.push_back(Pair("digsupply", ValueFromAmount(blockindex->nDigsupply)));
+    result.push_back(Pair("stakesupply", ValueFromAmount(blockindex->nStakeSupply)));
+    result.push_back(Pair("activesupply", ValueFromAmount(blockindex->nDigsupply + blockindex->nStakeSupply)));
     result.push_back(Pair("time", (int64_t)blockindex->nTime));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
     result.push_back(Pair("nonce", (uint64_t)blockindex->nNonce));
@@ -169,10 +173,72 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 		
     result.push_back(Pair("flags", strprintf("%s", blockindex->IsProofOfStake()? "proof-of-stake" : "proof-of-work")));
     result.push_back(Pair("proofhash", blockindex->hashProof.GetHex()));
+    result.push_back(Pair("entropybit", (int)blockindex->GetStakeEntropyBit()));
     result.push_back(Pair("modifier", blockindex->nStakeModifier));
+
+    UniValue clamours(UniValue::VARR);
+    BOOST_FOREACH (const CClamour& clamour, blockindex->vClamour)
+    {
+        UniValue entry(UniValue::VOBJ);
+        entry.push_back(Pair("txid", clamour.txid.GetHex()));
+        entry.push_back(Pair("hash", clamour.strHash));
+        if (clamour.strURL.length())
+            entry.push_back(Pair("url", clamour.strURL));
+        clamours.push_back(entry);
+    }
+    if (clamours.size())
+        result.push_back(Pair("clamours", clamours));
 
     return result;
 }
+
+UniValue dumpbootstrap(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() < 2 || params.size() > 3)
+        throw runtime_error(
+            "dumpbootstrap <destination> <endblock> [startblock=0]\n"
+            "Creates a bootstrap format block dump of the blockchain in destination, which can be a directory or a path with filename, up to the given endblock number.\n"
+            "Optional <startblock> is the first block number to dump.");
+
+    string strDest = params[0].get_str();
+    int nEndBlock = params[1].get_int();
+    if (nEndBlock < 0 || nEndBlock > pindexBestHeader->nHeight)
+        throw runtime_error("End block number out of range.");
+    int nStartBlock = 0;
+    if (params.size() > 2)
+        nStartBlock = params[2].get_int();
+    if (nStartBlock < 0 || nStartBlock > nEndBlock)
+        throw runtime_error("Start block number out of range.");
+
+    boost::filesystem::path pathDest(strDest);
+    if (boost::filesystem::is_directory(pathDest))
+        pathDest /= "bootstrap.dat";
+
+    try {
+        FILE* filestr = fopen(pathDest.string().c_str(), "wb");
+        CAutoFile file(filestr, SER_DISK, CLIENT_VERSION);
+        if (file.IsNull())
+            throw JSONRPCError(RPC_MISC_ERROR, "Error: Could not open bootstrap file for writing.");
+
+        for (int nHeight = nStartBlock; nHeight <= nEndBlock; nHeight++)
+        {
+            CBlock block;
+            CBlockIndex* pblockindex = pindexBestHeader->GetAncestor(nHeight);
+            if(!pblockindex)
+                throw runtime_error("Error: Failed to find block index");
+            if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
+                throw runtime_error("Error: Failed to read block from disk");
+
+            unsigned int nSize = GetSerializeSize(file, block);
+            file << FLATDATA(Params().MessageStart()) << nSize << block;
+        }
+    } catch(const boost::filesystem::filesystem_error &e) {
+        throw JSONRPCError(RPC_MISC_ERROR, "Error: Bootstrap dump failed!");
+    }
+
+    return NullUniValue;
+}
+
 
 UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool txDetails = false)
 {

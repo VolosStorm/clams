@@ -278,7 +278,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("blockvalue",    (uint64_t)GetBlockSubsidy(pb, 0, consensusParams, 0)));
 
     obj.push_back(Pair("netmhashps",       GetPoWMHashPS()));
-    obj.push_back(Pair("netstakeweight",   GetPoSKernelPS()));
+    obj.push_back(Pair("netstakeweight",   GetPoSKernelPS()/COIN));
     obj.push_back(Pair("errors",           GetWarnings("statusbar")));
     obj.push_back(Pair("networkhashps",    getnetworkhashps(request)));
     obj.push_back(Pair("pooledtx",         (uint64_t)mempool.size()));
@@ -288,9 +288,9 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     if (pwalletMain)
     nWeight = pwalletMain->GetStakeWeight(); 
 #endif
-    weight.push_back(Pair("minimum",       (uint64_t)nWeight));
+    weight.push_back(Pair("minimum",       (uint64_t)nWeight/COIN));
     weight.push_back(Pair("maximum",       (uint64_t)0));
-    weight.push_back(Pair("combined",      (uint64_t)nWeight));
+    weight.push_back(Pair("combined",      (uint64_t)nWeight/COIN));
     obj.push_back(Pair("stakeweight",      weight));
 
     obj.push_back(Pair("chain",            Params().NetworkIDString()));
@@ -314,7 +314,7 @@ UniValue getstakinginfo(const JSONRPCRequest& request)
     }
 #endif
 
-    uint64_t nNetworkWeight = GetPoSKernelPS();
+    uint64_t nNetworkWeight = GetPoSKernelPS()/COIN;
     bool staking = nLastCoinStakeSearchInterval && nWeight;
     const Consensus::Params& consensusParams = Params().GetConsensus();
     int64_t nTargetSpacing = consensusParams.nTargetStakeSpacing;
@@ -333,7 +333,7 @@ UniValue getstakinginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(pindexBestHeader, true))));
     obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
 
-    obj.push_back(Pair("weight", (uint64_t)nWeight));
+    obj.push_back(Pair("weight", (uint64_t)nWeight/COIN));
     obj.push_back(Pair("netstakeweight", (uint64_t)nNetworkWeight));
 
     obj.push_back(Pair("expectedtime", nExpectedTime));

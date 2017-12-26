@@ -55,9 +55,14 @@ UniValue getinfo(const JSONRPCRequest& request)
             "  \"protocolversion\": xxxxx,   (numeric) the protocol version\n"
             "  \"walletversion\": xxxxx,     (numeric) the wallet version\n"
             "  \"balance\": xxxxxxx,         (numeric) the total clam balance of the wallet\n"
+            "  \"mint\": xxxxxxx,            (numeric) the total amount of clams minted\n"
             "  \"stake\": xxxxxxx,           (numeric) the total clam stake balance of the wallet\n"
             "  \"blocks\": xxxxxx,           (numeric) the current number of blocks processed in the server\n"
             "  \"timeoffset\": xxxxx,        (numeric) the time offset\n"
+            "  \"moneysupply\": xxxxx,       (numeric) the total clam in existence\n"
+            "  \"digsupply\": xxxxx,         (numeric) the total clam that have been dug from the initial distrubution\n"
+            "  \"stakesupply\": xxxxx,       (numeric) the total clam that have been staked on the network\n"
+            "  \"activesupply\": xxxxx,      (numeric) the total active supply (not including undug clam)\n"
             "  \"connections\": xxxxx,       (numeric) the number of connections\n"
             "  \"proxy\": \"host:port\",     (string, optional) the proxy used by the server\n"
             "  \"difficulty\": xxxxxx,       (numeric) the current difficulty\n"
@@ -96,6 +101,10 @@ UniValue getinfo(const JSONRPCRequest& request)
 #endif
     obj.push_back(Pair("blocks",        (int)chainActive.Height()));
     obj.push_back(Pair("timeoffset",    GetTimeOffset()));
+    obj.push_back(Pair("moneysupply",   ValueFromAmount(pindexBestHeader->nMoneySupply)));
+    obj.push_back(Pair("digsupply",     ValueFromAmount(pindexBestHeader->nDigsupply)));
+    obj.push_back(Pair("stakesupply",   ValueFromAmount(pindexBestHeader->nStakeSupply)));
+    obj.push_back(Pair("activesupply",  ValueFromAmount(pindexBestHeader->nDigsupply + pindexBestHeader->nStakeSupply)));
     if(g_connman)
         obj.push_back(Pair("connections",   (int)g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL)));
     obj.push_back(Pair("proxy",         (proxy.IsValid() ? proxy.proxy.ToStringIPPort() : string())));
@@ -103,7 +112,6 @@ UniValue getinfo(const JSONRPCRequest& request)
     diff.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBestHeader, true))));
     obj.push_back(Pair("difficulty",    diff));
     obj.push_back(Pair("testnet",       Params().NetworkIDString() == CBaseChainParams::TESTNET));
-    obj.push_back(Pair("moneysupply",       pindexBestHeader->nMoneySupply / COIN));
 #ifdef ENABLE_WALLET
     if (pwalletMain) {
         obj.push_back(Pair("keypoololdest", pwalletMain->GetOldestKeyPoolTime()));
