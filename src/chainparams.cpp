@@ -233,8 +233,6 @@ public:
         genesis = CreateGenesisBlock(1397512438, 15165, 0x1f00ffff, 1);
         consensus.hashGenesisBlock = genesis.GetHash();
 
-        LogPrintf("111 %s %s 111", consensus.hashGenesisBlock.ToString(), uint256S("0x00001924120e93f445dd4adb9d90e0020350b8c6c2b08e1a4950372a37f8bcc8").ToString());
-        LogPrintf("222 %s 222", genesis.hashMerkleRoot.ToString());
         assert(consensus.hashGenesisBlock == uint256S("0x00001924120e93f445dd4adb9d90e0020350b8c6c2b08e1a4950372a37f8bcc8"));
         assert(genesis.hashMerkleRoot == uint256S("0xef10b32afd53e4a6ebb8bdb0486c6acbe9b43afe3dfa538e913b89bb1319ff96"));
 
@@ -315,9 +313,6 @@ public:
 
         genesis = CreateGenesisBlock(1397512438, 15165, 0x1f00ffff, 1);
         consensus.hashGenesisBlock = genesis.GetHash();
-
-        LogPrintf("333 %s %s 333", consensus.hashGenesisBlock.ToString(), uint256S("0x00001924120e93f445dd4adb9d90e0020350b8c6c2b08e1a4950372a37f8bcc8").ToString());
-        LogPrintf("444 %s 444", genesis.hashMerkleRoot.ToString());
 
         assert(consensus.hashGenesisBlock == uint256S("0x00001924120e93f445dd4adb9d90e0020350b8c6c2b08e1a4950372a37f8bcc8"));
         assert(genesis.hashMerkleRoot == uint256S("0xef10b32afd53e4a6ebb8bdb0486c6acbe9b43afe3dfa538e913b89bb1319ff96"));
