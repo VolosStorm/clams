@@ -200,10 +200,10 @@ void SendCoinsDialog::on_sendButton_clicked()
     if(!model || !model->getOptionsModel())
         return;
 
+    QString txcomment = ui->editTxComment->text();
+
     QList<SendCoinsRecipient> recipients;
     bool valid = true;
-
-    QString clamspeech = ui->clamQuotes->currentText();
 
     for(int i = 0; i < ui->entries->count(); ++i)
     {
@@ -225,41 +225,6 @@ void SendCoinsDialog::on_sendButton_clicked()
     {
         return;
     }
-
-    fNewRecipientAllowed = false;
-    WalletModel::UnlockContext ctx(model->requestUnlock());
-    if(!ctx.isValid())
-    {
-        // Unlock wallet was cancelled
-        fNewRecipientAllowed = true;
-        return;
-    }
-
-    // prepare transaction for getting txFee earlier
-    WalletModelTransaction currentTransaction(recipients);
-    WalletModel::SendCoinsReturn prepareStatus;
-
-    // Always use a CCoinControl instance, use the CoinControlDialog instance if CoinControl has been enabled
-    CCoinControl ctrl;
-    if (model->getOptionsModel()->getCoinControlFeatures())
-        ctrl = *CoinControlDialog::coinControl;
-    if (ui->radioSmartFee->isChecked())
-        ctrl.nConfirmTarget = ui->sliderSmartFee->maximum() - ui->sliderSmartFee->value() + 2;
-    else
-        ctrl.nConfirmTarget = 0;
-
-    prepareStatus = model->prepareTransaction(clamspeech, currentTransaction, &ctrl);
-
-    // process prepareStatus and on error generate message shown to user
-    processSendCoinsReturn(prepareStatus,
-        BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), currentTransaction.getTransactionFee()));
-
-    if(prepareStatus.status != WalletModel::OK) {
-        fNewRecipientAllowed = true;
-        return;
-    }
-
-    CAmount txFee = currentTransaction.getTransactionFee();
 
     // Format confirmation message
     QStringList formatted;
@@ -298,6 +263,35 @@ void SendCoinsDialog::on_sendButton_clicked()
         formatted.append(recipientElement);
     }
 
+    fNewRecipientAllowed = false;
+
+
+    WalletModel::UnlockContext ctx(model->requestUnlock());
+    if(!ctx.isValid())
+    {
+        // Unlock wallet was cancelled
+        fNewRecipientAllowed = true;
+        return;
+    }
+
+    // prepare transaction for getting txFee earlier
+    WalletModelTransaction currentTransaction(recipients);
+    WalletModel::SendCoinsReturn prepareStatus;
+    if (model->getOptionsModel()->getCoinControlFeatures()) // coin control enabled
+        prepareStatus = model->prepareTransaction(txcomment, currentTransaction, CoinControlDialog::coinControl);
+    else
+        prepareStatus = model->prepareTransaction(txcomment, currentTransaction);
+
+    // process prepareStatus and on error generate message shown to user
+    processSendCoinsReturn(prepareStatus,
+        BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), currentTransaction.getTransactionFee()));
+
+    if(prepareStatus.status != WalletModel::OK) {
+        fNewRecipientAllowed = true;
+        return;
+    }
+
+    CAmount txFee = currentTransaction.getTransactionFee();
     QString questionString = tr("Are you sure you want to send?");
     questionString.append("<br /><br />%1");
 
@@ -339,7 +333,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     }
 
     // now send the prepared transaction
-    WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction);
+    WalletModel::SendCoinsReturn sendStatus = model->sendCoins(txcomment, currentTransaction);
     // process sendStatus and on error generate message shown to user
     processSendCoinsReturn(sendStatus);
 
@@ -352,28 +346,9 @@ void SendCoinsDialog::on_sendButton_clicked()
     fNewRecipientAllowed = true;
 }
 
-void SendCoinsDialog::clamSpeechIndexChanged(const int &index)
-{
-    if ( index >= clamSpeechQuoteCount )
-    {
-        qDebug() << "New CLAMSpeech quote added at" << index;
-
-        // Add quote
-        quoteList.push_back( ui->clamQuotes->itemText(index).toStdString() );
-    }
-
-    clamSpeechQuoteCount = ui->clamQuotes->count();
-    nClamSpeechIndex = index;
-
-    qDebug() << "saving nClamSpeechIndex =" << index;
-    // Save to QSettings
-    QSettings settings;
-    settings.setValue( "nClamSpeechIndex", nClamSpeechIndex );
-}
-
 void SendCoinsDialog::clear()
 {
-    ui->clamQuotes->clear();
+    ui->editTxComment->clear();
     // Remove entries until only one left
     while(ui->entries->count())
     {
@@ -437,6 +412,7 @@ void SendCoinsDialog::removeEntry(SendCoinsEntry* entry)
 
 QWidget *SendCoinsDialog::setupTabChain(QWidget *prev)
 {
+    QWidget::setTabOrder(prev,ui->editTxComment);
     for(int i = 0; i < ui->entries->count(); ++i)
     {
         SendCoinsEntry *entry = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(i)->widget());
@@ -519,53 +495,6 @@ void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& unconfir
         ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balance));
     }
 }
-
-void SendCoinsDialog::loadClamSpeech()
-{
-    if ( !fUseClamSpeech )
-        return;
-
-    // disconnect widget change signal to stop clashing
-    disconnect( ui->clamQuotes, SIGNAL(currentIndexChanged(int)), this, SLOT(clamSpeechIndexChanged(int)) );
-
-    // Load quotes from clamspeech.h
-    ui->clamQuotes->clear();
-    for ( ulong i = 0; i < clamSpeech.size(); i++ )
-        ui->clamQuotes->addItem( QString::fromStdString( clamSpeech.at(i) ) );
-
-    // Hold the index count to detect appending new quotes
-    clamSpeechQuoteCount = ui->clamQuotes->count();
-
-    if ( !clamSpeechQuoteCount )
-        return;
-
-    // Select a random index based on current time, if random option set
-    if ( fUseClamSpeechRandom && clamSpeechQuoteCount )
-    {
-        qDebug() << "Random quote selected";
-
-        qsrand( (QDateTime().toTime_t() * 1000) );
-        ui->clamQuotes->setCurrentIndex( qrand() % ui->clamQuotes->count() );
-    }
-    else // Fixed chosen quote
-    {
-        // Support out of bounds removal with already set index
-        if ( nClamSpeechIndex >= clamSpeechQuoteCount )
-            nClamSpeechIndex = clamSpeechQuoteCount -1;
-
-        ui->clamQuotes->setCurrentIndex( nClamSpeechIndex );
-    }
-
-    // Print debug info
-    qDebug() << clamSpeechQuoteCount << "CLAMSpeech quotes parsed.";
-    qDebug() << "fClamSpeechRandom =" << fUseClamSpeechRandom;
-    qDebug() << "nClamSpeechIndex =" << nClamSpeechIndex;
-    qDebug() << "CLAMSpeech selected index" << ui->clamQuotes->currentIndex();
-
-    // setup clamspeech widget change signal
-    connect( ui->clamQuotes, SIGNAL(currentIndexChanged(int)), this, SLOT(clamSpeechIndexChanged(int)) );
-}
-
 
 void SendCoinsDialog::updateDisplayUnit()
 {

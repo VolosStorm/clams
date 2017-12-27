@@ -77,32 +77,29 @@ public:
         SendToOther,
         RecvWithAddress,
         RecvFromOther,
-        SendToSelf,
-        Notary,
-        NotarySendToAddress,
-        NotarySendToOther,
-        CreateClamour
+        SendToSelf
     };
 
     /** Number of confirmation recommended for accepting a transaction */
     static const int RecommendedNumConfirmations = 6;
 
     TransactionRecord():
-            hash(), time(0), type(Other), address(""), debit(0), credit(0), clamspeech(""), idx(0)
+            hash(), time(0), type(Other), address(""), debit(0), credit(0), txcomment(""), idx(0)
     {
     }
 
-    TransactionRecord(uint256 _hash, qint64 _time):
-            hash(_hash), time(_time), type(Other), address(""), debit(0),
-            credit(0), clamspeech(""), idx(0)
+    TransactionRecord(uint256 hash, qint64 time):
+            hash(hash), time(time), type(Other), address(""), debit(0),
+            credit(0), txcomment(""), idx(0)
     {
     }
 
-    TransactionRecord(uint256 _hash, qint64 _time,
-                Type _type, const std::string &_address,
-                const CAmount& _debit, const CAmount& _credit):
-            hash(_hash), time(_time), type(_type), address(_address), debit(_debit), credit(_credit),
-            clamspeech(clamspeech), idx(0)
+    TransactionRecord(uint256 hash, qint64 time,
+                Type type, const std::string &address,
+                const CAmount& debit, const CAmount& credit,
+                const std::string &txcomment):
+            hash(hash), time(time), type(type), address(address), debit(debit), credit(credit),
+            txcomment(txcomment), idx(0)
     {
     }
 
@@ -119,7 +116,7 @@ public:
     std::string address;
     CAmount debit;
     CAmount credit;
-    std::string clamspeech;
+    std::string txcomment;
     /**@}*/
 
     /** Subtransaction index, for sort key */

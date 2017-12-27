@@ -35,6 +35,7 @@ static int column_alignments[] = {
         Qt::AlignLeft|Qt::AlignVCenter, /* date */
         Qt::AlignLeft|Qt::AlignVCenter, /* type */
         Qt::AlignLeft|Qt::AlignVCenter, /* address */
+        Qt::AlignLeft|Qt::AlignVCenter, /* tx-comment */
         Qt::AlignRight|Qt::AlignVCenter /* amount */
     };
 
@@ -243,7 +244,7 @@ TransactionTableModel::TransactionTableModel(const PlatformStyle *_platformStyle
         fProcessingQueuedTransactions(false),
         platformStyle(_platformStyle)
 {
-    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Label") << tr("ClamSpeech") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
+    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Address") << tr("Transaction Comment") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
     priv->refreshWallet();
 
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
@@ -426,24 +427,16 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     }
 }
 
-QString TransactionTableModel::formatClamSpeech(const TransactionRecord *wtx, bool tooltip) const
+QString TransactionTableModel::formatTxComment(const TransactionRecord *wtx, bool tooltip) const
 {
     switch(wtx->type)
     {
     case TransactionRecord::RecvFromOther:
-        return QString::fromStdString(wtx->clamspeech);
     case TransactionRecord::RecvWithAddress:
-        return QString::fromStdString(wtx->clamspeech);
     case TransactionRecord::SendToAddress:
-        return QString::fromStdString(wtx->clamspeech);
     case TransactionRecord::SendToOther:
-        return QString::fromStdString(wtx->clamspeech);
     case TransactionRecord::SendToSelf:
-    case TransactionRecord::Notary:
-    case TransactionRecord::NotarySendToAddress:
-    case TransactionRecord::NotarySendToOther:
-    case TransactionRecord::CreateClamour:
-        return QString::fromStdString(wtx->clamspeech);
+        return QString::fromStdString(wtx->txcomment);
     case TransactionRecord::Generated:
          return "";
       default:
@@ -539,6 +532,8 @@ QString TransactionTableModel::formatTooltip(const TransactionRecord *rec) const
        rec->type==TransactionRecord::SendToAddress || rec->type==TransactionRecord::RecvWithAddress)
     {
         tooltip += QString(" ") + formatTxToAddress(rec, true);
+        if (rec->txcomment.length() > 0)
+            tooltip += QString("\n") + formatTxComment(rec, true);
     }
     return tooltip;
 }
@@ -576,10 +571,10 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxType(rec);
         case ToAddress:
             return formatTxToAddress(rec, false);
+        case TxComment:
+            return formatTxComment(rec, false);
         case Amount:
             return formatTxAmount(rec, true, BitcoinUnits::separatorAlways);
-        case ClamSpeech:
-            return formatCLAMSpeech(rec, false);
         }
         break;
     case Qt::EditRole:
@@ -596,10 +591,10 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return (rec->involvesWatchAddress ? 1 : 0);
         case ToAddress:
             return formatTxToAddress(rec, true);
+        case TxComment:
+            return formatTxComment(rec, false);
         case Amount:
             return qint64(rec->credit + rec->debit);
-        case ClamSpeech:
-             return formatCLAMSpeech(rec, false);
         }
         break;
     case Qt::ToolTipRole:
@@ -711,11 +706,11 @@ QVariant TransactionTableModel::headerData(int section, Qt::Orientation orientat
             case Watchonly:
                 return tr("Whether or not a watch-only address is involved in this transaction.");
             case ToAddress:
-                return tr("User-defined intent/purpose of the transaction.");
+                return tr("Destination address of transaction.");
+            case TxComment:
+                return tr("Transaction comment.");
             case Amount:
                 return tr("Amount removed from or added to balance.");
-            case CLAMSpeech:
-                return tr("Transaction comment.");
             }
         }
     }

@@ -40,13 +40,12 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
     uint256 hash = wtx.GetHash();
-    std::map<std::string, std::string> mapValue = wtx.mapValue;
-
-    std::string clamspeech = "";
-    if (!wtx.strClamSpeech.empty())
+    std::string txcomment = "";
+    if (!wtx.strTxComment.empty())
     {
-        clamspeech = wtx.strClamSpeech;
+        txcomment = wtx.strTxComment;
     }
+    std::map<std::string, std::string> mapValue = wtx.mapValue;
 
     if (nNet > 0 || wtx.IsCoinBase() || wtx.IsCoinStake())
     {
@@ -61,7 +60,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             {
                 TransactionRecord sub(hash, nTime);
                 CTxDestination address;
-                sub.clamspeech = clamspeech;
                 if(wtx.IsCoinStake()) // Combine into single output for coinstake
                 {
                     sub.idx = 1; // vout index
@@ -72,6 +70,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                     sub.idx = i; // vout index
                     sub.credit = txout.nValue;
                 }
+				sub.txcomment = txcomment;
                 sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address))
                 {
@@ -122,14 +121,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             // Payment to self
             CAmount nChange = wtx.GetChange();
 
-            TransactionRecord sub(hash, nTime, TransactionRecord::SendToSelf, "",
-                             -(nDebit - nChange), nCredit - nChange, clamspeech);
-            if (clamspeech.length() == 71 && clamspeech.compare(0, 7, "notary ") == 0) {
-                sub.type = TransactionRecord::Notary;
-            } else if (clamspeech.length() >= 79 && clamspeech.compare(0, 15, "create clamour ") == 0) {
-                sub.type = TransactionRecord::CreateClamour;
-            }
-            parts.append(sub);
+            parts.append(TransactionRecord(hash, nTime, TransactionRecord::SendToSelf, "",
+                            -(nDebit - nChange), nCredit - nChange, txcomment));
             parts.last().involvesWatchAddress = involvesWatchAddress;   // maybe pass to TransactionRecord as constructor argument
         }
         else if (fAllFromMe)
@@ -143,8 +136,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             {
                 const CTxOut& txout = wtx.tx->vout[nOut];
                 TransactionRecord sub(hash, nTime);
-                sub.idx = nOut;
-                sub.clamspeech = clamspeech;
+                sub.idx = parts.size();
+                sub.txcomment = txcomment;
                 sub.involvesWatchAddress = involvesWatchAddress;
 
                 if(wallet->IsMine(txout))
@@ -160,16 +153,12 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                     // Sent to Bitcoin Address
                     sub.type = TransactionRecord::SendToAddress;
                     sub.address = CBitcoinAddress(address).ToString();
-                    if (clamspeech.length() == 71 && clamspeech.compare(0, 7, "notary ") == 0)
-                        sub.type = TransactionRecord::NotarySendToAddress;
                 }
                 else
                 {
                     // Sent to IP, or other non-address transaction like OP_EVAL
                     sub.type = TransactionRecord::SendToOther;
                     sub.address = mapValue["to"];
-                    if (clamspeech.length() == 71 && clamspeech.compare(0, 7, "notary ") == 0)
-                        sub.type = TransactionRecord::NotarySendToOther;
                 }
 
                 CAmount nValue = txout.nValue;
@@ -189,7 +178,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             //
             // Mixed debit transaction, can't break down payees
             //
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
+            parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0, txcomment));
             parts.last().involvesWatchAddress = involvesWatchAddress;
         }
     }

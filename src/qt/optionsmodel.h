@@ -47,9 +47,6 @@ public:
         SpendZeroConfChange,    // bool
         Listen,                 // bool
 		ReserveBalance,         // CAmount
-        UseClamSpeech,          // bool
-        UseClamSpeechRandom,    // bool
-        ClamSpeechIndex,        // int
         OptionIDRowCount,
     };
 
