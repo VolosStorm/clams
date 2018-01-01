@@ -605,6 +605,49 @@ void WalletModel::UnlockContext::CopyFrom(const UnlockContext& rhs)
     rhs.relock = false;
 }
 
+void WalletModel::searchNotaryTx(uint256 hash)
+{
+    std::vector<std::pair<std::string, int> > txResults;
+    wallet->SearchNotaryTransactions(hash, txResults);
+    emit notarySearchComplete(txResults);
+}
+
+void WalletModel::sendNotaryTx(std::string hash)
+{
+    CWalletTx wtx;
+    std::string prefix = "notary";
+    std::string txError = wallet->SendCLAMSpeech(wtx, hash, prefix);
+    emit notaryTxSent(wtx.GetHash().GetHex(), txError);
+}
+
+void WalletModel::searchClamours(std::string pid)
+{
+    CClamour *pResult(wallet->GetClamour(pid));
+    emit clamourSearchComplete(pResult);
+}
+
+void WalletModel::sendClamourTx(std::string hash)
+{
+    CWalletTx wtx;
+    std::string prefix = "clamour";
+    std::string txError = wallet->SendCLAMSpeech(wtx, hash, prefix);
+    emit clamourTxSent(wtx.GetHash().GetHex(), txError);
+}
+
+void WalletModel::getPetitionSupport(int nWindow)
+{
+    std::map<std::string, int> mapSupport;
+    int nBlock = nBestHeight;
+    for (int i = nBlock + 1 - nWindow; i <= nBlock; i++) {
+        CBlockIndex* pblockindex = FindBlockByHeight(i);
+        std::set<string> sup = pblockindex->GetSupport();
+        BOOST_FOREACH(const string &s, sup) {
+            mapSupport[s]++;
+        }
+    }
+    emit petitionSupportRetrieved(mapSupport);
+}
+
 bool WalletModel::getPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const
 {
     return wallet->GetPubKey(address, vchPubKeyOut);

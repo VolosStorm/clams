@@ -59,6 +59,7 @@ struct Params {
     uint32_t posLimit;
     bool fPowAllowMinDifficultyBlocks;
     bool fPowNoRetargeting;
+    bool fPoSNoRetargeting;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 
@@ -67,7 +68,7 @@ struct Params {
     unsigned int nStakeMinAge; 
     unsigned int nStakeMaxAge; 
     unsigned int nModifierInterval;
-    int64_t nTargetTimespan; 
+    int64_t nTargetTimespan;
 
     int DISTRIBUTION_END;
     int LAST_POW_BLOCK;

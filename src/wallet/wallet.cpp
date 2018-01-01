@@ -2830,16 +2830,6 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 if (coinControl && coinControl->nConfirmTarget > 0)
                     currentConfirmationTarget = coinControl->nConfirmTarget;
 
-                // Can we complete this as a free transaction?
-                if (fSendFreeTransactions && nBytes <= MAX_FREE_TRANSACTION_CREATE_SIZE)
-                {
-                    // Not enough fee: enough priority?
-                    double dPriorityNeeded = mempool.estimateSmartPriority(currentConfirmationTarget);
-                    // Require at least hard-coded AllowFree.
-                    if (dPriority >= dPriorityNeeded && AllowFree(dPriority))
-                        break;
-                }
-
                 CAmount nFeeNeeded = GetMinimumFee(nBytes, currentConfirmationTarget, mempool);
                 if (coinControl && nFeeNeeded > 0 && coinControl->nMinimumTotalFee > nFeeNeeded) {
                     nFeeNeeded = coinControl->nMinimumTotalFee;
@@ -3084,6 +3074,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         bool fKernelFound = false;
         for (unsigned int n=0; n<min(nSearchInterval,(int64_t)nMaxStakeSearchInterval) && !fKernelFound && pindexPrev == pindexBestHeader; n++)
         {
+            LogPrintf("CreateCoinStake : check kernel pprev=%s blockFrom=%s txTime=%d\n", pindexPrev->ToString(), blockFrom->ToString(), txNew.nTime);
             boost::this_thread::interruption_point();
             // Search backward in time from the given txNew timestamp
             // Search nSearchInterval seconds back up to nMaxStakeSearchInterval
@@ -3091,7 +3082,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             if (CheckStakeKernelHashV2(pindexPrev, nBits, blockFrom->nTime, *pcoin.first, prevoutStake, txNew.nTime - n, hashProofOfStake, targetProofOfStake, false))
             {
                 // Found a kernel
-                LogPrint("coinstake", "CreateCoinStake : kernel found\n");
+                LogPrintf("CreateCoinStake : kernel found\n");
                 vector<valtype> vSolutions;
                 txnouttype whichType;
                 CScript scriptPubKeyOut;
@@ -3329,6 +3320,8 @@ CAmount CWallet::GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarge
     // But always obey the maximum
     if (nFeeNeeded > maxTxFee)
         nFeeNeeded = maxTxFee;
+    if(nFeeNeeded < 10000)
+        nFeeNeeded = CAmount(10000);
     return nFeeNeeded;
 }
 

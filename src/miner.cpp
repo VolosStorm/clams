@@ -148,6 +148,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Add dummy coinstake tx as second transaction
     if(fProofOfStake)
         pblock->vtx.emplace_back();
+
+
     pblocktemplate->vTxFees.push_back(-1); // updated at end
     pblocktemplate->vTxSigOpsCost.push_back(-1); // updated at end
 
@@ -195,6 +197,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout.resize(1);
     if (fProofOfStake)
     {
+
         // Make the coinbase tx empty in case of proof of stake
         coinbaseTx.vout[0].SetEmpty();
     }
@@ -203,7 +206,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
         coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(pindexPrev, 0, chainparams.GetConsensus(), nFees);
     }
-    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << COINBASE_FLAGS;
     originalRewardTx = coinbaseTx;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
 
@@ -829,10 +832,11 @@ void ThreadStakeMiner(CWallet *pwallet)
 
     CReserveKey reservekey(pwallet);
 
-    //bool regtestMode = Params().GetConsensus().fPoSNoRetargeting;
-    //if(regtestMode){
-    //    nMinerSleep = 30000; //limit regtest to 30s, otherwise it'll create 2 blocks per second
-    //}
+    bool fTryToSync = true;
+    bool regtestMode = Params().GetConsensus().fPoSNoRetargeting;
+    if(regtestMode){
+       nMinerSleep = 30000; //limit regtest to 30s, otherwise it'll create 2 blocks per second
+    }
 
     while (true)
     {
@@ -841,7 +845,7 @@ void ThreadStakeMiner(CWallet *pwallet)
             nLastCoinStakeSearchInterval = 0;
             MilliSleep(10000);
         }
-        /*
+        
         //don't disable PoS mining for no connections if in regtest mode
         if(!regtestMode && !GetBoolArg("-emergencystaking", false)) {
             while (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 || IsInitialBlockDownload()) {
@@ -858,7 +862,6 @@ void ThreadStakeMiner(CWallet *pwallet)
                 }
             }
         }
-        */
 
         //
         // Create new block
@@ -937,6 +940,7 @@ void ThreadStakeMiner(CWallet *pwallet)
                             validBlock=true;
                         }
                         if(validBlock) {
+                            LogPrintf("xploited how do you get in here!\n");
                             CheckStake(pblockfilled, *pwallet);
                             // Update the search time when new valid block is created, needed for status bar icon
                             nLastCoinStakeSearchTime = pblockfilled->GetBlockTime();

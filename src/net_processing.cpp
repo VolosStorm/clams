@@ -2245,14 +2245,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
     else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) // Ignore headers received while importing
     {
-        //bypass headers from older clients
-        if(pfrom->nVersion <= 70012)
-            return true; 
-
         std::vector<CBlockHeader> headers;
-
         // Bypass the normal CBlock deserialization, as we don't want to risk deserializing 2000 full blocks.
         unsigned int nCount = ReadCompactSize(vRecv);
+
         if (nCount > MAX_HEADERS_RESULTS) {
             LOCK(cs_main);
             Misbehaving(pfrom->GetId(), 20);
@@ -2303,9 +2299,14 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         uint256 hashLastBlock;
         for (const CBlockHeader& header : headers) {
             if (!hashLastBlock.IsNull() && header.hashPrevBlock != hashLastBlock) {
+                if(pfrom->nVersion <= 70012){ 
+                    LogPrintf("xploited header non-continue header seq  %s  %s", header.ToString(), hashLastBlock.ToString());
+                    return true;
+                }
                 Misbehaving(pfrom->GetId(), 20);
                 return error("non-continuous headers sequence");
             }
+            LogPrintf("xploited header lastProcessed=%s", header.ToString());
             hashLastBlock = header.GetHash();
         }
         }

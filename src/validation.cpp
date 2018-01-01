@@ -3178,7 +3178,6 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
 
     txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
 
-
     if (nSearchTime > nLastCoinStakeSearchTime)
     {
         int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > 203500 ? 1 : nSearchTime - nLastCoinStakeSearchTime;

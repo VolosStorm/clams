@@ -331,8 +331,8 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
 {
     const Consensus::Params& params = Params().GetConsensus();
     if (nTimeTx < txPrev.nTime) {  // Transaction timestamp violation
-        LogPrintf("[STAKE] fail: nTime violation\n");
-        return error("CheckStakeKernelHash() : nTime violation");
+        LogPrintf("[STAKE] fail: nTime violation %d %d\n", nTimeTx, txPrev.nTime);
+        return error("CheckStakeKernelHash() : nTime violation ");
     }
 
     if ((nTimeBlockFrom + params.nStakeMinAge) > nTimeTx) { // Min age requirement

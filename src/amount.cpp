@@ -33,7 +33,8 @@ CAmount CFeeRate::GetFee(size_t nBytes_) const
         if (nSatoshisPerK < 0)
             nFee = CAmount(-1);
     }
-
+    if (nFee < 10000)
+        nFee = CAmount(10000);
     return nFee;
 }
 
