@@ -2255,8 +2255,30 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return error("headers message size = %u", nCount);
         }
         headers.resize(nCount);
-        for (unsigned int n = 0; n < nCount; n++) {
-            vRecv >> headers[n];
+
+
+        if(pfrom->nVersion <= 70012){ 
+            for (unsigned int n = 0; n < nCount; n++) {
+                CBlockLegacy header;
+                vRecv >> header;
+
+                COutPoint prevoutStake;
+                if(chainActive.Tip()->nHeight > 10000)
+                    prevoutStake.n = 0;
+
+                headers[n].nVersion = header.nVersion;
+                headers[n].hashPrevBlock = header.hashPrevBlock;
+                headers[n].hashMerkleRoot = header.hashMerkleRoot;
+                headers[n].nTime = header.nTime;
+                headers[n].nBits = header.nBits;
+                headers[n].nNonce = header.nNonce;
+                headers[n].prevoutStake = prevoutStake;
+
+            }
+        } else { 
+            for (unsigned int n = 0; n < nCount; n++) {
+                vRecv >> headers[n];
+            }
         }
 
         if (nCount == 0) {
@@ -2299,14 +2321,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         uint256 hashLastBlock;
         for (const CBlockHeader& header : headers) {
             if (!hashLastBlock.IsNull() && header.hashPrevBlock != hashLastBlock) {
-                if(pfrom->nVersion <= 70012){ 
-                    LogPrintf("xploited header non-continue header seq  %s  %s", header.ToString(), hashLastBlock.ToString());
-                    return true;
-                }
                 Misbehaving(pfrom->GetId(), 20);
-                return error("non-continuous headers sequence");
+                return error("non-continuous headers sequence %s %s", header.ToString(), hashLastBlock.ToString());
             }
-            LogPrintf("xploited header lastProcessed=%s", header.ToString());
             hashLastBlock = header.GetHash();
         }
         }
