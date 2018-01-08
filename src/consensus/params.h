@@ -69,10 +69,10 @@ struct Params {
     unsigned int nStakeMaxAge; 
     unsigned int nModifierInterval;
     int64_t nTargetTimespan;
+    int nProtocolV2Height;
 
     int DISTRIBUTION_END;
     int LAST_POW_BLOCK;
-    int LAST_TESTNET_POW_BLOCK;
     int64_t COIN_YEAR_REWARD; 
     int LOTTERY_START;
     int LOTTERY_END;

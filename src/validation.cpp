@@ -3179,8 +3179,8 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
     txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
 
     if (nSearchTime > nLastCoinStakeSearchTime)
-    {
-        int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > 203500 ? 1 : nSearchTime - nLastCoinStakeSearchTime;
+    {        
+        int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height ? 1 : nSearchTime - nLastCoinStakeSearchTime;
         if (wallet.CreateCoinStake(wallet, pblock->nBits, nSearchInterval, nTotalFees, nTimeBlock, txCoinStake, key))
         {
             if (txCoinStake.nTime >= pindexBestHeader->GetMedianTimePast()+1)
@@ -3189,14 +3189,14 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
                 //    as it would be the same as the block timestamp
                 pblock->nTime = nTime = txCoinStake.nTime;
                 nTime = std::max(pindexBestHeader->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
-                nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1));
+                nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()));
                 
                 pblock->vtx[1] = MakeTransactionRef(std::move(txCoinStake));
                 pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
                 pblock->prevoutStake = pblock->vtx[1]->vin[0].prevout;
 
                 // Check timestamp against prev
-                if(pblock->GetBlockTime() <= pindexBestHeader->GetBlockTime() || FutureDrift(pblock->GetBlockTime(), chainActive.Height() + 1) < pindexBestHeader->GetBlockTime())
+                if(pblock->GetBlockTime() <= pindexBestHeader->GetBlockTime() || FutureDrift(pblock->GetBlockTime(), chainActive.Height() + 1, Params().GetConsensus()) < pindexBestHeader->GetBlockTime())
                 {
                     return false;
                 }
@@ -3295,55 +3295,66 @@ int generateMTRandom(unsigned int s, int range)
 
 CAmount GetPOWBlockSubsidy(CBlockIndex* pindex)
 {
-        CAmount nSubsidy = 2.15652173 * COIN;
-        if (pindex->nHeight < 4551  ) {
-          nSubsidy = 3284 * COIN;
-        } else if (pindex->nHeight < 9551) {
-            nSubsidy = 2.15652173 * COIN;
-       }
-       return nSubsidy;
+        //skip the initial distrubtion on testnet
+        if(Params().NetworkIDString() != "main") { 
+                return 5000 * COIN;
+        } else { 
+            CAmount nSubsidy = 2.15652173 * COIN;
+            if (pindex->nHeight < 4551  ) {
+              nSubsidy = 3284 * COIN;
+            } else if (pindex->nHeight < 9551) {
+                nSubsidy = 2.15652173 * COIN;
+           }
+           return nSubsidy;
+        }
+
 }
 
 CAmount GetBlockSubsidy(CBlockIndex* pindex, uint64_t nCoinAge, const Consensus::Params& consensusParams, int64_t nFees)
 {
-    if(pindex->nHeight + 1 < consensusParams.LOTTERY_START){
-            CAmount nSubsidy = nCoinAge * consensusParams.COIN_YEAR_REWARD * 33 / (365 * 33 + 8);
-            return nSubsidy + nFees;
-    } else if (pindex->nHeight + 1 > consensusParams.LOTTERY_END) {
+    //skip the lottery rewards on testnet
+    if(Params().NetworkIDString() != "main") { 
         CAmount nSubsidy = 1 * COIN;
         return nSubsidy + nFees;
-
-    } else {
-        const CAmount randSpan = 2147483647; //Big Number, its unclear but possable correlates to the amount of clams that have ever existed.
-        const CAmount maxReward = 1000 * COIN; //1000 CLAMS
-        const CAmount minReward = 10000000; //.1 CLAM
-        double multFactor = 3000; //Exponential Curve Factor
- 
-        //Randomize based on blockHash
-        uint256 hash = pindex->GetBlockHash();
-        std::string cseed_str = hash.ToString().substr(12,7);
-        const char* cseed = cseed_str.c_str();
-        long seed = hex2long(cseed);
-        int random = generateMTRandom(seed, randSpan);
- 
-        //Create our reward coEfficient
-        double randCoefficient = (double)random / (double)randSpan;
-        double nCoefficient = pow(randCoefficient, multFactor);
- 
-        CAmount nSubsidy = ceil(((maxReward - minReward) * nCoefficient) + minReward);
- 
-        //Sanity Checks, If they happen: "We're All Going To Die"
-        if(nSubsidy < minReward){
-            //If less than minReward, == 1 CLAM
-            nSubsidy = minReward;
-        } else if(nSubsidy > maxReward) {
-            //If more than maxReward, == 1 CLAM
-            nSubsidy = minReward;
+    } else { 
+        if(pindex->nHeight + 1 < consensusParams.LOTTERY_START){
+                CAmount nSubsidy = nCoinAge * consensusParams.COIN_YEAR_REWARD * 33 / (365 * 33 + 8);
+                return nSubsidy + nFees;
+        } else if (pindex->nHeight + 1 > consensusParams.LOTTERY_END) {
+            CAmount nSubsidy = 1 * COIN;
+            return nSubsidy + nFees;
         } else {
-            nSubsidy = ceil(nSubsidy);
+            const CAmount randSpan = 2147483647; //Big Number, its unclear but possable correlates to the amount of clams that have ever existed.
+            const CAmount maxReward = 1000 * COIN; //1000 CLAMS
+            const CAmount minReward = 10000000; //.1 CLAM
+            double multFactor = 3000; //Exponential Curve Factor
+     
+            //Randomize based on blockHash
+            uint256 hash = pindex->GetBlockHash();
+            std::string cseed_str = hash.ToString().substr(12,7);
+            const char* cseed = cseed_str.c_str();
+            long seed = hex2long(cseed);
+            int random = generateMTRandom(seed, randSpan);
+     
+            //Create our reward coEfficient
+            double randCoefficient = (double)random / (double)randSpan;
+            double nCoefficient = pow(randCoefficient, multFactor);
+     
+            CAmount nSubsidy = ceil(((maxReward - minReward) * nCoefficient) + minReward);
+     
+            //Sanity Checks, If they happen: "We're All Going To Die"
+            if(nSubsidy < minReward){
+                //If less than minReward, == 1 CLAM
+                nSubsidy = minReward;
+            } else if(nSubsidy > maxReward) {
+                //If more than maxReward, == 1 CLAM
+                nSubsidy = minReward;
+            } else {
+                nSubsidy = ceil(nSubsidy);
+            }
+            //Return the block reward plus fees.
+            return nSubsidy + nFees;
         }
-        //Return the block reward plus fees.
-        return nSubsidy + nFees;
     }   
 }
 
@@ -3359,7 +3370,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
-    if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1))
+    if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1, Params().GetConsensus()))
         return error("CheckBlock() : block timestamp too far in the future");
     // Check the merkle root.
     if (fCheckMerkleRoot) {
@@ -3527,7 +3538,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     if((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||
        (block.nVersion < 3 && nHeight >= consensusParams.BIP66Height) ||
        (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height) || 
-       (block.nVersion < 7 && nHeight > 203500)) 
+       (block.nVersion < 7 && nHeight > consensusParams.nProtocolV2Height)) 
             return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
                                  strprintf("rejected nVersion=0x%08x block", block.nVersion));
 
@@ -3746,9 +3757,9 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
     // Get block height
     int nHeight = pindex->nHeight;
 
-    //if (nHeight > 203500 && block.nVersion < 7)
+    //if (nHeight > consensusParams.nProtocolV2Height && block.nVersion < 7)
     //    return state.DoS(100, error("AcceptBlock() : reject too old nVersion = %d at height=%d", block.nVersion, nHeight));
-    //else if (nHeight < 203500 && block.nVersion > 6)
+    //else if (nHeight < consensusParams.nProtocolV2Height && block.nVersion > 6)
     //    return state.DoS(100, error("AcceptBlock() : reject too new nVersion = %d at height=%d", block.nVersion, nHeight));
 
     // Check for the last proof of work block
@@ -3756,7 +3767,7 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
         return state.DoS(100, error("AcceptBlock() : reject proof-of-work at height %d", nHeight));
 
     // Check timestamp against prev
-    if ( pindexPrev != NULL && (block.GetBlockTime() <= pindexPrev->GetPastTimeLimit() || FutureDrift(block.GetBlockTime(), nHeight) < pindexPrev->GetBlockTime()))
+    if ( pindexPrev != NULL && (block.GetBlockTime() <= pindexPrev->GetPastTimeLimit() || FutureDrift(block.GetBlockTime(), nHeight, Params().GetConsensus()) < pindexPrev->GetBlockTime()))
         return error("AcceptBlock() : block's timestamp is too early");
 
 

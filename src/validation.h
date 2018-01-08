@@ -222,11 +222,11 @@ static const unsigned int MAX_TX_COMMENT_LEN = 140; // 128 bytes + little extra
 
 inline int64_t FutureDrift(uint32_t nTime) { return nTime + 15; }
 
-inline int64_t PastDrift(int64_t nTime, int nHeight)   { return nHeight > 203500 ? nTime      : nTime - 10 * 60; }
+inline int64_t PastDrift(int64_t nTime, int nHeight, const Consensus::Params& params)   { return nHeight > params.nProtocolV2Height ? nTime : nTime - 10 * 60; }
 
 inline int64_t FutureDriftV1(int64_t nTime) { return nTime + 10 * 60; }
 inline int64_t FutureDriftV2(int64_t nTime) { return nTime + 15; }
-inline int64_t FutureDrift(int64_t nTime, int nHeight) { return nHeight > 203500 ? FutureDriftV2(nTime) : FutureDriftV1(nTime); }
+inline int64_t FutureDrift(int64_t nTime, int nHeight, const Consensus::Params& params) { return nHeight > params.nProtocolV2Height ? FutureDriftV2(nTime) : FutureDriftV1(nTime); }
 
 
 /** 
