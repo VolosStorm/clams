@@ -298,7 +298,3 @@ void OverviewPage::showOutOfSyncWarning(bool fShow)
     ui->labelTransactionsStatus->setVisible(fShow);
 }
 
-void OverviewPage::on_buttonAddToken_clicked()
-{
-    Q_EMIT addTokenClicked(true);
-}

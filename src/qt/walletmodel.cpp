@@ -189,14 +189,6 @@ void WalletModel::checkBalanceChanged()
     }
 }
 
-void WalletModel::checkTokenBalanceChanged()
-{
-    if(tokenItemModel)
-    {
-        tokenItemModel->checkTokenBalanceChanged();
-    }
-}
-
 void WalletModel::updateTransaction()
 {
     // Balance and number of transactions might have changed
@@ -333,7 +325,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(const QString &clam
     return SendCoinsReturn(OK);
 }
 
-WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &transaction)
+WalletModel::SendCoinsReturn WalletModel::sendCoins(const QString &clamspeech, WalletModelTransaction &transaction)
 {
     QByteArray transaction_array; /* store serialized transaction */
 
@@ -605,6 +597,7 @@ void WalletModel::UnlockContext::CopyFrom(const UnlockContext& rhs)
     rhs.relock = false;
 }
 
+/*
 void WalletModel::searchNotaryTx(uint256 hash)
 {
     std::vector<std::pair<std::string, int> > txResults;
@@ -647,6 +640,7 @@ void WalletModel::getPetitionSupport(int nWindow)
     }
     emit petitionSupportRetrieved(mapSupport);
 }
+*/
 
 bool WalletModel::getPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const
 {

@@ -2,13 +2,13 @@
 
 using namespace std;
 
-vector<string> clamSpeechList;
-vector<string> clamSpeech;
-vector<string> clamourClamSpeech;
-vector<string> quoteList;
-CWeightedSpeech weightedStakeSpeech;
+//vector<string> clamSpeechList;
+//vector<string> clamSpeech;
+//vector<string> clamourClamSpeech;
+//vector<string> quoteList;
+//CWeightedSpeech weightedStakeSpeech;
 
-void CSLoad() {
+void load() {
     const char *texts[] = {
         "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks. -Satoshi Nakamoto",
         "If you don’t believe me or don’t get it, I don’t have time to try to convince you, sorry. -Satoshi Nakamoto",
