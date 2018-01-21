@@ -29,6 +29,7 @@
 #include "rpc/register.h"
 #include "script/standard.h"
 #include "script/sigcache.h"
+#include "crypto/scrypt.h"
 #include "scheduler.h"
 #include "timedata.h"
 #include "txdb.h"
