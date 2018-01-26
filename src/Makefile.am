@@ -280,8 +280,14 @@ libbitcoin_consensus_a_SOURCES = \
   consensus/merkle.h \
   consensus/params.h \
   consensus/validation.h \
+  crypto/pbkdf2.cpp \
+  crypto/pbkdf2.h \
+  crypto/scrypt.cpp \
+  crypto/scrypt.h \
   hash.cpp \
   hash.h \
+  netaddress.h \
+  netaddress.cpp \
   prevector.h \
   primitives/block.cpp \
   primitives/block.h \
@@ -298,11 +304,17 @@ libbitcoin_consensus_a_SOURCES = \
   script/script_error.h \
   serialize.h \
   tinyformat.h \
+  timedata.h \
+  timedata.cpp \
+  ui_interface.h \
+  ui_interface.cpp \
   uint256.cpp \
   uint256.h \
   utilstrencodings.cpp \
   utilstrencodings.h \
-  version.h
+  version.h \
+  warnings.cpp \
+  warings.h
 
 # common: shared between bitcoind, and bitcoin-qt and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
