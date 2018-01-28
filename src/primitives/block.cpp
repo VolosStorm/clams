@@ -17,7 +17,9 @@ uint256 CBlockHeader::GetHash() const
         return Hash(BEGIN(nVersion), END(nNonce));
     }
     else{
-        return scrypt_blockhash(((const void*)&(nVersion))); 
+        uint256 thash;
+	    scrypt_1024_1_1_256(BEGIN(nVersion), BEGIN(thash));
+	    return thash;
     }
 }
 
