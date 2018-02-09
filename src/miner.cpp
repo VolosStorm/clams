@@ -206,7 +206,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
         coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(pindexPrev, 0, chainparams.GetConsensus(), nFees);
     }
-    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << COINBASE_FLAGS;
+    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     originalRewardTx = coinbaseTx;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
 
