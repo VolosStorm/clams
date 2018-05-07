@@ -409,8 +409,8 @@ public:
 
     std::string ToString() const
     {
-        return strprintf("CBlockIndex(nDataPos=%d, nUndoPos=%d, nHeight=%d, nTime=%d, nNonce=%d, nFlags=(%s)(%d)(%s), nStakeModifier=%016x, hashProof=%s, prevoutStake=(%s), merkle=%s, hashBlock=%s)",
-            nDataPos, nUndoPos, nHeight, nTime, nNonce,
+        return strprintf("CBlockIndex(nVersion=%d, nDataPos=%d, nUndoPos=%d, nHeight=%d, nTime=%d, nNonce=%d, nFlags=(%s)(%d)(%s), nStakeModifier=%016x, hashProof=%s, prevoutStake=(%s), merkle=%s, hashBlock=%s)",
+            nVersion, nDataPos, nUndoPos, nHeight, nTime, nNonce,
             GeneratedStakeModifier() ? "MOD" : "-", GetStakeEntropyBit(), IsProofOfStake()? "PoS" : "PoW",
             nStakeModifier,
             hashProof.ToString(),

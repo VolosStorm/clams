@@ -7,8 +7,14 @@
 
 #include "arith_uint256.h"
 #include "chain.h"
+
+#include "chainparams.h"
+#include "consensus/params.h"
+#include "consensus/consensus.h"
+
 #include "primitives/block.h"
 #include "uint256.h"
+#include "util.h"
 
 // ppcoin: find last block index up to pindex
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake)
@@ -33,7 +39,8 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus:
     // genesis block
     if (pindexLast == NULL)
         return GetLimit(params, fProofOfStake).GetCompact();
-    if (pindexLast->nHeight < params.DISTRIBUTION_END )
+
+    if (pindexLast->nHeight < params.DISTRIBUTION_END && Params().NetworkIDString() == "main")
         return GetNextTargetRequiredV1(pindexLast, params, fProofOfStake);
     else if (!(pindexLast->nHeight > 203500))
         return GetNextTargetRequiredV2(pindexLast, params, fProofOfStake);
@@ -74,9 +81,7 @@ unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consen
     if (bnNew <= 0 || bnNew > bnTargetLimit)
         bnNew = bnTargetLimit;
 
- 
     return bnNew.GetCompact();
- 
 }
  
 unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)

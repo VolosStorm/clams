@@ -940,7 +940,6 @@ void ThreadStakeMiner(CWallet *pwallet)
                             validBlock=true;
                         }
                         if(validBlock) {
-                            LogPrintf("xploited how do you get in here!\n");
                             CheckStake(pblockfilled, *pwallet);
                             // Update the search time when new valid block is created, needed for status bar icon
                             nLastCoinStakeSearchTime = pblockfilled->GetBlockTime();

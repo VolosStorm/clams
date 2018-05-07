@@ -47,6 +47,6 @@ int64_t GetWeight(const int64_t &nIntervalBeginning, const int64_t &nIntervalEnd
 // Wrapper around CheckStakeKernelHash()
 // Also checks existence of kernel input and min age
 // Convenient for searching a kernel
-bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& prevout, CCoinsViewCache& view, CBlockTreeDB& db);
+bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& prevout, CCoinsViewCache& view, CBlockTreeDB& db, unsigned int txTime);
 
 #endif // QUANTUM_POS_H

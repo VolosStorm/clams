@@ -1190,7 +1190,7 @@ bool GetTransaction(const uint256 &hash, CTransactionRef &txOut, const Consensus
 bool CheckHeaderPoW(const CBlockHeader& block, const Consensus::Params& consensusParams)
 {
     // Check for proof of work block header
-    return CheckProofOfWork(block.GetHash(), block.nBits, consensusParams);
+    return CheckProofOfWork(block.GetPoWHash(), block.nBits, consensusParams);
 }
 
 bool CheckHeaderPoS(const CBlockHeader& block, const Consensus::Params& consensusParams)
@@ -1203,7 +1203,7 @@ bool CheckHeaderPoS(const CBlockHeader& block, const Consensus::Params& consensu
 
     // Check the kernel hash
     CBlockIndex* pindexPrev = (*mi).second;
-    return CheckKernel(pindexPrev, block.nBits, block.prevoutStake, *pcoinsTip, *pblocktree);
+    return CheckKernel(pindexPrev, block.nBits, block.prevoutStake, *pcoinsTip, *pblocktree, block.nTime);
 }
 
 bool CheckHeaderProof(const CBlockHeader& block, const Consensus::Params& consensusParams){
@@ -3373,6 +3373,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
     if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1, Params().GetConsensus()))
         return error("CheckBlock() : block timestamp too far in the future");
+
     // Check the merkle root.
     if (fCheckMerkleRoot) {
         bool mutated;
@@ -3414,6 +3415,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         if(block.vtx[1]->vin.empty() || block.prevoutStake != block.vtx[1]->vin[0].prevout){
             return state.DoS(100, false, REJECT_INVALID, "bad-cs-invalid", false, "prevoutStake in block header does not match coinstake in block body");
         }
+
         //the rest of the transactions must not be coinstake
         for (unsigned int i = 2; i < block.vtx.size(); i++)
             if (block.vtx[i]->IsCoinStake())
@@ -3421,14 +3423,16 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     }
 
     // Check proof-of-stake block signature
-    if (fCheckSig && !CheckBlockSignature(block))
+    if (fCheckSig && !CheckBlockSignature(block)) {
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-signature", false, "bad proof-of-stake block signature");
+    }
 
     // Check transactions
     for (const auto& tx : block.vtx)
         if (!CheckTransaction(*tx, state, false))
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
+
 
     unsigned int nSigOps = 0;
     for (const auto& tx : block.vtx)
@@ -3523,7 +3527,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     const int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
     // Check proof of work
    
-    if (block.nBits != GetNextWorkRequired(pindexPrev, consensusParams,block.IsProofOfStake()))
+    if (block.nBits != GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()))
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect difficulty value");
 
     // Check timestamp against prev
@@ -3649,7 +3653,7 @@ static bool UpdateHashProof(const CBlock& block, CValidationState& state, const 
     // PoW is checked in CheckBlock()
     if (block.IsProofOfWork())
     {
-        hashProof = block.GetHash();
+        hashProof = block.GetPoWHash();
     }
     
     // Record proof hash value

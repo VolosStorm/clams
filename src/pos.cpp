@@ -467,7 +467,7 @@ bool CheckCoinStakeTimestamp(int nHeight, int64_t nTimeBlock, int64_t nTimeTx)
         return (nTimeBlock == nTimeTx);
 }
 
-bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& prevout, CCoinsViewCache& view, CBlockTreeDB& db)
+bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& prevout, CCoinsViewCache& view, CBlockTreeDB& db, unsigned int txTime)
 {
     uint256 hashProofOfStake, targetProofOfStake;
     const Consensus::Params& params = Params().GetConsensus();
@@ -505,7 +505,7 @@ bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& p
     const CTransaction& txPrev = *txPrevRef;
 
     return CheckStakeKernelHash(pindexPrev, nBits, block, nTxOffset, txPrev, prevout,
-                                txPrev.nTime, hashProofOfStake, targetProofOfStake, false, params);
+                                txTime, hashProofOfStake, targetProofOfStake, false, params);
 }
 
 

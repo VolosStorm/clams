@@ -126,13 +126,12 @@ std::string CTransaction::ToString() const
 {
     std::string str;
     str += IsCoinBase()? "Coinbase" : (IsCoinStake()? "Coinstake" : "CTransaction");
-    str += strprintf("(hash=%s, nTime=%d, ver=%d, vin.size=%u, vout.size=%u, nTime= %u nLockTime=%u, strCLAMSpeech=%s)\n",
+    str += strprintf("(hash=%s, nTime=%d, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%u, strCLAMSpeech=%s)\n",
         GetHash().ToString().substr(0,10),
         nTime, 
         nVersion,
         vin.size(),
         vout.size(),
-        nTime, 
         nLockTime,
         strClamSpeech.substr(0,30).c_str());
     for (unsigned int i = 0; i < vin.size(); i++)
