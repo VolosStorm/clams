@@ -3141,17 +3141,8 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 bool CheckFirstCoinstakeOutput(const CBlock& block)
 {
     // Coinbase output should be empty if proof-of-stake block
-    int commitpos = GetWitnessCommitmentIndex(block);
-    if(commitpos < 0)
-    {
-        if (block.vtx[0]->vout.size() != 1 || !block.vtx[0]->vout[0].IsEmpty())
+    if (block.vtx[0]->vout.size() != 1 || !block.vtx[0]->vout[0].IsEmpty())
             return false;
-    }
-    else
-    {
-        if (block.vtx[0]->vout.size() != 2 || !block.vtx[0]->vout[0].IsEmpty() || block.vtx[0]->vout[1].nValue)
-            return false;
-    }
 
     return true;
 }
@@ -3474,7 +3465,10 @@ static int GetWitnessCommitmentIndex(const CBlock& block)
 {
     int commitpos = -1;
     for (size_t o = 0; o < block.vtx[0]->vout.size(); o++) {
-        if (block.vtx[0]->vout[o].scriptPubKey.size() >= 38 && block.vtx[0]->vout[o].scriptPubKey[0] == OP_RETURN && block.vtx[0]->vout[o].scriptPubKey[1] == 0x24 && block.vtx[0]->vout[o].scriptPubKey[2] == 0xaa && block.vtx[0]->vout[o].scriptPubKey[3] == 0x21 && block.vtx[0]->vout[o].scriptPubKey[4] == 0xa9 && block.vtx[0]->vout[o].scriptPubKey[5] == 0xed) {
+        CScript script;
+        std::vector<unsigned char> scriptData(ParseHex(block.vtx[0]->strClamSpeech));
+        script = CScript(scriptData.begin(), scriptData.end());
+        if (script.size() >= 38 && script[0] == OP_RETURN && script[1] == 0x24 && script[2] == 0xaa && script[3] == 0x21 && script[4] == 0xa9 && script[5] == 0xed) {
             commitpos = o;
         }
     }
@@ -3502,19 +3496,18 @@ std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBloc
         if (commitpos == -1) {
             uint256 witnessroot = BlockWitnessMerkleRoot(block, NULL, &fProofOfStake);
             CHash256().Write(witnessroot.begin(), 32).Write(&ret[0], 32).Finalize(witnessroot.begin());
-            CTxOut out;
-            out.nValue = 0;
-            out.scriptPubKey.resize(38);
-            out.scriptPubKey[0] = OP_RETURN;
-            out.scriptPubKey[1] = 0x24;
-            out.scriptPubKey[2] = 0xaa;
-            out.scriptPubKey[3] = 0x21;
-            out.scriptPubKey[4] = 0xa9;
-            out.scriptPubKey[5] = 0xed;
-            memcpy(&out.scriptPubKey[6], witnessroot.begin(), 32);
-            commitment = std::vector<unsigned char>(out.scriptPubKey.begin(), out.scriptPubKey.end());
+            CScript script;
+            script.resize(38);
+            script[0] = OP_RETURN;
+            script[1] = 0x24;
+            script[2] = 0xaa;
+            script[3] = 0x21;
+            script[4] = 0xa9;
+            script[5] = 0xed;
+            memcpy(&script[6], witnessroot.begin(), 32);
             CMutableTransaction tx(*block.vtx[0]);
-            tx.vout.push_back(out);
+            // put the witnessCommitment into clamspeech
+            tx.strClamSpeech = HexStr(script.begin(), script.end());
             block.vtx[0] = MakeTransactionRef(std::move(tx));
         }
     }
