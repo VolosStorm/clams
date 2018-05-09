@@ -42,7 +42,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus:
 
     if (pindexLast->nHeight < params.DISTRIBUTION_END && Params().NetworkIDString() == "main")
         return GetNextTargetRequiredV1(pindexLast, params, fProofOfStake);
-    else if (!(pindexLast->nHeight > 203500))
+    else if (!(pindexLast->nHeight > params.nProtocolV2Height))
         return GetNextTargetRequiredV2(pindexLast, params, fProofOfStake);
     else    
         return GetNextTargetRequiredV3(pindexLast, params, fProofOfStake);
@@ -86,6 +86,7 @@ unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consen
  
 unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
+
     arith_uint256 bnTargetLimit;
     bnTargetLimit.SetCompact(params.powLimit);
     int64_t currentTargetSpacing = params.nTargetStakeSpacing;

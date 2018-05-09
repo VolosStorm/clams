@@ -70,6 +70,7 @@ struct Params {
     unsigned int nModifierInterval;
     int64_t nTargetTimespan;
     int nProtocolV2Height;
+    int nCoinbaseMaturity;
 
     int DISTRIBUTION_END;
     int LAST_POW_BLOCK;
