@@ -1055,6 +1055,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                         //push old block structure to old clients
                         if(pfrom->nVersion <= 70012) { 
                             CBlockLegacy legacyBlock;
+                            legacyBlock.nVersion = block.nVersion;
                             legacyBlock.hashPrevBlock = block.hashPrevBlock;
                             legacyBlock.hashMerkleRoot = block.hashMerkleRoot;
                             legacyBlock.nTime = block.nTime;
@@ -1062,8 +1063,10 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                             legacyBlock.nNonce = block.nNonce;
                             legacyBlock.vtx = block.vtx;
                             legacyBlock.vchBlockSig = block.vchBlockSig;
+                            LogPrintf("xploited - Pushing old block structure %s %s\n", block.ToString(), legacyBlock.ToString());
                             connman.PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, legacyBlock));
                         } else { 
+                            LogPrintf("xploited - Pushing new block structure %s\n", block.ToString());
                             connman.PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, block));
                         }  
                     }
@@ -1392,12 +1395,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         int64_t nTimeOffset = nTime - GetTime();
         pfrom->nTimeOffset = nTimeOffset;
         AddTimeData(pfrom->addr, nTimeOffset);
-
-        // If the peer is old enough to have the old alert system, send it the final alert.
-        //if (pfrom->nVersion <= 70012) {
-        //    CDataStream finalAlert(ParseHex("0486bce1bac0d543f104cbff2bd23680056a3b9ea05e1137d2ff90eeb5e08472eb500322593a2cb06fbf8297d7beb6cd30cb90f98153b5b7cce1493749e41e0284"), SER_NETWORK, PROTOCOL_VERSION);
-        //    connman.PushMessage(pfrom, CNetMsgMaker(nSendVersion).Make("alert", finalAlert));
-        //}
 
         // Feeler connections exist only to verify if address is online.
         if (pfrom->fFeeler) {
