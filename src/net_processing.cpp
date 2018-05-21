@@ -1394,10 +1394,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         AddTimeData(pfrom->addr, nTimeOffset);
 
         // If the peer is old enough to have the old alert system, send it the final alert.
-        if (pfrom->nVersion <= 70012) {
-            CDataStream finalAlert(ParseHex("0486bce1bac0d543f104cbff2bd23680056a3b9ea05e1137d2ff90eeb5e08472eb500322593a2cb06fbf8297d7beb6cd30cb90f98153b5b7cce1493749e41e0284"), SER_NETWORK, PROTOCOL_VERSION);
-            connman.PushMessage(pfrom, CNetMsgMaker(nSendVersion).Make("alert", finalAlert));
-        }
+        //if (pfrom->nVersion <= 70012) {
+        //    CDataStream finalAlert(ParseHex("0486bce1bac0d543f104cbff2bd23680056a3b9ea05e1137d2ff90eeb5e08472eb500322593a2cb06fbf8297d7beb6cd30cb90f98153b5b7cce1493749e41e0284"), SER_NETWORK, PROTOCOL_VERSION);
+        //    connman.PushMessage(pfrom, CNetMsgMaker(nSendVersion).Make("alert", finalAlert));
+        //}
 
         // Feeler connections exist only to verify if address is online.
         if (pfrom->fFeeler) {
