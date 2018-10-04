@@ -51,6 +51,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus:
 
 unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
+    LogPrintf("xploited GetNextTargetRequiredV1\n");
     arith_uint256 bnTargetLimit;
     bnTargetLimit.SetCompact(params.powLimit);
     
@@ -86,11 +87,13 @@ unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consen
  
 unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-
+    LogPrintf("xploited GetNextTargetRequiredV2 %s\n", fProofOfStake);
     arith_uint256 bnTargetLimit;
-    bnTargetLimit.SetCompact(params.powLimit);
+    bnTargetLimit.SetCompact(params.posLimit);
     int64_t currentTargetSpacing = params.nTargetStakeSpacing;
  
+    LogPrintf("xploited GetNextTargetRequiredV2 2  %d\n", bnTargetLimit.GetCompact());
+
     if (pindexLast == NULL)
         return bnTargetLimit.GetCompact(); // genesis block
  
@@ -105,6 +108,8 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
     if (nActualSpacing < 0)
         nActualSpacing = currentTargetSpacing;
  
+
+
     // ppcoin: target change every block
     // ppcoin: retarget with exponential moving toward target spacing
     arith_uint256 bnNew;
@@ -116,13 +121,15 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
     if (bnNew <= 0 || bnNew > bnTargetLimit)
         bnNew = bnTargetLimit;
  
+    LogPrintf("xploited %d %d %d %d %d %d\n",bnNew.GetCompact(), nActualSpacing, nInterval, currentTargetSpacing, params.nTargetTimespan, nActualSpacing);
     return bnNew.GetCompact();
 }
 
 unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
+    LogPrintf("xploited GetNextTargetRequiredV3\n");
     arith_uint256 bnTargetLimit;
-    bnTargetLimit.SetCompact(params.powLimit);
+    bnTargetLimit.SetCompact(params.posLimit);
  
     const CBlockIndex* pindex;
     const CBlockIndex* pindexPrevPrev = NULL;

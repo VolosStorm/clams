@@ -77,7 +77,7 @@ public:
         consensus.BIP34Hash = uint256S("0x00000c3ce6b3d823a35224a39798eca9ad889966aeb5a9da7b960ffb9869db35");
         consensus.BIP65Height = 0; // 
         consensus.BIP66Height = 0; // 
-        //consensus.powLimit = uint256S("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        //consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.powLimit = 0x1E0FFFFF;
         consensus.posLimit = 0x1E0FFFFF;
         consensus.fPowNoRetargeting = true;
@@ -200,12 +200,12 @@ public:
         consensus.BIP65Height = 0; // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
         consensus.BIP66Height = 0; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
         consensus.powLimit = 0x1f00ffff; //0x1E00FFFF
-        consensus.posLimit = 0x1f00ffff;
+        consensus.posLimit = 0x1E0FFFFF;
 
 
         consensus.nTargetSpacing = 1 * 5; // 5 Seconds, this was only used to the inital PoW and distrubution
         consensus.nTargetStakeSpacing = 1 * 1; // 60 seconds
-        consensus.nStakeMinAge = 1 * 30 * 60; // 4 hours
+        consensus.nStakeMinAge = 4 * 60; // 4 hours
         consensus.nStakeMaxAge = -1; // unlimited
         consensus.nModifierInterval = 10 * 60; // time to elapse before new modifier is computed
         consensus.nTargetTimespan = 16 * 60;  // 16 mins

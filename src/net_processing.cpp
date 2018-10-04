@@ -1049,6 +1049,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                 {
                     // Send block from disk
                     CBlock block;
+                    LogPrintf("xploited end block from disk %s %s\n", block.ToString(), (*mi).second->ToString());
                     if (!ReadBlockFromDisk(block, (*mi).second, consensusParams))
                         assert(!"cannot load block from disk");
                     if (inv.type == MSG_BLOCK){
@@ -1727,6 +1728,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         CBlock block;
+        LogPrintf("xploited GETBLOCKTXN\n");
         bool ret = ReadBlockFromDisk(block, it->second, chainparams.GetConsensus());
         assert(ret);
 
@@ -2259,9 +2261,11 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 CBlockLegacy header;
                 vRecv >> header;
 
-                COutPoint prevoutStake;
-                if(chainActive.Tip()->nHeight > 10000)
-                    prevoutStake.n = 0;
+                if(chainActive.Tip()->nHeight > 500){
+                    uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
+                    COutPoint prevoutStake(a, 0);
+                    headers[n].prevoutStake = prevoutStake;
+                }
 
                 headers[n].nVersion = header.nVersion;
                 headers[n].hashPrevBlock = header.hashPrevBlock;
@@ -2269,7 +2273,11 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 headers[n].nTime = header.nTime;
                 headers[n].nBits = header.nBits;
                 headers[n].nNonce = header.nNonce;
-                headers[n].prevoutStake = prevoutStake;
+                //headers[n].prevoutStake = prevoutStake;
+                headers[n].vchBlockSig = header.vchBlockSig;
+
+                LogPrintf("xploited 1 %s\n", headers[n].ToString());
+                LogPrintf("xploited 2 %s\n", header.ToString());
 
             }
         } else { 
@@ -2415,7 +2423,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
 
         if(pfrom->nVersion <= 70012) {
-            LogPrint("net", "Incomming Block from old client, attempting to convert\n");
+            LogPrintf("Incomming Block from old client, attempting to convert\n");
 
             std::shared_ptr<CBlockLegacy> lblock = std::make_shared<CBlockLegacy>();
             vRecv >> *lblock;
@@ -2436,10 +2444,11 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             pblock->vtx  =   lblock->vtx;
 
         } else { 
+             LogPrintf("Incomming Block from new client\n");
             vRecv >> *pblock;
         }
 
-        LogPrint("net", "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
+        LogPrintf("received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
 
         // Process all blocks from whitelisted peers, even if not requested,
         // unless we're still syncing with the network.
@@ -3049,6 +3058,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
                     }
                     if (!fGotBlockFromCache) {
                         CBlock block;
+                        LogPrintf("xploited fGotBlockFromCache\n");
                         bool ret = ReadBlockFromDisk(block, pBestIndex, consensusParams);
                         assert(ret);
                         CBlockHeaderAndShortTxIDs cmpctblock(block, state.fWantsCmpctWitness);

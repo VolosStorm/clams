@@ -423,6 +423,7 @@ bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const C
         return state.DoS(100, error("CheckProofOfStake() : Block at height %i for prevout can not be loaded", coinPrev.nHeight));
     }
 
+    LogPrintf("xploited CheckProofOfStake\n");
     CBlock block;
     if (!ReadBlockFromDisk(block, blockFrom, consensusParams))
         return state.DoS(100, error("%s: CheckProofOfStake()", __func__), REJECT_INVALID, "block-not-found");
@@ -493,6 +494,7 @@ bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& p
     }
 
     CBlock block;
+    LogPrintf("xploited CheckKernel\n");
     if (!ReadBlockFromDisk(block, blockFrom, params))
         return state.DoS(100, error("%s: CheckProofOfStake()", __func__), REJECT_INVALID, "block-not-found");
 

@@ -15,9 +15,10 @@
 uint256 CBlockHeader::GetHash() const
 {
     if (nVersion > 6 && !IsProofOfWork()) {
+        LogPrintf("xploited > 6 %s %d %d\n", Hash(BEGIN(nVersion), END(nNonce)).ToString(), nVersion, nNonce);
         return Hash(BEGIN(nVersion), END(nNonce));
-    }
-    else {
+    } else {
+        LogPrintf("xploited < 6 %s %d\n", GetPoWHash().ToString(), nVersion);
         return GetPoWHash();  
     }
 }
@@ -42,7 +43,7 @@ std::string CBlockHeader::ToString() const
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
-        HexStr(vchBlockSig),
+        HexStr(vchBlockSig.begin(), vchBlockSig.end()),
         IsProofOfStake() ? "PoS" : "PoW",
         prevoutStake.ToString());
     return s.str();
@@ -57,7 +58,7 @@ std::string CBlock::ToString() const
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
-        HexStr(vchBlockSig),
+        HexStr(vchBlockSig.begin(), vchBlockSig.end()),
         IsProofOfStake() ? "PoS" : "PoW",
         prevoutStake.ToString(),
         vtx.size());
@@ -71,12 +72,13 @@ std::string CBlock::ToString() const
 std::string CBlockLegacy::ToString() const
 {
     std::stringstream s;
-    s << strprintf("CBlockLegacy(ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, blockSig=%s, vtx=%u)\n",
+    s << strprintf("CBlockLegacy(ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, blockSig=%s, proof=%s, vtx=%u)\n",
         nVersion,
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
-        HexStr(vchBlockSig),
+        HexStr(vchBlockSig.begin(), vchBlockSig.end()),
+        IsProofOfStake() ? "PoS" : "PoW",
         vtx.size());
     for (unsigned int i = 0; i < vtx.size(); i++)
     {
