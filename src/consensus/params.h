@@ -72,6 +72,8 @@ struct Params {
     int nProtocolV2Height;
     int nCoinbaseMaturity;
 
+
+    uint256 lastPowBlockHash;
     int DISTRIBUTION_END;
     int LAST_POW_BLOCK;
     int64_t COIN_YEAR_REWARD; 
