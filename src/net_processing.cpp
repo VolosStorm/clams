@@ -1197,6 +1197,13 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     connman.PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::BLOCKTXN, resp));
 }
 
+void PushGetBlocks(CNode* pnode, const CBlockIndex* pindexBegin, const uint256& hashEnd, CConnman& connman)
+{
+    const CNetMsgMaker msgMaker(pnode->GetSendVersion());
+    connman.PushMessage(pnode, msgMaker.Make(NetMsgType::GETBLOCKS, chainActive.GetLocator(pindexBegin), hashEnd));
+}
+
+
 bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc)
 {
     LogPrint("net", "received: %s (%u bytes) peer=%d\n", SanitizeString(strCommand), vRecv.size(), pfrom->id);
@@ -2257,11 +2264,13 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
 
         if(pfrom->nVersion <= 70012){ 
+            // if its an older client, ignore headers and just ask for the blocks directly
+
             for (unsigned int n = 0; n < nCount; n++) {
                 CBlockLegacy header;
                 vRecv >> header;
 
-                if(chainActive.Tip()->nHeight > 500){
+                if(chainActive.Height() > 499){ 
                     uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
                     COutPoint prevoutStake(a, 0);
                     headers[n].prevoutStake = prevoutStake;
@@ -2274,12 +2283,16 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 headers[n].nBits = header.nBits;
                 headers[n].nNonce = header.nNonce;
                 //headers[n].prevoutStake = prevoutStake;
-                headers[n].vchBlockSig = header.vchBlockSig;
+                //headers[n].vchBlockSig = header.vchBlockSig;
 
-                LogPrintf("xploited 1 %s\n", headers[n].ToString());
-                LogPrintf("xploited 2 %s\n", header.ToString());
-
+                LogPrintf("xploited HEADERS 1 %s\n", headers[n].GetHash().ToString());
             }
+
+            //BlockMap::iterator mi = mapBlockIndex.find(headers[nCount-1].GetHash());
+            //uint256 test = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
+            //if (mi == mapBlockIndex.end())
+            //    PushGetBlocks(pfrom, chainActive.Tip(), test, connman);
+            //return true;
         } else { 
             for (unsigned int n = 0; n < nCount; n++) {
                 vRecv >> headers[n];
@@ -2295,6 +2308,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         {
         LOCK(cs_main);
         CNodeState *nodestate = State(pfrom->GetId());
+
+
 
         // If this looks like it could be a block announcement (nCount <
         // MAX_BLOCKS_TO_ANNOUNCE), use special logic for handling headers that
@@ -2333,6 +2348,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
         }
 
+        //if(pfrom->nVersion <= 70012)
         CValidationState state;
         if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast)) {
             int nDoS;
@@ -3348,11 +3364,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
     return true;
 }
 
-void PushGetBlocks(CNode* pnode, const CBlockIndex* pindexBegin, const uint256& hashEnd, CConnman& connman)
-{
-    const CNetMsgMaker msgMaker(pnode->GetSendVersion());
-    connman.PushMessage(pnode, msgMaker.Make(NetMsgType::GETBLOCKS, chainActive.GetLocator(pindexBegin), hashEnd));
-}
+
 
 uint256 static GetOrphanRoot(const uint256& hash)
 {

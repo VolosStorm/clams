@@ -43,7 +43,7 @@ std::string CBlockHeader::ToString() const
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
-        HexStr(vchBlockSig.begin(), vchBlockSig.end()),
+        HexStr(vchBlockSig),
         IsProofOfStake() ? "PoS" : "PoW",
         prevoutStake.ToString());
     return s.str();
@@ -58,7 +58,7 @@ std::string CBlock::ToString() const
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
-        HexStr(vchBlockSig.begin(), vchBlockSig.end()),
+        HexStr(vchBlockSig),
         IsProofOfStake() ? "PoS" : "PoW",
         prevoutStake.ToString(),
         vtx.size());
@@ -77,7 +77,7 @@ std::string CBlockLegacy::ToString() const
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
-        HexStr(vchBlockSig.begin(), vchBlockSig.end()),
+        HexStr(vchBlockSig),
         IsProofOfStake() ? "PoS" : "PoW",
         vtx.size());
     for (unsigned int i = 0; i < vtx.size(); i++)

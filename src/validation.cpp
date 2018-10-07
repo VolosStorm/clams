@@ -3276,8 +3276,12 @@ bool CheckBlockSignature(const CBlock& block)
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW)
 {
     // Check proof of work matches claimed amount
-    LogPrintf("xploited CheckBlockHeader %s", block.ToString());
-    if(chainActive.Tip()->nHeight > 499)
+    LogPrintf("xploited CheckBlockHeader %s\n", block.ToString());
+    LogPrintf("xploited CheckBlockHeader 2 %d\n", chainActive.Height());
+
+    //make sure wwere past thhe lastPow block
+    BlockMap::iterator mi = mapBlockIndex.find(consensusParams.lastPowBlockHash);
+    if (mi != mapBlockIndex.end())
         return true;
     if (fCheckPOW && block.IsProofOfWork() && !CheckHeaderPoW(block, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
@@ -3371,9 +3375,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
+    LogPrintf("xploited CheckBlock 1 %s\n", block.ToString());
+
     if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1, Params().GetConsensus()))
         return error("CheckBlock() : block timestamp too far in the future");
 
+    LogPrintf("xploited CheckBlock 2\n");
     // Check the merkle root.
     if (fCheckMerkleRoot) {
         bool mutated;
@@ -3393,6 +3400,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // Note that witness malleability is checked in ContextualCheckBlock, so no
     // checks that use witness data may be performed here.
 
+    LogPrintf("xploited CheckBlock 3\n");
     // First transaction must be coinbase in case of PoW block, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
@@ -3400,40 +3408,47 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         if (block.vtx[i]->IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
 
+    LogPrintf("xploited CheckBlock 4\n");
     // Second transaction must be coinbase in case of PoS block, the rest must not be
     if (block.IsProofOfStake())
     {
+        LogPrintf("xploited CheckBlock 4a\n");
         // Coinbase output should be empty if proof-of-stake block
         if (!CheckFirstCoinstakeOutput(block))
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "coinbase output not empty for proof-of-stake block");
 
+        LogPrintf("xploited CheckBlock 4b\n");
         // Second transaction must be coinstake
         if (block.vtx.empty() || block.vtx.size() < 2 || !block.vtx[1]->IsCoinStake())
             return state.DoS(100, false, REJECT_INVALID, "bad-cs-missing", false, "second tx is not coinstake");
 
+        LogPrintf("xploited CheckBlock 4c\n");
         //prevoutStake must exactly match the coinstake in the block body
         if(block.vtx[1]->vin.empty() || block.prevoutStake != block.vtx[1]->vin[0].prevout){
             return state.DoS(100, false, REJECT_INVALID, "bad-cs-invalid", false, "prevoutStake in block header does not match coinstake in block body");
         }
 
+        LogPrintf("xploited CheckBlock 4c\n");
         //the rest of the transactions must not be coinstake
         for (unsigned int i = 2; i < block.vtx.size(); i++)
             if (block.vtx[i]->IsCoinStake())
                return state.DoS(100, false, REJECT_INVALID, "bad-cs-multiple", false, "more than one coinstake");
 
+        LogPrintf("xploited CheckBlock 4d\n");
         // Check proof-of-stake block signature
         if (fCheckSig && !CheckBlockSignature(block)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-blk-signature", false, "bad proof-of-stake block signature");
         }
     }
 
+    LogPrintf("xploited CheckBlock 5\n");
     // Check transactions
     for (const auto& tx : block.vtx)
         if (!CheckTransaction(*tx, state, false))
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
 
-
+    LogPrintf("xploited CheckBlock 6\n");
     unsigned int nSigOps = 0;
     for (const auto& tx : block.vtx)
     {
@@ -3445,6 +3460,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (fCheckPOW && fCheckMerkleRoot)
         block.fChecked = true;
 
+    LogPrintf("xploited CheckBlock 7\n");
     return true;
 }
 
@@ -3883,6 +3899,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         LOCK(cs_main);
 
         if (ret) {
+            LogPrintf("xploited ProcessNewBlock %s\n", pblock->ToString());
             // Store to disk
             ret = AcceptBlock(pblock, state, chainparams, &pindex, fForceProcessing, NULL, fNewBlock);
         }

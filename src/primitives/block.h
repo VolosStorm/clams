@@ -28,7 +28,6 @@ public:
     unsigned int nNonce;
 
     std::vector<CTransactionRef> vtx;
-
     std::vector<unsigned char> vchBlockSig;
 
     CBlockLegacy()
