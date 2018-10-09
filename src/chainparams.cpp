@@ -109,7 +109,6 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00000000000000000013176bf8d7dfeab4e1db31dc93bc311b436e82ab226b90"); //453354
-        consensus.lastPowBlockHash = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -241,8 +240,6 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00001924120e93f445dd4adb9d90e0020350b8c6c2b08e1a4950372a37f8bcc8");
-        consensus.lastPowBlockHash = uint256S("0x0000634a0c0c4a274b047de2656af5fbd073bbab0bc23d62786e6cc694a24f8d");
-
 
         pchMessageStart[0] = 0xc4;
         pchMessageStart[1] = 0xf1;

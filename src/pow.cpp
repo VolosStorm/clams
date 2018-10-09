@@ -89,10 +89,15 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
 {
     LogPrintf("xploited GetNextTargetRequiredV2 %s\n", fProofOfStake);
     arith_uint256 bnTargetLimit;
-    if(fProofOfStake) 
+    if(fProofOfStake) {
+        LogPrintf("xploited GetNextTargetRequiredV2 a\n");
         bnTargetLimit.SetCompact(params.posLimit);
-    else 
+    }
+    else {
+        LogPrintf("xploited GetNextTargetRequiredV2 b\n");
         bnTargetLimit.SetCompact(params.powLimit);
+    }
+
     int64_t currentTargetSpacing = params.nTargetStakeSpacing;
  
     LogPrintf("xploited GetNextTargetRequiredV2 2  %d\n", bnTargetLimit.GetCompact());

@@ -3200,7 +3200,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
                 }
 
                 // append a signature to our block and ensure that is LowS
-                return key.Sign(pblock->GetHashWithoutSign(), pblock->vchBlockSig) &&
+                return key.Sign(pblock->GetHash(), pblock->vchBlockSig) &&
                            EnsureLowS(pblock->vchBlockSig) &&
                            CheckHeaderPoS(*pblock, Params().GetConsensus());
             }
@@ -3270,7 +3270,7 @@ bool CheckBlockSignature(const CBlock& block)
         return false;
     }
 
-    return CPubKey(vchPubKey).Verify(block.GetHashWithoutSign(), block.vchBlockSig);
+    return CPubKey(vchPubKey).Verify(block.GetHash(), block.vchBlockSig);
 }
 
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW)
@@ -3443,10 +3443,14 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
     LogPrintf("xploited CheckBlock 5\n");
     // Check transactions
-    for (const auto& tx : block.vtx)
+    for (const auto& tx : block.vtx) {
         if (!CheckTransaction(*tx, state, false))
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
+
+        if (block.GetBlockTime() < (int64_t)tx->nTime)
+            return state.DoS(50, error("CheckBlock() : block timestamp earlier than transaction timestamp"));
+    }
 
     LogPrintf("xploited CheckBlock 6\n");
     unsigned int nSigOps = 0;
@@ -3655,6 +3659,8 @@ static bool UpdateHashProof(const CBlock& block, CValidationState& state, const 
     if (block.IsProofOfStake() && !CheckCoinStakeTimestamp(nHeight, block.GetBlockTime(), (int64_t)block.vtx[1]->nTime))
         return state.DoS(50, error("UpdateHashProof() : coinstake timestamp violation nTimeBlock=%d", block.GetBlockTime()));
 
+
+    LogPrintf("xploited UpdateHashProof %d %d\n", block.nBits, GetNextWorkRequired(pindex->pprev, consensusParams, block.IsProofOfStake()));
     // Check proof-of-work or proof-of-stake
     if (block.nBits != GetNextWorkRequired(pindex->pprev, consensusParams, block.IsProofOfStake()))
         return state.DoS(100, error("UpdateHashProof() : incorrect %s", block.IsProofOfWork() ? "proof-of-work" : "proof-of-stake"));
