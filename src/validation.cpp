@@ -1877,6 +1877,7 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
         }
     }
 
+    LogPrintf("xploited ComputeBlockVersion %d\n", nVersion);
     return nVersion;
 }
 
@@ -3171,23 +3172,26 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
 
     CKey key;
     CMutableTransaction txCoinStake(*pblock->vtx[1]);
-    uint32_t nTimeBlock = nTime;
-    int64_t nSearchTime = nTime;
+    unsigned int nStartTime = txCoinStake.nTime;
 
-    txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
+    uint32_t nTimeBlock = nTime;
+    
+    if(chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height)
+        txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
+    int64_t nSearchTime = txCoinStake.nTime;
 
     if (nSearchTime > nLastCoinStakeSearchTime)
     {        
         int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height ? 1 : nSearchTime - nLastCoinStakeSearchTime;
         if (wallet.CreateCoinStake(wallet, pblock->nBits, nSearchInterval, nTotalFees, nTimeBlock, txCoinStake, key))
         {
-            if (txCoinStake.nTime >= pindexBestHeader->GetMedianTimePast()+1)
+            if (txCoinStake.nTime >= std::max(pindexBestHeader->GetPastTimeLimit()+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())))
             {
                 // make sure coinstake would meet timestamp protocol
                 //    as it would be the same as the block timestamp
-                pblock->nTime = nTime = txCoinStake.nTime;
-                nTime = std::max(pindexBestHeader->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
-                nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()));
+                //pblock->vtx[0]->nTime = nTime = txCoinStake.nTime;
+                pblock->nTime = std::max(pindexBestHeader->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
+                pblock->nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()));
                 
                 pblock->vtx[1] = MakeTransactionRef(std::move(txCoinStake));
                 pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
@@ -3281,7 +3285,7 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
 
     //make sure wwere past thhe lastPow block
     BlockMap::iterator mi = mapBlockIndex.find(consensusParams.lastPowBlockHash);
-    if (mi != mapBlockIndex.end())
+    if (mi != mapBlockIndex.end() || block.nVersion > 6)
         return true;
     if (fCheckPOW && block.IsProofOfWork() && !CheckHeaderPoW(block, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");

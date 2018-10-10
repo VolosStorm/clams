@@ -133,6 +133,7 @@ void BlockAssembler::resetBlock()
 
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fProofOfStake, int64_t* pTotalFees, int32_t txProofTime, int32_t nTimeLimit)
 {
+    LogPrintf("CreateEmptyBlock xploited 1\n");
     resetBlock();
 
     pblocktemplate.reset(new CBlockTemplate());
@@ -150,6 +151,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         pblock->vtx.emplace_back();
 
 
+    LogPrintf("CreateEmptyBlock xploited 2\n");
     pblocktemplate->vTxFees.push_back(-1); // updated at end
     pblocktemplate->vTxSigOpsCost.push_back(-1); // updated at end
 
@@ -163,17 +165,21 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     if (chainparams.MineBlocksOnDemand())
         pblock->nVersion = GetArg("-blockversion", pblock->nVersion);
 
+    LogPrintf("CreateEmptyBlock xploited 3\n");
+    /*
     if(txProofTime == 0) {
         txProofTime = GetAdjustedTime();
     }
     if(fProofOfStake)
         txProofTime &= ~STAKE_TIMESTAMP_MASK;
     pblock->nTime = txProofTime;
-    if (!fProofOfStake)
-        UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
+    */
+
+    LogPrintf("CreateEmptyBlock xploited 4\n");
     pblock->nBits = GetNextWorkRequired(pindexPrev, chainparams.GetConsensus(), fProofOfStake);
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
+    LogPrintf("CreateEmptyBlock xploited 5\n");
     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
                        ? nMedianTimePast
                        : pblock->GetBlockTime();
@@ -186,6 +192,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // transaction (which in most cases can be a no-op).
     fIncludeWitness = IsWitnessEnabled(pindexPrev, chainparams.GetConsensus());
 
+    LogPrintf("CreateEmptyBlock xploited 6\n");
     nLastBlockTx = nBlockTx;
     nLastBlockSize = nBlockSize;
     nLastBlockWeight = nBlockWeight;
@@ -210,6 +217,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     originalRewardTx = coinbaseTx;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
 
+    LogPrintf("CreateEmptyBlock xploited 7\n");
     // Create coinstake transaction.
     if(fProofOfStake)
     {
@@ -226,7 +234,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     }
 
-
+    LogPrintf("CreateEmptyBlock xploited 8\n");
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus(), fProofOfStake);
     pblocktemplate->vTxFees[0] = -nFees;
 
@@ -238,11 +246,16 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         *pTotalFees = nFees;
 
     // Fill in header
+    //pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
+    //pblock->nNonce         = 0;
+    pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     pblock->nTime          = std::max(pindexPrev->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
     pblock->nTime          = std::max(pblock->GetBlockTime(), PastDrift(pindexPrev->GetBlockTime(), pindexPrev->nHeight+1, chainparams.GetConsensus()));
+    if (!fProofOfStake)
+        UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
+    pblock->nBits          = GetNextWorkRequired(pindexPrev, chainparams.GetConsensus(), fProofOfStake);
     pblock->nNonce         = 0;
-    pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;
     if (!fProofOfStake && !TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
@@ -339,13 +352,6 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateEmptyBlock(const CScript& 
         *pTotalFees = nFees;
 
     // Fill in header
-    pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
-    //pblock->nTime          = std::max(pindexPrev->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
-   // pblock->nTime          = std::max(pblock->GetBlockTime(), PastDrift(pindexPrev->GetBlockTime(), pindexPrev->nHeight+1, chainparams.GetConsensus()));
-    if (!fProofOfStake)
-        UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-    pblock->nBits          = GetNextWorkRequired(pindexPrev, chainparams.GetConsensus(), fProofOfStake);
-    pblock->nNonce         = 0;
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;
