@@ -70,6 +70,7 @@ struct Params {
     unsigned int nModifierInterval;
     int64_t nTargetTimespan;
     int nProtocolV2Height;
+    int nProtocolV3Height;
     int nCoinbaseMaturity;
 
 

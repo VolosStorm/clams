@@ -15,10 +15,10 @@
 uint256 CBlockHeader::GetHash() const
 {
     if (nVersion > 6 ) { //&& !IsProofOfWork()) {
-        //LogPrintf("xploited > 6 %s %d %d\n", Hash(BEGIN(nVersion), END(nNonce)).ToString(), nVersion, nNonce);
+        //LogPrint("xp", "> 6 %s %d %d\n", Hash(BEGIN(nVersion), END(nNonce)).ToString(), nVersion, nNonce);
         return Hash(BEGIN(nVersion), END(nNonce));
     } else {
-        LogPrintf("xploited < 6 %s %d\n", GetPoWHash().ToString(), nVersion);
+        LogPrint("xp", "< 6 %s %d\n", GetPoWHash().ToString(), nVersion);
         return GetPoWHash();  
     }
 }

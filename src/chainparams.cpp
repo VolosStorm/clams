@@ -177,6 +177,7 @@ public:
         consensus.nTargetTimespan = 16 * 60;  // 16 mins
 
         consensus.nProtocolV2Height = 203500;
+        consensus.nProtocolV3Height = 3000000;
 
         consensus.DISTRIBUTION_END = 10000;
         consensus.LAST_POW_BLOCK = 10000;
@@ -213,6 +214,7 @@ public:
         consensus.DISTRIBUTION_END = 500;
         consensus.LAST_POW_BLOCK = 500;
         consensus.nProtocolV2Height = 500;
+        consensus.nProtocolV3Height = 3000000;
 
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = true;
@@ -221,9 +223,9 @@ public:
 
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
+        //consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
+       // consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
+        //consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
 
         // Deployment of BIP68, BIP112, and BIP113.
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
