@@ -133,6 +133,7 @@ void BlockAssembler::resetBlock()
 
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fProofOfStake, int64_t* pTotalFees, int32_t txProofTime, int32_t nTimeLimit)
 {
+    LogPrint("xp", "CreateEmptyBlock xploited 1\n");
     resetBlock();
 
     pblocktemplate.reset(new CBlockTemplate());
@@ -150,6 +151,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         pblock->vtx.emplace_back();
 
 
+    LogPrint("xp", "CreateEmptyBlock 2\n");
     pblocktemplate->vTxFees.push_back(-1); // updated at end
     pblocktemplate->vTxSigOpsCost.push_back(-1); // updated at end
 
@@ -157,23 +159,31 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     CBlockIndex* pindexPrev = chainActive.Tip();
     nHeight = pindexPrev->nHeight + 1;
 
-    pblock->nVersion = ComputeBlockVersion(pindexPrev, chainparams.GetConsensus());
+    if(nHeight < chainparams.GetConsensus().nProtocolV2Height )
+        pblock->nVersion = 6;
+    else 
+        pblock->nVersion = ComputeBlockVersion(pindexPrev, chainparams.GetConsensus());
+
     // -regtest only: allow overriding block.nVersion with
     // -blockversion=N to test forking scenarios
     if (chainparams.MineBlocksOnDemand())
         pblock->nVersion = GetArg("-blockversion", pblock->nVersion);
 
+    LogPrint("xp", "CreateEmptyBlock  3\n");
+    /*
     if(txProofTime == 0) {
         txProofTime = GetAdjustedTime();
     }
     if(fProofOfStake)
         txProofTime &= ~STAKE_TIMESTAMP_MASK;
     pblock->nTime = txProofTime;
-    if (!fProofOfStake)
-        UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
+    */
+
+    LogPrint("xp", "CreateEmptyBlock xploited 4\n");
     pblock->nBits = GetNextWorkRequired(pindexPrev, chainparams.GetConsensus(), fProofOfStake);
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
+    LogPrint("xp", "CreateEmptyBlock xploited 5\n");
     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
                        ? nMedianTimePast
                        : pblock->GetBlockTime();
@@ -186,6 +196,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // transaction (which in most cases can be a no-op).
     fIncludeWitness = IsWitnessEnabled(pindexPrev, chainparams.GetConsensus());
 
+    LogPrint("xp", "CreateEmptyBlock xploited 6\n");
     nLastBlockTx = nBlockTx;
     nLastBlockSize = nBlockSize;
     nLastBlockWeight = nBlockWeight;
@@ -210,6 +221,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     originalRewardTx = coinbaseTx;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
 
+    LogPrint("xp", "CreateEmptyBlock xploited 7\n");
     // Create coinstake transaction.
     if(fProofOfStake)
     {
@@ -226,7 +238,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     }
 
-
+    LogPrint("xp", "CreateEmptyBlock xploited 8\n");
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus(), fProofOfStake);
     pblocktemplate->vTxFees[0] = -nFees;
 
@@ -239,7 +251,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
+    pblock->nTime          = std::max(pindexPrev->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
+    pblock->nTime          = std::max(pblock->GetBlockTime(), PastDrift(pindexPrev->GetBlockTime(), pindexPrev->nHeight+1, chainparams.GetConsensus()));
+    if (!fProofOfStake)
+        UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
+    pblock->nBits          = GetNextWorkRequired(pindexPrev, chainparams.GetConsensus(), fProofOfStake);
     pblock->nNonce         = 0;
+
+
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;
@@ -344,6 +363,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateEmptyBlock(const CScript& 
         UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
     pblock->nBits          = GetNextWorkRequired(pindexPrev, chainparams.GetConsensus(), fProofOfStake);
     pblock->nNonce         = 0;
+
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;
@@ -794,8 +814,10 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
     pblocktree->ReadTxIndex(pblock->vtx[1]->vin[0].prevout.hash, postx);
     // verify hash target and signature of coinstake tx
     CValidationState state;
-    if (!CheckProofOfStake(mapBlockIndex[pblock->hashPrevBlock], state, *pblock->vtx[1], pblock->nBits, proofHash, hashTarget, *pcoinsTip, *pblocktree, Params().GetConsensus()))
+    if (!CheckProofOfStake(mapBlockIndex[pblock->hashPrevBlock], state, *pblock->vtx[1], pblock->nBits, proofHash, hashTarget, *pcoinsTip, *pblocktree, Params().GetConsensus())){
+        LogPrint("miner", "CheckStake() : proof-of-stake checking failed");
         return error("CheckStake() : proof-of-stake checking failed");
+    }
 
     //// debug print
     LogPrint("miner", "CheckStake() : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", hashBlock.GetHex(), proofHash.GetHex(), hashTarget.GetHex());
@@ -911,10 +933,12 @@ void ThreadStakeMiner(CWallet *pwallet)
                     // Sign the full block and use the timestamp from earlier for a valid stake
                     std::shared_ptr<CBlock> pblockfilled = std::make_shared<CBlock>(pblocktemplatefilled->block);
                     if (SignBlock(pblockfilled, *pwallet, nTotalFees, i)) {
+                        LogPrint("xp", "miner block signed\n");
                         // Should always reach here unless we spent too much time processing transactions and the timestamp is now invalid
                         // CheckStake also does CheckBlock and AcceptBlock to propogate it to the network
                         bool validBlock = false;
                         while(!validBlock) {
+                            LogPrint("xp", "miner invalidBlockFound\n");
                             if (chainActive.Tip()->GetBlockHash() != pblockfilled->hashPrevBlock) {
                                 //another block was received while building ours, scrap progress
                                 LogPrintf("ThreadStakeMiner(): Valid future PoS block was orphaned before becoming valid");
@@ -941,6 +965,7 @@ void ThreadStakeMiner(CWallet *pwallet)
                             validBlock=true;
                         }
                         if(validBlock) {
+                            LogPrint("xp", "ValidBlock found\n");
                             CheckStake(pblockfilled, *pwallet);
                             // Update the search time when new valid block is created, needed for status bar icon
                             nLastCoinStakeSearchTime = pblockfilled->GetBlockTime();

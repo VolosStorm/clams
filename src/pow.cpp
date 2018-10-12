@@ -89,10 +89,15 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
 {
     LogPrintf("xploited GetNextTargetRequiredV2 %s\n", fProofOfStake);
     arith_uint256 bnTargetLimit;
-    if(fProofOfStake) 
+    if(fProofOfStake) {
+        LogPrintf("xploited GetNextTargetRequiredV2 a\n");
         bnTargetLimit.SetCompact(params.posLimit);
-    else 
+    }
+    else {
+        LogPrintf("xploited GetNextTargetRequiredV2 b\n");
         bnTargetLimit.SetCompact(params.powLimit);
+    }
+
     int64_t currentTargetSpacing = params.nTargetStakeSpacing;
  
     LogPrintf("xploited GetNextTargetRequiredV2 2  %d\n", bnTargetLimit.GetCompact());
@@ -130,10 +135,13 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
 
 unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-    LogPrintf("xploited GetNextTargetRequiredV3\n");
+    LogPrintf("xploited GetNextTargetRequired V3 %s\n", fProofOfStake);
     arith_uint256 bnTargetLimit;
     bnTargetLimit.SetCompact(params.posLimit);
  
+
+    LogPrintf("xploited GetNextTargetRequired V3 2  %d\n", bnTargetLimit.GetCompact());
+
     const CBlockIndex* pindex;
     const CBlockIndex* pindexPrevPrev = NULL;
 
@@ -142,16 +150,21 @@ unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consen
  
     const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
 
+
+    LogPrintf("xploited GetNextTargetRequired V3 3\n");
     int64_t nInterval = (params.nTargetTimespan / params.nTargetStakeSpacing) * 4;
     int64_t count = 0;
 
     for (pindex = pindexPrev; pindex && pindex->nHeight && count < nInterval; pindex = GetLastBlockIndex(pindex, fProofOfStake))
     {
-    pindexPrevPrev = pindex;
+        LogPrintf("xploited GetNextTargetRequired V3 3a\n");
+        pindexPrevPrev = pindex;
         pindex = pindex->pprev;
+        LogPrintf("xploited GetNextTargetRequired V3 3b\n");
         if (!pindex) break;
         count++;
         pindex = GetLastBlockIndex(pindex, fProofOfStake);
+        LogPrintf("xploited GetNextTargetRequired V3 3c\n");
     }
 
     if (!pindex || !pindex->nHeight)
@@ -159,9 +172,11 @@ unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consen
 
     count--;
 
+    LogPrintf("xploited GetNextTargetRequired V3 4\n");
     if (count < 1)
         return bnTargetLimit.GetCompact(); // not enough blocks yet
  
+    LogPrintf("xploited GetNextTargetRequired V3 5\n");
     int64_t nActualSpacing = (pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime()) / count;
 
     /*
@@ -176,14 +191,18 @@ unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consen
 
     if (nActualSpacing < 0) nActualSpacing = params.nTargetStakeSpacing;
 
+    LogPrintf("xploited GetNextTargetRequired V3 6\n");
     arith_uint256 bnNew;
     bnNew.SetCompact(pindexPrev->nBits);
     bnNew *= ((nInterval - 1) * params.nTargetStakeSpacing + 2 * nActualSpacing);
     bnNew /= ((nInterval + 1) * params.nTargetStakeSpacing);
  
+    LogPrintf("xploited GetNextTargetRequired V3 7\n");
     if (bnNew <= 0 || bnNew > bnTargetLimit)
         bnNew = bnTargetLimit;
  
+
+    LogPrintf("xploited GetNextTargetRequired V3: %d %d %d %d\n", bnNew.GetCompact(), nActualSpacing, nInterval, params.nTargetStakeSpacing);
     return bnNew.GetCompact();
 }
 

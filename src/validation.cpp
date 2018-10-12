@@ -1107,7 +1107,7 @@ bool GetCoinAge(const CTransaction& tx, CBlockIndex* pindexPrev, CCoinsViewCache
             return false;
         }
 
-        LogPrintf("xploited GetCoinAge \n");
+        LogPrint("xp", "GetCoinAge \n");
         CBlock block;
         if (!ReadBlockFromDisk(block, blockFrom, consensusParams))
             return false;
@@ -1174,7 +1174,7 @@ bool GetTransaction(const uint256 &hash, CTransactionRef &txOut, const Consensus
 
     if (pindexSlow) {
         CBlock block;
-        LogPrintf("xploited Transaction \n");
+        LogPrint("xp", "Transaction \n");
         if (ReadBlockFromDisk(block, pindexSlow, consensusParams)) {
             for (const auto& tx : block.vtx) {
                 if (tx->GetHash() == hash) {
@@ -1262,7 +1262,7 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
 template <typename Block>
 bool ReadBlockFromDisk(Block& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
 {
-    LogPrintf("xploited ReadBlockFromDisk %s", pos.ToString());
+    LogPrint("xp", "ReadBlockFromDisk %s", pos.ToString());
     block.SetNull();
 
     // Open history file to read
@@ -1291,7 +1291,7 @@ bool ReadBlockFromDisk(Block& block, const CDiskBlockPos& pos, const Consensus::
 
 bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
 {
-    LogPrintf("xploited RBFD %s %s %s\n", block.ToString(), pindex->ToString(), pindex->GetBlockPos().ToString());
+    LogPrint("xp", "RBFD %s %s %s\n", block.ToString(), pindex->ToString(), pindex->GetBlockPos().ToString());
     if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
         return false;
     if (block.GetHash() != pindex->GetBlockHash())
@@ -1868,16 +1868,27 @@ VersionBitsCache versionbitscache;
 int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
-    int32_t nVersion = VERSIONBITS_TOP_BITS;
 
-    for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
-        ThresholdState state = VersionBitsState(pindexPrev, params, (Consensus::DeploymentPos)i, versionbitscache);
-        if (state == THRESHOLD_LOCKED_IN || state == THRESHOLD_STARTED) {
-            nVersion |= VersionBitsMask(params, (Consensus::DeploymentPos)i);
+
+    LogPrint("xp", "ComputeBlockVersion 1\n");
+    LogPrint("xp", "ComputeBlockVersion 2 %d \n", pindexPrev->nHeight + 1);
+    LogPrint("xp", "ComputeBlockVersion 3 %d \n", params.nProtocolV3Height);
+    if( pindexPrev->nHeight + 1 < params.nProtocolV3Height) { 
+        LogPrint("xp", "ComputeBlockVersion 4\n");
+        return CBlock::CURRENT_VERSION;
+    } else { 
+        int32_t nVersion = VERSIONBITS_TOP_BITS;
+
+        for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
+            ThresholdState state = VersionBitsState(pindexPrev, params, (Consensus::DeploymentPos)i, versionbitscache);
+            if (state == THRESHOLD_LOCKED_IN || state == THRESHOLD_STARTED) {
+                nVersion |= VersionBitsMask(params, (Consensus::DeploymentPos)i);
+            }
         }
-    }
 
-    return nVersion;
+        LogPrint("xp", "ComputeBlockVersion %d\n", nVersion);
+        return nVersion;
+    }
 }
 
 /**
@@ -2445,24 +2456,26 @@ void static UpdateTip(CBlockIndex *pindexNew, const CChainParams& chainParams) {
                 }
             }
         }
+        if(chainActive.Tip()->nHeight > chainParams.GetConsensus().nProtocolV3Height) {
         // Check the version of the last 100 blocks to see if we need to upgrade:
-        for (int i = 0; i < 100 && pindex != NULL; i++)
-        {
-            int32_t nExpectedVersion = ComputeBlockVersion(pindex->pprev, chainParams.GetConsensus());
-            if (pindex->nVersion > VERSIONBITS_LAST_OLD_BLOCK_VERSION && (pindex->nVersion & ~nExpectedVersion) != 0)
-                ++nUpgraded;
-            pindex = pindex->pprev;
-        }
-        if (nUpgraded > 0)
-            warningMessages.push_back(strprintf("%d of last 100 blocks have unexpected version", nUpgraded));
-        if (nUpgraded > 100/2)
-        {
-            std::string strWarning = _("Warning: Unknown block versions being mined! It's possible unknown rules are in effect");
-            // notify GetWarnings(), called by Qt and the JSON-RPC code to warn the user:
-            SetMiscWarning(strWarning);
-            if (!fWarned) {
-                AlertNotify(strWarning);
-                fWarned = true;
+            for (int i = 0; i < 100 && pindex != NULL; i++)
+            {
+                int32_t nExpectedVersion = ComputeBlockVersion(pindex->pprev, chainParams.GetConsensus());
+                if (pindex->nVersion > VERSIONBITS_LAST_OLD_BLOCK_VERSION && (pindex->nVersion & ~nExpectedVersion) != 0)
+                    ++nUpgraded;
+                pindex = pindex->pprev;
+            }
+            if (nUpgraded > 0)
+                warningMessages.push_back(strprintf("%d of last 100 blocks have unexpected version", nUpgraded));
+            if (nUpgraded > 100/2)
+            {
+                std::string strWarning = _("Warning: Unknown block versions being mined! It's possible unknown rules are in effect");
+                // notify GetWarnings(), called by Qt and the JSON-RPC code to warn the user:
+                SetMiscWarning(strWarning);
+                if (!fWarned) {
+                    AlertNotify(strWarning);
+                    fWarned = true;
+                }
             }
         }
     }
@@ -2484,7 +2497,7 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
     assert(pindexDelete);
     // Read block from disk.
     CBlock block;
-    LogPrintf("xploited DissconnectTip %s %s", pindexDelete->ToString(), pindexDelete->GetBlockPos().ToString());
+    LogPrint("xp", "DissconnectTip %s %s", pindexDelete->ToString(), pindexDelete->GetBlockPos().ToString());
     if (!ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus()))
         return AbortNode(state, "Failed to read block");
     // Apply the block atomically to the chain state.
@@ -2564,7 +2577,7 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     if (!pblock) {
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         connectTrace.blocksConnected.emplace_back(pindexNew, pblockNew);
-        LogPrintf("xploited ConnectTip  %s", pindexNew->ToString());
+        LogPrint("xp", "ConnectTip  %s", pindexNew->ToString());
         if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus()))
             return AbortNode(state, "Failed to read block");
     } else {
@@ -3174,36 +3187,45 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
 
     CKey key;
     CMutableTransaction txCoinStake(*pblock->vtx[1]);
+    unsigned int nStartTime = txCoinStake.nTime;
+
     uint32_t nTimeBlock = nTime;
-    int64_t nSearchTime = nTime;
+    
+    if(chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height)
+        txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
 
-    txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
-
+    int64_t nSearchTime = txCoinStake.nTime;
     if (nSearchTime > nLastCoinStakeSearchTime)
     {        
         int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height ? 1 : nSearchTime - nLastCoinStakeSearchTime;
         if (wallet.CreateCoinStake(wallet, pblock->nBits, nSearchInterval, nTotalFees, nTimeBlock, txCoinStake, key))
         {
-            if (txCoinStake.nTime >= pindexBestHeader->GetMedianTimePast()+1)
+            if (txCoinStake.nTime >= std::max(pindexBestHeader->GetPastTimeLimit()+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())))
             {
+                LogPrint("xp", "SignBlock xploited \n");
                 // make sure coinstake would meet timestamp protocol
                 //    as it would be the same as the block timestamp
-                pblock->nTime = nTime = txCoinStake.nTime;
-                nTime = std::max(pindexBestHeader->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
-                nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()));
-                
+                //pblock->vtx[0]->nTime = nTime = txCoinStake.nTime;
+                pblock->nTime = std::max(pindexBestHeader->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
+                LogPrint("xp", "SignBlock xploited 1\n");
+                pblock->nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()));
+                LogPrint("xp", "SignBlock xploited 2\n");
+
                 pblock->vtx[1] = MakeTransactionRef(std::move(txCoinStake));
                 pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
                 pblock->prevoutStake = pblock->vtx[1]->vin[0].prevout;
 
+                LogPrint("xp", "SignBlock xploited 3\n");
                 // Check timestamp against prev
                 if(pblock->GetBlockTime() <= pindexBestHeader->GetBlockTime() || FutureDrift(pblock->GetBlockTime(), chainActive.Height() + 1, Params().GetConsensus()) < pindexBestHeader->GetBlockTime())
                 {
+                    LogPrint("xp", "SignBlock xploited Check timestamp against prev failed\n");
                     return false;
                 }
 
+                LogPrint("xp", "SignBlock xploited 4 %s %s %s\n", key.Sign(pblock->GetHash(), pblock->vchBlockSig), EnsureLowS(pblock->vchBlockSig), CheckHeaderPoS(*pblock, Params().GetConsensus()));
                 // append a signature to our block and ensure that is LowS
-                return key.Sign(pblock->GetHashWithoutSign(), pblock->vchBlockSig) &&
+                return key.Sign(pblock->GetHash(), pblock->vchBlockSig) &&
                            EnsureLowS(pblock->vchBlockSig) &&
                            CheckHeaderPoS(*pblock, Params().GetConsensus());
             }
@@ -3273,18 +3295,18 @@ bool CheckBlockSignature(const CBlock& block)
         return false;
     }
 
-    return CPubKey(vchPubKey).Verify(block.GetHashWithoutSign(), block.vchBlockSig);
+    return CPubKey(vchPubKey).Verify(block.GetHash(), block.vchBlockSig);
 }
 
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW)
 {
     // Check proof of work matches claimed amount
-    LogPrintf("xploited CheckBlockHeader %s\n", block.ToString());
-    LogPrintf("xploited CheckBlockHeader 2 %d\n", chainActive.Height());
+    LogPrint("xp", "CheckBlockHeader %s\n", block.ToString());
+    LogPrint("xp", "CheckBlockHeader 2 %d\n", chainActive.Height());
 
     //make sure wwere past thhe lastPow block
     BlockMap::iterator mi = mapBlockIndex.find(consensusParams.lastPowBlockHash);
-    if (mi != mapBlockIndex.end())
+    if (mi != mapBlockIndex.end() || block.nVersion > 6)
         return true;
     if (fCheckPOW && block.IsProofOfWork() && !CheckHeaderPoW(block, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
@@ -3378,12 +3400,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
-    LogPrintf("xploited CheckBlock 1 %s\n", block.ToString());
+    LogPrint("xp", "CheckBlock 1 %s\n", block.ToString());
 
     if (block.IsProofOfStake() &&  block.GetBlockTime() > FutureDrift(GetAdjustedTime(), chainActive.Height() + 1, Params().GetConsensus()))
         return error("CheckBlock() : block timestamp too far in the future");
 
-    LogPrintf("xploited CheckBlock 2\n");
+    LogPrint("xp", "CheckBlock 2\n");
     // Check the merkle root.
     if (fCheckMerkleRoot) {
         bool mutated;
@@ -3403,7 +3425,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // Note that witness malleability is checked in ContextualCheckBlock, so no
     // checks that use witness data may be performed here.
 
-    LogPrintf("xploited CheckBlock 3\n");
+    LogPrint("xp", "CheckBlock 3\n");
     // First transaction must be coinbase in case of PoW block, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
@@ -3411,47 +3433,51 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         if (block.vtx[i]->IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
 
-    LogPrintf("xploited CheckBlock 4\n");
+    LogPrint("xp", "CheckBlock 4\n");
     // Second transaction must be coinbase in case of PoS block, the rest must not be
     if (block.IsProofOfStake())
     {
-        LogPrintf("xploited CheckBlock 4a\n");
+        LogPrint("xp", "CheckBlock 4a\n");
         // Coinbase output should be empty if proof-of-stake block
         if (!CheckFirstCoinstakeOutput(block))
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "coinbase output not empty for proof-of-stake block");
 
-        LogPrintf("xploited CheckBlock 4b\n");
+        LogPrint("xp", "CheckBlock 4b\n");
         // Second transaction must be coinstake
         if (block.vtx.empty() || block.vtx.size() < 2 || !block.vtx[1]->IsCoinStake())
             return state.DoS(100, false, REJECT_INVALID, "bad-cs-missing", false, "second tx is not coinstake");
 
-        LogPrintf("xploited CheckBlock 4c\n");
+        LogPrint("xp", "CheckBlock 4c\n");
         //prevoutStake must exactly match the coinstake in the block body
         if(block.vtx[1]->vin.empty() || block.prevoutStake != block.vtx[1]->vin[0].prevout){
             return state.DoS(100, false, REJECT_INVALID, "bad-cs-invalid", false, "prevoutStake in block header does not match coinstake in block body");
         }
 
-        LogPrintf("xploited CheckBlock 4c\n");
+        LogPrint("xp", "CheckBlock 4c\n");
         //the rest of the transactions must not be coinstake
         for (unsigned int i = 2; i < block.vtx.size(); i++)
             if (block.vtx[i]->IsCoinStake())
                return state.DoS(100, false, REJECT_INVALID, "bad-cs-multiple", false, "more than one coinstake");
 
-        LogPrintf("xploited CheckBlock 4d\n");
+        LogPrint("xp", "CheckBlock 4d\n");
         // Check proof-of-stake block signature
         if (fCheckSig && !CheckBlockSignature(block)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-blk-signature", false, "bad proof-of-stake block signature");
         }
     }
 
-    LogPrintf("xploited CheckBlock 5\n");
+    LogPrint("xp", "CheckBlock 5\n");
     // Check transactions
-    for (const auto& tx : block.vtx)
+    for (const auto& tx : block.vtx) {
         if (!CheckTransaction(*tx, state, false))
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
 
-    LogPrintf("xploited CheckBlock 6\n");
+        if (block.GetBlockTime() < (int64_t)tx->nTime)
+            return state.DoS(50, error("CheckBlock() : block timestamp earlier than transaction timestamp"));
+    }
+
+    LogPrint("xp", "CheckBlock 6\n");
     unsigned int nSigOps = 0;
     for (const auto& tx : block.vtx)
     {
@@ -3463,7 +3489,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (fCheckPOW && fCheckMerkleRoot)
         block.fChecked = true;
 
-    LogPrintf("xploited CheckBlock 7\n");
+    LogPrint("xp", "CheckBlock 7\n");
     return true;
 }
 
@@ -3548,7 +3574,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     const int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
     // Check proof of work
    
-    LogPrintf("xploited ContextualCheckBlockHeader %d %d\n", block.nBits, GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()));
+    LogPrint("xp", "ContextualCheckBlockHeader %d %d\n", block.nBits, GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()));
    
     if (block.nBits != GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()))
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect difficulty value");
@@ -3658,6 +3684,8 @@ static bool UpdateHashProof(const CBlock& block, CValidationState& state, const 
     if (block.IsProofOfStake() && !CheckCoinStakeTimestamp(nHeight, block.GetBlockTime(), (int64_t)block.vtx[1]->nTime))
         return state.DoS(50, error("UpdateHashProof() : coinstake timestamp violation nTimeBlock=%d", block.GetBlockTime()));
 
+
+    LogPrint("xp", "UpdateHashProof %d %d\n", block.nBits, GetNextWorkRequired(pindex->pprev, consensusParams, block.IsProofOfStake()));
     // Check proof-of-work or proof-of-stake
     if (block.nBits != GetNextWorkRequired(pindex->pprev, consensusParams, block.IsProofOfStake()))
         return state.DoS(100, error("UpdateHashProof() : incorrect %s", block.IsProofOfWork() ? "proof-of-work" : "proof-of-stake"));
@@ -3902,7 +3930,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         LOCK(cs_main);
 
         if (ret) {
-            LogPrintf("xploited ProcessNewBlock %s\n", pblock->ToString());
+            LogPrint("xp", "ProcessNewBlock %s\n", pblock->ToString());
             // Store to disk
             ret = AcceptBlock(pblock, state, chainparams, &pindex, fForceProcessing, NULL, fNewBlock);
         }
@@ -4308,7 +4336,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
         }
         CBlock block;
         // check level 0: read from disk
-        LogPrintf("xploited VerifyDB \n");
+        LogPrint("xp", "VerifyDB \n");
         if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus()))
             return error("VerifyDB(): *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
         // check level 1: verify block validity
@@ -4353,7 +4381,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
             uiInterface.ShowProgress(_("Verifying blocks..."), std::max(1, std::min(99, 100 - (int)(((double)(chainActive.Height() - pindex->nHeight)) / (double)nCheckDepth * 50))));
             pindex = chainActive.Next(pindex);
             CBlock block;
-            LogPrintf("xploited VerifyDB 2\n");
+            LogPrint("xp", "VerifyDB 2\n");
             if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus()))
                 return error("VerifyDB(): *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
             if (!ConnectBlock(block, state, pindex, coins, chainparams))
@@ -4617,7 +4645,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     while (range.first != range.second) {
                         std::multimap<uint256, CDiskBlockPos>::iterator it = range.first;
                         std::shared_ptr<CBlock> pblockrecursive = std::make_shared<CBlock>();
-                        LogPrintf("xploited LoadExternalBlockFile \n");
+                        LogPrint("xp", "LoadExternalBlockFile \n");
                         if (ReadBlockFromDisk(*pblockrecursive, it->second, chainparams.GetConsensus()))
                         {
                             LogPrint("reindex", "%s: Processing out of order child %s of %s\n", __func__, pblockrecursive->GetHash().ToString(),
