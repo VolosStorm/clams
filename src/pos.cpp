@@ -331,12 +331,12 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
 {
     const Consensus::Params& params = Params().GetConsensus();
     if (nTimeTx < txPrev.nTime) {  // Transaction timestamp violation
-        LogPrintf("[STAKE] fail: nTime violation %d %d\n", nTimeTx, txPrev.nTime);
+        LogPrint("miner", "[STAKE] fail: nTime violation %d %d\n", nTimeTx, txPrev.nTime);
         return error("CheckStakeKernelHash() : nTime violation ");
     }
 
     if ((nTimeBlockFrom + params.nStakeMinAge) > nTimeTx) { // Min age requirement
-        //LogPrintf("stake", "[STAKE] fail: too young\n");
+        LogPrint("miner", "[STAKE] fail: too young\n");
         return error("CheckStakeKernelHashV2() : min age violation");// %d %d %d %s", nTimeBlockFrom + params.nStakeMinAge, nTimeBlockFrom, nTimeTx, pindexPrev->ToString());
     }
 
@@ -344,6 +344,7 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
     CBigNum bnTarget;
     bnTarget.SetCompact(nBits);
 
+    LogPrint("xp", "CheckStakeKernelHashV2 %d %s %64s\n", nBits,  bnTarget.GetCompact(), bnTarget.GetHex());
     // Weighted target
     int64_t nValueIn = txPrev.vout[prevout.n].nValue;
     CBigNum bnWeight = CBigNum(nValueIn);
@@ -359,8 +360,10 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
     ss << nStakeModifier << nTimeBlockFrom << txPrev.nTime << prevout.hash << prevout.n << nTimeTx;
     hashProofOfStake = Hash(ss.begin(), ss.end());
 
-    if (fPrintProofOfStake)
-    {
+    LogPrint("xp", "CheckStakeKernelHashV2 2\n");
+
+    //if (fPrintProofOfStake)
+    //{
     //LogPrintf("CheckStakeKernelHash() : using modifier 0x%016x at height=%d timestamp=%s for block from timestamp=%s\n",
      //       nStakeModifier, nStakeModifierHeight,
      //       DateTimeStrFormat("%Y-%m-%d %H:%M:%S",nStakeModifierTime),
@@ -369,19 +372,19 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
       //      nStakeModifier,
        //     nTimeBlockFrom, txPrev.nTime, prevout.n, nTimeTx,
        //     hashProofOfStake.ToString());
-    }
+    //}
 
     // Now check if proof-of-stake hash meets target protocol
     if (CBigNum(hashProofOfStake) > bnTarget) {
-        LogPrintf("[STAKE] fail: hash %64s\n", UintToArith256(hashProofOfStake).GetHex());
-        LogPrintf("[STAKE]   > target %64s\n", bnTarget.GetHex());
-        LogPrintf("[STAKE] fail: hash %64s\n", CBigNum(hashProofOfStake).GetHex());
-        LogPrintf("[STAKE]   > target %64s\n", bnTarget.GetHex());
+        LogPrint("miner", "[STAKE] fail: hash %64s\n", UintToArith256(hashProofOfStake).GetHex());
+        LogPrint("miner", "[STAKE]   > target %64s\n", bnTarget.GetHex());
+        LogPrint("miner", "[STAKE] fail: hash %64s\n", CBigNum(hashProofOfStake).GetHex());
+        LogPrint("miner", "[STAKE]   > target %s\n", bnTarget.GetCompact());
         return false;
     }
 
-    //LogPrint("stake", "[STAKE] PASS: hash %64s\n", UintToArith256(hashProofOfStake).GetHex());
-    //LogPrint("stake", "[STAKE]  <= target %64s\n", bnTarget.GetHex());
+    LogPrint("miner", "[STAKE] PASS: hash %64s\n", UintToArith256(hashProofOfStake).GetHex());
+    LogPrint("miner", "[STAKE]  <= target %64s\n", bnTarget.GetHex());
 
     if (fDebug && !fPrintProofOfStake)
     {
@@ -412,18 +415,21 @@ bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const C
     Coin coinPrev;
 
     if(!view.GetCoin(txin.prevout, coinPrev)){
+        LogPrint("miner", "CheckProofOfStake() : Stake prevout does not exist %s\n", txin.prevout.hash.ToString());
         return state.DoS(100, error("CheckProofOfStake() : Stake prevout does not exist %s", txin.prevout.hash.ToString()));
     }
 
     if(pindexPrev->nHeight + 1 - coinPrev.nHeight < Params().GetConsensus().nCoinbaseMaturity){
+        LogPrint("miner", "CheckProofOfStake() : Stake prevout is not mature, expecting %i and only matured to %i\n", Params().GetConsensus().nCoinbaseMaturity, pindexPrev->nHeight + 1 - coinPrev.nHeight);
         return state.DoS(100, error("CheckProofOfStake() : Stake prevout is not mature, expecting %i and only matured to %i", Params().GetConsensus().nCoinbaseMaturity, pindexPrev->nHeight + 1 - coinPrev.nHeight));
     }
     CBlockIndex* blockFrom = pindexPrev->GetAncestor(coinPrev.nHeight);
     if(!blockFrom) {
+        LogPrint("miner", "CheckProofOfStake() : Stake prevout does not exist %s\n", txin.prevout.hash.ToString());
         return state.DoS(100, error("CheckProofOfStake() : Block at height %i for prevout can not be loaded", coinPrev.nHeight));
     }
 
-    LogPrintf("xploited CheckProofOfStake\n");
+    LogPrint("miner", "CheckProofOfStake xploited\n");
     CBlock block;
     if (!ReadBlockFromDisk(block, blockFrom, consensusParams))
         return state.DoS(100, error("%s: CheckProofOfStake()", __func__), REJECT_INVALID, "block-not-found");
@@ -437,12 +443,16 @@ bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const C
     pblocktree->ReadTxOffsetIndex(nHeight, nTxOffset);
 
     // Verify signature
-    if (!VerifySignature(coinPrev, txin.prevout.hash, tx, 0, SCRIPT_VERIFY_NONE))
+    if (!VerifySignature(coinPrev, txin.prevout.hash, tx, 0, SCRIPT_VERIFY_NONE)){
+        LogPrint("miner", "CheckProofOfStake() : INFO: check kernel failed on coinstake %s, hashProof=%s\n", tx.GetHash().ToString(), hashProofOfStake.ToString());
         return state.DoS(100, error("CheckProofOfStake() : VerifySignature failed on coinstake %s", tx.GetHash().ToString()));
+    }
 
 
-    if (!CheckStakeKernelHash(pindexPrev, nBits, block, nTxOffset, txPrev, txin.prevout, tx.nTime, hashProofOfStake, targetProofOfStake, fDebug))
+    if (!CheckStakeKernelHash(pindexPrev, nBits, block, nTxOffset, txPrev, txin.prevout, tx.nTime, hashProofOfStake, targetProofOfStake, fDebug)) {
+        LogPrint("miner", "CheckProofOfStake() : INFO: check kernel failed on coinstake %s, hashProof=%s\n", tx.GetHash().ToString(), hashProofOfStake.ToString());
         return state.DoS(1, error("CheckProofOfStake() : INFO: check kernel failed on coinstake %s, hashProof=%s", tx.GetHash().ToString(), hashProofOfStake.ToString())); // may occur during initial download or if behind on block chain sync
+    }
 
     return true;
 }
@@ -451,6 +461,7 @@ bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const C
 
 bool CheckStakeKernelHash(CBlockIndex* pindexPrev, unsigned int nBits, const CBlock& blockFrom, unsigned int nTxPrevOffset, const CTransaction& txPrev, const COutPoint& prevout, unsigned int nTimeTx, uint256& hashProofOfStake, uint256& targetProofOfStake, bool fPrintProofOfStake, const Consensus::Params& consensusParams)
 {
+    LogPrint("xp", "CheckStakeKernelHash xploited %d %d\n", pindexPrev->nHeight + 1, consensusParams.nProtocolV2Height);
     if (pindexPrev->nHeight + 1 > consensusParams.nProtocolV2Height) {
         return CheckStakeKernelHashV2(pindexPrev, nBits, blockFrom.GetBlockTime(), txPrev, prevout, nTimeTx, hashProofOfStake, targetProofOfStake, fPrintProofOfStake);
     } 
@@ -477,24 +488,30 @@ bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& p
     uint256 hashBlock;
     CTransactionRef txPrevRef;
 
+    LogPrintf("xploited CheckKernel 1\n");
     Coin coinPrev;
     if(!view.GetCoin(prevout, coinPrev)){
         return false;
     }
 
+    LogPrintf("xploited CheckKernel 2\n");
     if(pindexPrev->nHeight + 1 - coinPrev.nHeight < Params().GetConsensus().nCoinbaseMaturity){
         return false;
     }
+
+    LogPrintf("xploited CheckKernel 3\n");
     CBlockIndex* blockFrom = pindexPrev->GetAncestor(coinPrev.nHeight);
     if(!blockFrom) {
         return false;
     }
+
+    LogPrintf("xploited CheckKernel 4\n");
     if(coinPrev.IsSpent()){
         return false;
     }
 
     CBlock block;
-    LogPrintf("xploited CheckKernel\n");
+    LogPrintf("xploited CheckKernel 5\n");
     if (!ReadBlockFromDisk(block, blockFrom, params))
         return state.DoS(100, error("%s: CheckProofOfStake()", __func__), REJECT_INVALID, "block-not-found");
 

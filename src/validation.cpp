@@ -1868,8 +1868,8 @@ VersionBitsCache versionbitscache;
 int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
-    
-    
+
+
     LogPrint("xp", "ComputeBlockVersion 1\n");
     LogPrint("xp", "ComputeBlockVersion 2 %d \n", pindexPrev->nHeight + 1);
     LogPrint("xp", "ComputeBlockVersion 3 %d \n", params.nProtocolV3Height);
@@ -3190,8 +3190,8 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
     
     if(chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height)
         txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
-    int64_t nSearchTime = txCoinStake.nTime;
 
+    int64_t nSearchTime = txCoinStake.nTime;
     if (nSearchTime > nLastCoinStakeSearchTime)
     {        
         int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height ? 1 : nSearchTime - nLastCoinStakeSearchTime;
@@ -3199,22 +3199,28 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
         {
             if (txCoinStake.nTime >= std::max(pindexBestHeader->GetPastTimeLimit()+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())))
             {
+                LogPrint("xp", "SignBlock xploited \n");
                 // make sure coinstake would meet timestamp protocol
                 //    as it would be the same as the block timestamp
                 //pblock->vtx[0]->nTime = nTime = txCoinStake.nTime;
                 pblock->nTime = std::max(pindexBestHeader->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
+                LogPrint("xp", "SignBlock xploited 1\n");
                 pblock->nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()));
-                
+                LogPrint("xp", "SignBlock xploited 2\n");
+
                 pblock->vtx[1] = MakeTransactionRef(std::move(txCoinStake));
                 pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
                 pblock->prevoutStake = pblock->vtx[1]->vin[0].prevout;
 
+                LogPrint("xp", "SignBlock xploited 3\n");
                 // Check timestamp against prev
                 if(pblock->GetBlockTime() <= pindexBestHeader->GetBlockTime() || FutureDrift(pblock->GetBlockTime(), chainActive.Height() + 1, Params().GetConsensus()) < pindexBestHeader->GetBlockTime())
                 {
+                    LogPrint("xp", "SignBlock xploited Check timestamp against prev failed\n");
                     return false;
                 }
 
+                LogPrint("xp", "SignBlock xploited 4 %s %s %s\n", key.Sign(pblock->GetHash(), pblock->vchBlockSig), EnsureLowS(pblock->vchBlockSig), CheckHeaderPoS(*pblock, Params().GetConsensus()));
                 // append a signature to our block and ensure that is LowS
                 return key.Sign(pblock->GetHash(), pblock->vchBlockSig) &&
                            EnsureLowS(pblock->vchBlockSig) &&

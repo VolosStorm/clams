@@ -3087,13 +3087,13 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 scriptPubKeyKernel = pcoin.first->tx->vout[pcoin.second].scriptPubKey;
                 if (!Solver(scriptPubKeyKernel, whichType, vSolutions))
                 {
-                    LogPrint("coinstake", "CreateCoinStake : failed to parse kernel\n");
+                    LogPrint("stake", "CreateCoinStake : failed to parse kernel\n");
                     break;
                 }
-                LogPrint("coinstake", "CreateCoinStake : parsed kernel type=%d\n", whichType);
+                LogPrint("stake", "CreateCoinStake : parsed kernel type=%d\n", whichType);
                 if (whichType != TX_PUBKEY && whichType != TX_PUBKEYHASH)
                 {
-                    LogPrint("coinstake", "CreateCoinStake : no support for kernel type=%d\n", whichType);
+                    LogPrint("stake", "CreateCoinStake : no support for kernel type=%d\n", whichType);
                     break;  // only support pay to public key and pay to address
                 }
                 if (whichType == TX_PUBKEYHASH) // pay to address type
@@ -3101,7 +3101,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                     // convert to pay to public key type
                     if (!keystore.GetKey(uint160(vSolutions[0]), key))
                     {
-                        LogPrint("coinstake", "CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
+                        LogPrint("stake", "CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
                         break;  // unable to find corresponding public key
                     }
                     scriptPubKeyOut << key.GetPubKey().getvch() << OP_CHECKSIG;
@@ -3111,13 +3111,13 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                     valtype& vchPubKey = vSolutions[0];
                     if (!keystore.GetKey(Hash160(vchPubKey), key))
                     {
-                        LogPrint("coinstake", "CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
+                        LogPrint("stake", "CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
                         break;  // unable to find corresponding public key
                     }
 
                     if (key.GetPubKey() != vchPubKey)
                     {
-                        LogPrint("coinstake", "CreateCoinStake : invalid key for kernel type=%d\n", whichType);
+                        LogPrint("stake", "CreateCoinStake : invalid key for kernel type=%d\n", whichType);
                         break; // keys mismatch
                     }
 
@@ -3130,7 +3130,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 vwtxPrev.push_back(pcoin.first);
                 txNew.vout.push_back(CTxOut(0, scriptPubKeyOut));
 
-                LogPrint("coinstake", "CreateCoinStake : added kernel type=%d\n", whichType);
+                LogPrint("stake", "CreateCoinStake : added kernel type=%d\n", whichType);
                 fKernelFound = true;
                 break;
             }
