@@ -1049,7 +1049,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                 {
                     // Send block from disk
                     CBlock block;
-                    LogPrint("xp", "end block from disk %s %s\n", block.ToString(), (*mi).second->ToString());
+                   // LogPrint("xp", "send block from disk %s %s\n", block.ToString(), (*mi).second->ToString());
                     if (!ReadBlockFromDisk(block, (*mi).second, consensusParams))
                         assert(!"cannot load block from disk");
                     if (inv.type == MSG_BLOCK){
@@ -1064,10 +1064,10 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                             legacyBlock.nNonce = block.nNonce;
                             legacyBlock.vtx = block.vtx;
                             legacyBlock.vchBlockSig = block.vchBlockSig;
-                            LogPrint("xp", "- Pushing old block structure %s %s\n", block.ToString(), legacyBlock.ToString());
+                            //LogPrint("xp", "- Pushing old block structure %s %s\n", block.ToString(), legacyBlock.ToString());
                             connman.PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, legacyBlock));
                         } else { 
-                            LogPrint("xp", "- Pushing new block structure %s\n", block.ToString());
+                            //LogPrint("xp", "- Pushing new block structure %s\n", block.ToString());
                             connman.PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, block));
                         }  
                     }
@@ -1735,7 +1735,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         CBlock block;
-        LogPrint("xp", "GETBLOCKTXN\n");
         bool ret = ReadBlockFromDisk(block, it->second, chainparams.GetConsensus());
         assert(ret);
 
@@ -2285,7 +2284,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 //headers[n].prevoutStake = prevoutStake;
                 //headers[n].vchBlockSig = header.vchBlockSig;
 
-                LogPrint("xp", "HEADERS 1 %s\n", headers[n].GetHash().ToString());
+                //LogPrint("xp", "HEADERS 1 %s\n", headers[n].GetHash().ToString());
             }
 
             //BlockMap::iterator mi = mapBlockIndex.find(headers[nCount-1].GetHash());
@@ -2348,7 +2347,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
         }
 
-        LogPrint("xp", "net 1\n");
         //if(pfrom->nVersion <= 70012)
         CValidationState state;
         if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast)) {
@@ -2362,7 +2360,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
         }
 
-        LogPrint("xp", "net 2\n");
 
         {
         LOCK(cs_main);
@@ -2372,12 +2369,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
         nodestate->nUnconnectingHeaders = 0;
 
-        LogPrint("xp", "net 3\n");
         assert(pindexLast);
         UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
 
         if (nCount == MAX_HEADERS_RESULTS) {
-            LogPrint("xp", "net 3a\n");
             // Headers message had its maximum size; the peer may have more headers.
             // TODO: optimize: if pindexLast is an ancestor of chainActive.Tip or pindexBestHeader, continue
             // from there instead.
@@ -2387,11 +2382,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         
         bool fCanDirectFetch = CanDirectFetch(chainparams.GetConsensus());
-        LogPrint("xp", "net 4 %s %s %s\n", fCanDirectFetch, pindexLast->IsValid(BLOCK_VALID_TREE), chainActive.Tip()->nChainWork <= pindexLast->nChainWork);
         // If this set of headers is valid and ends in a block with at least as
         // much work as our tip, download as much as possible.
         if (fCanDirectFetch && pindexLast->IsValid(BLOCK_VALID_TREE) && chainActive.Tip()->nChainWork <= pindexLast->nChainWork) {
-            LogPrint("xp", "net 5a\n");
             std::vector<const CBlockIndex*> vToFetch;
             const CBlockIndex *pindexWalk = pindexLast;
             // Calculate all the blocks we'd need to switch to pindexLast, up to a limit.
@@ -2404,7 +2397,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
                 pindexWalk = pindexWalk->pprev;
             }
-            LogPrint("xp", "net 5\n");
             // If pindexWalk still isn't on our main chain, we're looking at a
             // very large reorg at a time we think we're close to caught up to
             // the main chain -- this shouldn't really happen.  Bail out on the
@@ -2414,12 +2406,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                         pindexLast->GetBlockHash().ToString(),
                         pindexLast->nHeight);
             } else {
-                LogPrint("xp", "net 6\n");
                 std::vector<CInv> vGetData;
                 // Download as much as possible, from earliest to latest.
                 BOOST_REVERSE_FOREACH(const CBlockIndex *pindex, vToFetch) 
                 {
-                    LogPrint("xp", "net 7\n");
                     if (nodestate->nBlocksInFlight >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
                         // Can't download any more from this peer
                         break;
@@ -2451,7 +2441,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
 
         if(pfrom->nVersion <= 70012) {
-            LogPrintf("Incomming Block from old client, attempting to convert\n");
+            //LogPrint("xp", "Incomming Block from old client, attempting to convert\n");
 
             std::shared_ptr<CBlockLegacy> lblock = std::make_shared<CBlockLegacy>();
             vRecv >> *lblock;
@@ -2472,11 +2462,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             pblock->vtx  =   lblock->vtx;
 
         } else { 
-             LogPrintf("Incomming Block from new client\n");
             vRecv >> *pblock;
         }
 
-        LogPrintf("received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
+        LogPrint("net", "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
 
         // Process all blocks from whitelisted peers, even if not requested,
         // unless we're still syncing with the network.
@@ -3086,7 +3075,6 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
                     }
                     if (!fGotBlockFromCache) {
                         CBlock block;
-                        LogPrint("xp", "fGotBlockFromCache\n");
                         bool ret = ReadBlockFromDisk(block, pBestIndex, consensusParams);
                         assert(ret);
                         CBlockHeaderAndShortTxIDs cmpctblock(block, state.fWantsCmpctWitness);
