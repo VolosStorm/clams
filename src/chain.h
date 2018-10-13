@@ -345,7 +345,7 @@ public:
 
     int64_t GetPastTimeLimit() const
     {
-        if (nHeight > 203500)
+        if (nHeight > 500)
             return GetBlockTime();
         else
             return GetMedianTimePast();
