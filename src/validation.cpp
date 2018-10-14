@@ -1930,6 +1930,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     // verify that the view's current state corresponds to the previous block
     uint256 hashPrevBlock = pindex->pprev == NULL ? uint256() : pindex->pprev->GetBlockHash();
+    LogPrintf("pindex->pprev: %x\n", pindex->pprev);
+    LogPrintf("hashPrevBlock: %s\n", hashPrevBlock.ToString());
+    LogPrintf("view.GetBestBlock(): %s\n", view.GetBestBlock().ToString());
     assert(hashPrevBlock == view.GetBestBlock());
 
     // Special case for the genesis block, skipping connection of its transactions

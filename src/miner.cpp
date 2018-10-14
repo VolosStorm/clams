@@ -871,7 +871,8 @@ void ThreadStakeMiner(CWallet *pwallet)
                 fTryToSync = false;
                 if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) < 3 ||
                     pindexBestHeader->GetBlockTime() < GetTime() - 10 * 60) {
-                    MilliSleep(60000);
+                    LogPrintf("sleeping 5 seconds before staking\n");
+                    MilliSleep(5000);
                     continue;
                 }
             }

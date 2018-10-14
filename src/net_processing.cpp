@@ -2466,6 +2466,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         LogPrint("net", "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
+        {
+            CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION);
+            ssBlock << *pblock;
+            std::string strHex = HexStr(ssBlock.begin(), ssBlock.end());
+            LogPrint("net", "block: %s\n", strHex);
+        }
 
         // Process all blocks from whitelisted peers, even if not requested,
         // unless we're still syncing with the network.
