@@ -343,9 +343,11 @@ public:
         return (int64_t)nTimeMax;
     }
 
-    int64_t GetPastTimeLimit() const
+    int64_t GetPastTimeLimit(int nProtocolV2Height) const
     {
-        if (nHeight > 500)
+        // need to change this to 203500 for mainnet...  not sure how to 
+        // check if its testnet or not here ..  possible pass it in as a bool
+        if (nHeight > nProtocolV2Height)
             return GetBlockTime();
         else
             return GetMedianTimePast();

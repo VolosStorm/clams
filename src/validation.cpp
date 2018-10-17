@@ -3194,7 +3194,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
         if (wallet.CreateCoinStake(wallet, pblock->nBits, nSearchInterval, nTotalFees, nTimeBlock, txCoinStake, key))
         {
             //LogPrint("xp", "SignBlock CreateCoinStake %s\n", pblock->ToString());
-            if (txCoinStake.nTime >= std::max(pindexBestHeader->GetPastTimeLimit()+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())))
+            if (txCoinStake.nTime >= std::max(pindexBestHeader->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height )+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())))
             {
                 //LogPrint("xp", "SignBlock blockBefore %s\n", pblock->ToString());
                 // make sure coinstake would meet timestamp protocol
@@ -3829,7 +3829,7 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
         return state.DoS(100, error("AcceptBlock() : reject proof-of-work at height %d", nHeight));
 
     // Check timestamp against prev
-    if ( pindexPrev != NULL && (block.GetBlockTime() <= pindexPrev->GetPastTimeLimit() || FutureDrift(block.GetBlockTime(), nHeight, Params().GetConsensus()) < pindexPrev->GetBlockTime()))
+    if ( pindexPrev != NULL && (block.GetBlockTime() <= pindexPrev->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height ) || FutureDrift(block.GetBlockTime(), nHeight, Params().GetConsensus()) < pindexPrev->GetBlockTime()))
         return error("AcceptBlock() : block's timestamp is too early");
 
 

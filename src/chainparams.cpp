@@ -205,15 +205,15 @@ public:
 
 
         consensus.nTargetSpacing = 1 * 5; // 5 Seconds, this was only used to the inital PoW and distrubution
-        consensus.nTargetStakeSpacing = 1 * 1; // 60 seconds
-        consensus.nStakeMinAge = 4 * 60; // 4 hours
+        consensus.nTargetStakeSpacing = 1 * 60; // 60 seconds
+        consensus.nStakeMinAge = 1 * 30 * 60; // 4 hours
         consensus.nStakeMaxAge = -1; // unlimited
         consensus.nModifierInterval = 10 * 60; // time to elapse before new modifier is computed
         consensus.nTargetTimespan = 16 * 60;  // 16 mins
 
-        consensus.DISTRIBUTION_END = 500;
-        consensus.LAST_POW_BLOCK = 500;
-        consensus.nProtocolV2Height = 500;
+        consensus.DISTRIBUTION_END = 300;
+        consensus.LAST_POW_BLOCK = 300;
+        consensus.nProtocolV2Height = 0;
         consensus.nProtocolV3Height = 3000000;
 
         consensus.fPowAllowMinDifficultyBlocks = false;
