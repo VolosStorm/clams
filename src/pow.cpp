@@ -131,8 +131,12 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
 unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
     arith_uint256 bnTargetLimit;
-    bnTargetLimit.SetCompact(params.posLimit);
- 
+    if(fProofOfStake) {
+        bnTargetLimit.SetCompact(params.posLimit);
+    }
+    else {
+        bnTargetLimit.SetCompact(params.powLimit);
+    }
 
 
     const CBlockIndex* pindex;
