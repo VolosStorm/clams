@@ -206,7 +206,7 @@ public:
 
         consensus.nTargetSpacing = 1 * 5; // 5 Seconds, this was only used to the inital PoW and distrubution
         consensus.nTargetStakeSpacing = 1 * 60; // 60 seconds
-        consensus.nStakeMinAge = 1 * 30 * 60; // 4 hours
+        consensus.nStakeMinAge = 1 * 30 * 60; // 30 minutes
         consensus.nStakeMaxAge = -1; // unlimited
         consensus.nModifierInterval = 10 * 60; // time to elapse before new modifier is computed
         consensus.nTargetTimespan = 16 * 60;  // 16 mins

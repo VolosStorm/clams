@@ -3333,7 +3333,11 @@ CAmount GetPOWBlockSubsidy(CBlockIndex* pindex)
 {
         //skip the initial distrubtion on testnet
         if(Params().NetworkIDString() != "main") { 
-                return 5000 * COIN;
+            if(pindex->nHeight < 300) {
+                return 5000 * COIN
+            } else {
+                return 1 * COIN;
+            } 
         } else { 
             CAmount nSubsidy = 2.15652173 * COIN;
             if (pindex->nHeight < 4551  ) {
