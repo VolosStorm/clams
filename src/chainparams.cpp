@@ -213,7 +213,7 @@ public:
 
         consensus.DISTRIBUTION_END = 300;
         consensus.LAST_POW_BLOCK = 300;
-        consensus.nProtocolV2Height = 0;
+        consensus.nProtocolV2Height = -1;
         consensus.nProtocolV3Height = 3000000;
 
         consensus.fPowAllowMinDifficultyBlocks = false;
