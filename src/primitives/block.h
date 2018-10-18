@@ -174,10 +174,10 @@ public:
     // ppcoin: two types of block: proof-of-work or proof-of-stake
     virtual bool IsProofOfStake() const //qtum
     {
-        if(nVersion > 6 || !prevoutStake.IsNull())
-            return true;
-        else 
+        if(prevoutStake.IsNull())
             return false;
+        else 
+            return true;
     }
 
     virtual bool IsProofOfWork() const

@@ -36,17 +36,12 @@ inline arith_uint256 GetLimit(const Consensus::Params& params, bool fProofOfStak
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-    // genesis block
-    if (pindexLast == NULL)
-        return GetLimit(params, fProofOfStake).GetCompact();
-
     if (pindexLast->nHeight < params.DISTRIBUTION_END && Params().NetworkIDString() == "main")
         return GetNextTargetRequiredV1(pindexLast, params, fProofOfStake);
-    else if (!(pindexLast->nHeight > params.nProtocolV2Height))
+    else if (pindexLast->nHeight < params.nProtocolV2Height)
         return GetNextTargetRequiredV2(pindexLast, params, fProofOfStake);
     else    
         return GetNextTargetRequiredV3(pindexLast, params, fProofOfStake);
-
 }
 
 unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)

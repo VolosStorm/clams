@@ -2261,7 +2261,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
         headers.resize(nCount);
 
-
         if(pfrom->nVersion <= 70012){ 
             // if its an older client, ignore headers and just ask for the blocks directly
 
@@ -2279,6 +2278,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
                     COutPoint prevoutStake(a, 0);
                     headers[n].prevoutStake = prevoutStake;
+                } else { 
+                    headers[n].prevoutStake.SetNull();
                 }
 
                 headers[n].nVersion = header.nVersion;
@@ -2290,7 +2291,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 //headers[n].prevoutStake = prevoutStake;
                 //headers[n].vchBlockSig = header.vchBlockSig;
 
-                //LogPrint("xp", "HEADERS 1 %s\n", headers[n].GetHash().ToString());
             }
 
             //BlockMap::iterator mi = mapBlockIndex.find(headers[nCount-1].GetHash());

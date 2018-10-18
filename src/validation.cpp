@@ -3579,8 +3579,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     const int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
     // Check proof of work
    
-    //LogPrint("xp", "ContextualCheckBlockHeader %d %d\n", block.nBits, GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()));
-   
+    LogPrint("xp", "ContextualCheckBlockHeader %d %d %s\n", block.nBits, GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()), block.IsProofOfStake());
     if (block.nBits != GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()))
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect difficulty value");
 
