@@ -2269,7 +2269,13 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 CBlockLegacy header;
                 vRecv >> header;
 
-                if(chainActive.Height() > 499){ 
+                // set blank pos if height is over LAST_POW_BLOCK or 
+                // also if the current tip is 0 height and n > LAST_POW_BLOCK
+                if( chainActive.Height() > chainparams.GetConsensus().LAST_POW_BLOCK ){ 
+                    uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
+                    COutPoint prevoutStake(a, 0);
+                    headers[n].prevoutStake = prevoutStake;
+                } else if ( chainActive.Height() == 0 && n > chainparams.GetConsensus().LAST_POW_BLOCK ) {
                     uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
                     COutPoint prevoutStake(a, 0);
                     headers[n].prevoutStake = prevoutStake;
