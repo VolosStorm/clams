@@ -3309,11 +3309,6 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
     // Check proof of work matches claimed amount
     //("xp", "CheckBlockHeader %s\n", block.ToString());
     //LogPrint("xp", "CheckBlockHeader 2 %d\n", chainActive.Height());
-
-    //make sure wwere past thhe lastPow block
-    BlockMap::iterator mi = mapBlockIndex.find(consensusParams.lastPowBlockHash);
-    if (mi != mapBlockIndex.end() || block.nVersion > 6)
-        return true;
     if (fCheckPOW && block.IsProofOfWork() && !CheckHeaderPoW(block, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
     // PoS header proofs are not validated and always return true
