@@ -3180,6 +3180,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
     //unsigned int nStartTime = txCoinStake.nTime;
 
     uint32_t nTimeBlock = nTime;
+    unsigned int nStartTime = GetAdjustedTime();
     
     if(chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height)
         txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
@@ -3187,6 +3188,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
     int64_t nSearchTime = txCoinStake.nTime;
     if (nSearchTime > nLastCoinStakeSearchTime)
     {        
+        LogPrintf("starting stake\n");
         int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height ? 1 : nSearchTime - nLastCoinStakeSearchTime;
         if (wallet.CreateCoinStake(wallet, pblock->nBits, nSearchInterval, nTotalFees, nTimeBlock, txCoinStake, key))
         {
@@ -3228,9 +3230,12 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
                 //LogPrint("xp", "SignBlock blockAfter %s\n", pblock->ToString());
                 //LogPrint("xp", "SignBlock xploited 1 %s %s %s\n", key.Sign(pblock->GetHash(), pblock->vchBlockSig), EnsureLowS(pblock->vchBlockSig), CheckHeaderPoS(*pblock, Params().GetConsensus()));
                 // append a signature to our block and ensure that is LowS
+                LogPrintf("successful stake took %lds\n", GetAdjustedTime() - nStartTime);
                 return key.Sign(pblock->GetHash(), pblock->vchBlockSig) &&
                            EnsureLowS(pblock->vchBlockSig) &&
                            CheckHeaderPoS(*pblock, Params().GetConsensus());
+            } else {
+                LogPrintf("found stake, but cannot use it\n");
             }
         }
         nLastCoinStakeSearchInterval = nSearchTime - nLastCoinStakeSearchTime;
