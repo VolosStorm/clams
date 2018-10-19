@@ -3244,6 +3244,9 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
                           std::max(pindexBestHeader->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height )+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())));
             }
         }
+
+        LogPrintf("stake took %lds\n", GetAdjustedTime() - nStartTime);
+
         nLastCoinStakeSearchInterval = nSearchTime - nLastCoinStakeSearchTime;
         nLastCoinStakeSearchTime = nSearchTime;
     }
