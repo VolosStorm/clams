@@ -46,7 +46,6 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus:
 
 unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-    LogPrintf("xploited GetNextTargetRequiredV1\n");
     arith_uint256 bnTargetLimit;
     bnTargetLimit.SetCompact(params.powLimit);
     

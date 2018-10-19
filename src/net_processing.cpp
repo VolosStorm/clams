@@ -2261,15 +2261,15 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
         headers.resize(nCount);
 
+        // if its an older client convert the incomming block
+        // because it will not include prevoutStake in the header 
+        // for pos blocks
         if(pfrom->nVersion <= 70012){ 
-            // if its an older client, ignore headers and just ask for the blocks directly
-
             for (unsigned int n = 0; n < nCount; n++) {
                 CBlockLegacy header;
                 vRecv >> header;
                 
-                // set blank pos if height is over LAST_POW_BLOCK or 
-                // also if the current tip is 0 height and n > LAST_POW_BLOCK
+                // set blank pos if were past PoW stage
                 if( pindexBestHeader->nHeight > chainparams.GetConsensus().LAST_POW_BLOCK ){ 
                     uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
                     COutPoint prevoutStake(a, 0);
@@ -2288,16 +2288,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 headers[n].nTime = header.nTime;
                 headers[n].nBits = header.nBits;
                 headers[n].nNonce = header.nNonce;
-                //headers[n].prevoutStake = prevoutStake;
-                //headers[n].vchBlockSig = header.vchBlockSig;
-
             }
-
-            //BlockMap::iterator mi = mapBlockIndex.find(headers[nCount-1].GetHash());
-            //uint256 test = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
-            //if (mi == mapBlockIndex.end())
-            //    PushGetBlocks(pfrom, chainActive.Tip(), test, connman);
-            //return true;
         } else { 
             for (unsigned int n = 0; n < nCount; n++) {
                 vRecv >> headers[n];
