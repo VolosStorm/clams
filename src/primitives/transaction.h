@@ -402,9 +402,16 @@ public:
      */
     unsigned int GetTotalSize() const;
 
-    bool IsCoinBase() const
+    bool IsCoinPoW() const
     {
         return (vin.size() == 1 && vin[0].prevout.IsNull() && vout.size() >= 1);
+    }
+
+    bool IsCoinBase() const
+    {
+        if( (vin.size() == 1 && vin[0].prevout.IsNull() && vout.size() >= 1) || (vin.size() > 0 && (!vin[0].prevout.IsNull()) && vout.size() >= 2 && vout[0].IsEmpty()) )
+            return true;
+        return false;
     }
 
     bool IsCoinStake() const

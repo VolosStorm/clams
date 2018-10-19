@@ -254,6 +254,7 @@ public:
 
     const uint256& GetHash() const { return tx->GetHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
+    bool IsCoinPoW() const { return tx->IsCoinPoW(); }
     bool IsCoinStake() const { return tx->IsCoinStake(); }
 };
 

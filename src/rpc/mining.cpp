@@ -649,7 +649,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         uint256 txHash = tx.GetHash();
         setTxIndex[txHash] = i++;
 
-        if (tx.IsCoinBase())
+        if (tx.IsCoinPoW())
             continue;
 
         UniValue entry(UniValue::VOBJ);

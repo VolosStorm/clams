@@ -52,8 +52,14 @@ public:
     //! empty constructor
     Coin() : fCoinBase(false), fCoinStake(false), nHeight(0) { }
 
-    bool IsCoinBase() const {
+    bool IsCoinPoW() const {
         return fCoinBase;
+    }
+
+    bool IsCoinBase() const {
+        if(fCoinBase || fCoinStake)
+            return true;
+        return false;
     }
     bool IsCoinStake() const {
         return fCoinStake;

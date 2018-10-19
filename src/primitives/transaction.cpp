@@ -125,7 +125,7 @@ unsigned int CTransaction::GetTotalSize() const
 std::string CTransaction::ToString() const
 {
     std::string str;
-    str += IsCoinBase()? "Coinbase" : (IsCoinStake()? "Coinstake" : "CTransaction");
+    str += IsCoinPoW()? "Coinbase" : (IsCoinStake()? "Coinstake" : "CTransaction");
     str += strprintf("(hash=%s, nTime=%d, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%u, strCLAMSpeech=%s)\n",
         GetHash().ToString().substr(0,10),
         nTime, 
