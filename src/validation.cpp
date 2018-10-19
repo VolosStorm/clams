@@ -3235,7 +3235,13 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
                            EnsureLowS(pblock->vchBlockSig) &&
                            CheckHeaderPoS(*pblock, Params().GetConsensus());
             } else {
-                LogPrintf("found stake, but cannot use it\n");
+                LogPrintf("found stake, but cannot use it : txCoinStake.nTime (%d) < max(%d+1, PastDrift(%d, %d+1) = %d) = %d\n",
+                          txCoinStake.nTime,
+                          pindexBestHeader->GetPastTimeLimit(Params().GetConsensus().nProtocolV2Height),
+                          pindexBestHeader->GetBlockTime(),
+                          pindexBestHeader->nHeight,
+                          PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()),
+                          std::max(pindexBestHeader->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height )+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())));
             }
         }
         nLastCoinStakeSearchInterval = nSearchTime - nLastCoinStakeSearchTime;
