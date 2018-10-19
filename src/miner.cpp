@@ -191,6 +191,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // transaction (which in most cases can be a no-op).
     fIncludeWitness = IsWitnessEnabled(pindexPrev, chainparams.GetConsensus());
 
+    addPackageTxs();
+
     nLastBlockTx = nBlockTx;
     nLastBlockSize = nBlockSize;
     nLastBlockWeight = nBlockWeight;
@@ -812,9 +814,9 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
     }
 
     //// debug print
-    LogPrint("miner", "CheckStake() : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", hashBlock.GetHex(), proofHash.GetHex(), hashTarget.GetHex());
-    LogPrint("miner", "%s\n", pblock->ToString());
-    LogPrint("miner", "out %s\n", FormatMoney(pblock->vtx[1]->GetValueOut()));
+    LogPrintf("CheckStake() : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", hashBlock.GetHex(), proofHash.GetHex(), hashTarget.GetHex());
+    LogPrintf("%s\n", pblock->ToString());
+    LogPrintf("out %s\n", FormatMoney(pblock->vtx[1]->GetValueOut()));
 
     // Found a solution
     {
