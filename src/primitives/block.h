@@ -238,25 +238,7 @@ public:
         *((CBlockHeader*)this) = header;
     }
 
-    CBlock(const CBlockLegacy& block)
-    {
-        this->nVersion       = block.nVersion;
-        this->hashPrevBlock  = block.hashPrevBlock;
-        this->hashMerkleRoot = block.hashMerkleRoot;
-        this->nTime          = block.nTime;
-        this->nBits          = block.nBits;
-        this->nNonce         = block.nNonce;
-        for (unsigned int j = 0; j < block.vchBlockSig.size(); j++)
-        {
-            this->vchBlockSig[j] = block.vchBlockSig[j];
-        }
-        this->prevoutStake   = block.vtx[1]->vin[0].prevout;
-        for (unsigned int i = 0; i < block.vtx.size(); i++)
-        {
-            this->vtx[i] = block.vtx[i];
-        }
-        //vtx            = *block.vtx;
-    }
+    CBlock(const CBlockLegacy& block);
 
     ADD_SERIALIZE_METHODS;
 
