@@ -340,7 +340,7 @@ UniValue getaddressesbyaccount(const JSONRPCRequest& request)
     return ret;
 }
 
-static void SendMoney(const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, std::string strClamSpeech)
+static void SendMoney(const CTxDestination &address, CAmount nValue, int64_t nCount, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, std::string strClamSpeech)
 {
     CAmount curBalance = pwalletMain->GetBalance();
 
@@ -348,7 +348,7 @@ static void SendMoney(const CTxDestination &address, CAmount nValue, bool fSubtr
     if (nValue <= 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
 
-    if (nValue > curBalance)
+    if (nValue * nCount > curBalance)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
 
     if (pwalletMain->GetBroadcastTransactions() && !g_connman)
@@ -370,10 +370,12 @@ static void SendMoney(const CTxDestination &address, CAmount nValue, bool fSubtr
     vector<CRecipient> vecSend;
     int nChangePosRet = -1;
     CRecipient recipient = {scriptPubKey, nValue, fSubtractFeeFromAmount};
-    vecSend.push_back(recipient);
+
+    for (int i = 0; i < nCount; i++)
+        vecSend.push_back(recipient);
 
     if (!pwalletMain->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, NULL, true, false, strClamSpeech)) {
-        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
+        if (!fSubtractFeeFromAmount && nValue * nCount + nFeeRequired > curBalance)
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
@@ -421,9 +423,24 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
 
     // Amount
-    CAmount nAmount = AmountFromValue(request.params[1]);
-    if (nAmount <= 0)
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+    CAmount nAmount;
+    int64_t nCount;
+
+    if (request.params[1].isObject()) {
+        UniValue s = request.params[1].get_obj();
+        const UniValue& count_v = find_value(s, "count");
+        if (!count_v.isNum())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, count must be integer");
+
+        nCount = count_v.get_int64();
+        if (nCount < 0)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, count must not be negative");
+
+        nAmount = AmountFromValue(find_value(s, "amount"));
+    } else {
+        nCount = 1;
+        nAmount = AmountFromValue(request.params[1]);
+    }
 
     // Wallet comments
     CWalletTx wtx;
@@ -447,7 +464,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked();
 
-    SendMoney(address.Get(), nAmount, fSubtractFeeFromAmount, wtx, clamspeech);
+    SendMoney(address.Get(), nAmount, nCount, fSubtractFeeFromAmount, wtx, clamspeech);
 
     return wtx.GetHash().GetHex();
 }
@@ -867,9 +884,26 @@ UniValue sendfrom(const JSONRPCRequest& request)
     CBitcoinAddress address(request.params[1].get_str());
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
-    CAmount nAmount = AmountFromValue(request.params[2]);
-    if (nAmount <= 0)
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+
+    CAmount nAmount;
+    int64_t nCount;
+
+    if (request.params[2].isObject()) {
+        UniValue s = request.params[2].get_obj();
+        const UniValue& count_v = find_value(s, "count");
+        if (!count_v.isNum())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, count must be integer");
+
+        nCount = count_v.get_int64();
+        if (nCount < 0)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, count must not be negative");
+
+        nAmount = AmountFromValue(find_value(s, "amount"));
+    } else {
+        nCount = 1;
+        nAmount = AmountFromValue(request.params[2]);
+    }
+
     int nMinDepth = 1;
     if (request.params.size() > 3)
         nMinDepth = request.params[3].get_int();
@@ -896,7 +930,7 @@ UniValue sendfrom(const JSONRPCRequest& request)
     if (nAmount > nBalance)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Account has insufficient funds");
 
-    SendMoney(address.Get(), nAmount, false, wtx, clamspeech);
+    SendMoney(address.Get(), nAmount, nCount, false, wtx, clamspeech);
 
     return wtx.GetHash().GetHex();
 }
@@ -1423,6 +1457,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     // Received
     if (listReceived.size() > 0 && wtx.GetDepthInMainChain() >= nMinDepth)
     {
+        bool stop = false;
         BOOST_FOREACH(const COutputEntry& r, listReceived)
         {
             string account;
@@ -1448,7 +1483,13 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
                 {
                     entry.push_back(Pair("category", "receive"));
                 }
-                entry.push_back(Pair("amount", ValueFromAmount(r.amount)));
+                if (!wtx.IsCoinStake())
+                    entry.push_back(Pair("amount", ValueFromAmount(r.amount)));
+                else
+                {
+                    entry.push_back(Pair("amount", ValueFromAmount(-nFee)));
+                    stop = true; // only one coinstake output
+                }
                 if (pwalletMain->mapAddressBook.count(r.destination))
                     entry.push_back(Pair("label", account));
                 entry.push_back(Pair("vout", r.vout));
@@ -1456,6 +1497,8 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
                     WalletTxToJSON(wtx, entry);
                 ret.push_back(entry);
             }
+            if ( stop)
+                break;
         }
     }
 }
@@ -2474,7 +2517,7 @@ UniValue listunspent(const JSONRPCRequest& request)
     if (!EnsureWalletIsAvailable(request.fHelp))
         return NullUniValue;
 
-    if (request.fHelp || request.params.size() > 4)
+    if (request.fHelp || request.params.size() > 5)
         throw runtime_error(
             "listunspent ( minconf maxconf  [\"addresses\",...] [include_unsafe] )\n"
             "\nReturns array of unspent transaction outputs\n"
@@ -2492,6 +2535,7 @@ UniValue listunspent(const JSONRPCRequest& request)
             "                  because they come from unconfirmed untrusted transactions or unconfirmed\n"
             "                  replacement transactions (cases where we are less sure that a conflicting\n"
             "                  transaction won't be mined).\n"
+            "5. only_mature    (bool, optional, default=true) Only include mature outputs\n"
             "\nResult\n"
             "[                   (array of json object)\n"
             "  {\n"
@@ -2548,11 +2592,17 @@ UniValue listunspent(const JSONRPCRequest& request)
         include_unsafe = request.params[3].get_bool();
     }
 
+    bool fMature = true;
+    if (request.params.size() > 4 && !request.params[4].isNull()) {
+        RPCTypeCheckArgument(request.params[4], UniValue::VBOOL);
+        fMature = request.params[4].get_bool();
+    }
+
     UniValue results(UniValue::VARR);
     vector<COutput> vecOutputs;
     assert(pwalletMain != NULL);
     LOCK2(cs_main, pwalletMain->cs_wallet);
-    pwalletMain->AvailableCoins(vecOutputs, !include_unsafe, NULL, true);
+    pwalletMain->AvailableCoins(vecOutputs, !include_unsafe, NULL, true, fMature);
     BOOST_FOREACH(const COutput& out, vecOutputs) {
         if (out.nDepth < nMinDepth || out.nDepth > nMaxDepth)
             continue;
@@ -3122,7 +3172,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listreceivedbyaddress",    &listreceivedbyaddress,    false,  {"minconf","include_empty","include_watchonly"} },
     { "wallet",             "listsinceblock",           &listsinceblock,           false,  {"blockhash","target_confirmations","include_watchonly"} },
     { "wallet",             "listtransactions",         &listtransactions,         false,  {"account","count","skip","include_watchonly"} },
-    { "wallet",             "listunspent",              &listunspent,              false,  {"minconf","maxconf","addresses","include_unsafe"} },
+    { "wallet",             "listunspent",              &listunspent,              false,  {"minconf","maxconf","addresses","include_unsafe","mature_only"} },
     { "wallet",             "lockunspent",              &lockunspent,              true,   {"unlock","transactions"} },
     { "wallet",             "move",                     &movecmd,                  false,  {"fromaccount","toaccount","amount","minconf","comment"} },
     { "wallet",             "reservebalance",           &reservebalance,           false,  {"reserve", "amount"}},
