@@ -449,6 +449,10 @@ static void SendMoney(const CTxDestination &address, CAmount nValue, int64_t nCo
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
+
+    // LogPrintf("nFeeRequired is %s\n", FormatMoney(nFeeRequired));
+    // throw JSONRPCError(RPC_WALLET_ERROR, "not broadcasting");
+
     CValidationState state;
     if (!pwalletMain->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
         strError = strprintf("Error: The transaction was rejected! Reason given: %s", state.GetRejectReason());
