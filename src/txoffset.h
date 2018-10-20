@@ -2217,7 +2217,7 @@ public:
             149,175,175,X149_2,37081,149,175,149,175,175,73987,149,175,149,12476,37081,X149_2
         };
 
-        for (int i = 0; i < sizeof(TxOffsetData)/sizeof(int); i++)
+        for (int i = 0; i < (int)(sizeof(TxOffsetData)/sizeof(int)); i++)
             vTxOffsetData.push_back(std::make_pair(i+10000, TxOffsetData[i]));
     }
 };
