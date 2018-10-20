@@ -14,8 +14,10 @@
 #include "random.h"
 #include "serialize.h"
 #include "sync.h"
+#include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "utiltime.h"
+
 
 #include <stdarg.h>
 
@@ -403,6 +405,21 @@ std::string GetArg(const std::string& strArg, const std::string& strDefault)
     if (mapArgs.count(strArg))
         return mapArgs[strArg];
     return strDefault;
+}
+
+int64_t GetMoneyArg(const std::string& strArg, int64_t nDefault)
+{
+    int64_t value;
+
+    if (!(mapArgs.count(strArg)))
+        return nDefault;
+
+    if (!ParseMoney(mapArgs[strArg], value)) {
+        LogPrintf("Error setting %s to %s\n", strArg, mapArgs[strArg]);
+        return nDefault;
+    }
+
+    return value;
 }
 
 int64_t GetArg(const std::string& strArg, int64_t nDefault)

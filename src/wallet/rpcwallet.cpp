@@ -3433,6 +3433,40 @@ UniValue bumpfee(const JSONRPCRequest& request)
     return result;
 }
 
+UniValue getrewardto(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw runtime_error(
+            "getrewardto\n"
+            "Gets the -rewardto address. Returns false if -rewardto is turned off.");
+
+    if (!fRewardTo)
+        return false;
+
+    return CBitcoinAddress(rewardtokeyID).ToString();
+}
+
+UniValue setrewardto(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw runtime_error(
+            "setrewardto [address]\n"
+            "Sets the -rewardto address. If address isn't specified, -rewardto is turned off.");
+
+    if (request.params.size() == 0)
+        fRewardTo = false;
+    else {
+        std::string address = request.params[0].get_str();
+
+        if (!CBitcoinAddress(address).GetKeyID(rewardtokeyID))
+            return strprintf(_("Bad -rewardto address: '%s'"), address);
+
+        fRewardTo = true;
+    }
+
+    return true;
+}
+
 
 UniValue getstaketo(const JSONRPCRequest& request)
 {
@@ -3504,6 +3538,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getreceivedbyaddress",     &getreceivedbyaddress,     false,  {"address","minconf"} },
     { "wallet",             "getstakedbyaddress",       &getstakedbyaddress,       true,   {"address","minconf"} },
     { "wallet",             "getstaketo",               &getstaketo,               true,   {} },
+    { "wallet",             "getrewardto",              &getrewardto,              true,   {} }, 
     { "wallet",             "gettransaction",           &gettransaction,           false,  {"txid","include_watchonly"} },
     { "wallet",             "getunconfirmedbalance",    &getunconfirmedbalance,    false,  {} },
     { "wallet",             "getwalletinfo",            &getwalletinfo,            false,  {} },
@@ -3531,6 +3566,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "sendtoaddress",            &sendtoaddress,            false,  {"address","amount","comment","comment_to","subtractfeefromamount"} },
     { "wallet",             "setaccount",               &setaccount,               true,   {"address","account"} },
     { "wallet",             "setstaketo",               &setstaketo,               true,   {"address"} },
+    { "wallet",             "setrewardto",              &setrewardto,              true,   {"address"} },
     { "wallet",             "settxfee",                 &settxfee,                 true,   {"amount"} },
     { "wallet",             "signmessage",              &signmessage,              true,   {"address","message"} },
     { "wallet",             "walletlock",               &walletlock,               true,   {} },

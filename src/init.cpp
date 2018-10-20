@@ -70,6 +70,14 @@
 bool fFeeEstimatesInitialized = false;
 bool fStakeTo = false;
 bool fRewardTo = false;
+CKeyID staketokeyID;
+CKeyID rewardtokeyID;
+int64_t nMaxStakeValue;
+int64_t nSplitSize;
+int64_t nCombineLimit;
+bool fCombineAny;
+
+
 static const bool DEFAULT_PROXYRANDOMIZE = true;
 static const bool DEFAULT_REST_ENABLE = false;
 static const bool DEFAULT_DISABLE_SAFEMODE = false;
@@ -780,6 +788,8 @@ void InitParameterInteraction()
         if (SoftSetBoolArg("-whitelistrelay", true))
             LogPrintf("%s: parameter interaction: -whitelistforcerelay=1 -> setting -whitelistrelay=1\n", __func__);
     }
+
+
 }
 
 static std::string ResolveErrMsg(const char * const optname, const std::string& strBind)

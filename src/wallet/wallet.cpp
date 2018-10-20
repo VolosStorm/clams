@@ -61,7 +61,7 @@ extern int64_t nSplitSize;
 extern int64_t nCombineLimit;
 extern bool fCombineAny;
 extern bool fStakeTo, fRewardTo;
-extern set<CBitcoinAddress> setStakeAddresses;
+extern std::set<CBitcoinAddress> setStakeAddresses;
 extern CKeyID staketokeyID, rewardtokeyID;
 
 /**
@@ -4527,6 +4527,35 @@ bool CWallet::ParameterInteraction()
                                        GetArg("-paytxfee", ""), ::minRelayTxFee.ToString()));
         }
     }
+
+    if (IsArgSet("-staketo")) {
+        if (!CBitcoinAddress(GetArg("-staketo", "")).GetKeyID(staketokeyID))
+            return InitError(strprintf(_("Bad -staketo address: '%s'"), GetArg("-staketo", "")));
+        fStakeTo = true;
+    }
+
+    if (IsArgSet("-rewardto")) {
+        if (!CBitcoinAddress(GetArg("-rewardto", "")).GetKeyID(rewardtokeyID))
+            return InitError(strprintf(_("Bad -rewardto address: '%s'"), GetArg("-rewardto", "")));
+        fRewardTo = true;
+    }
+
+    if (IsArgSet("-maxstakevalue")) {
+        nMaxStakeValue = GetMoneyArg("-maxstakevalue", 0*COIN);
+    } 
+
+    if (IsArgSet("-splitsize")) {
+        nSplitSize     = GetMoneyArg("-splitsize",     0*COIN);
+    } 
+
+    if (IsArgSet("-combinelimit")) {
+        nCombineLimit  = GetMoneyArg("-combinelimit",  1*COIN);
+    }   
+
+    if (IsArgSet("-combineany")) {
+        fCombineAny    = GetBoolArg( "-combineany",    false );
+    } 
+    
     if (IsArgSet("-maxtxfee"))
     {
         CAmount nMaxFee = 0;
@@ -4594,10 +4623,6 @@ bool CWallet::BackupWallet(const std::string& strDest)
 
 bool CWallet::CreateCLAMSpeechTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet, std::string clamSpeech, const CCoinControl* coinControl) 
 {
-    //vector< pair<CScript, int64_t> > vecSend;
-    //vecSend.push_back(make_pair(scriptPubKey, nValue));
-    unsigned int nSubtractFeeFromAmount = 0;
-
     wtxNew.BindWallet(this);
     CMutableTransaction txNew;
     txNew.strClamSpeech = clamSpeech;
@@ -4699,12 +4724,7 @@ bool CWallet::CreateCLAMSpeechTransaction(CWalletTx& wtxNew, CReserveKey& reserv
                                 return false;
                             }
 
-                        // Limit size
-                        if (GetTransactionWeight(txNew) >= MAX_STANDARD_TX_WEIGHT)
-                        {
-                            LogPrintf("CWallet::CreateTransaction failed: transaction too big");
-                            return false;
-                        }
+                        
                         // Limit size
                        // unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&txNew, SER_NETWORK, PROTOCOL_VERSION);
                         //if (nBytes >= MAX_STANDARD_TX_SIZE) {
@@ -4714,11 +4734,13 @@ bool CWallet::CreateCLAMSpeechTransaction(CWalletTx& wtxNew, CReserveKey& reserv
                         //dPriority /= nBytes;
 
                         // Check that enough fee is included
+                        unsigned int nBytes = GetVirtualTransactionSize(txNew);
                         int64_t nPayFee = nTransactionFee * (1 + (int64_t)nBytes / 1000);
-                        int64_t nMinFee = GetMinFee(txNew, 1, GMF_SEND, nBytes);
+                        int64_t nMinFee = GetMinimumFee(nBytes, nTxConfirmTarget, mempool);
 
-                            LogPrint("fee", "[FEE] tx is %d bytes; nPayFee = %s; nMinFee = %s; current fee = %s\n",
+                        LogPrint("fee", "[FEE] tx is %d bytes; nPayFee = %s; nMinFee = %s; current fee = %s\n",
                                 nBytes, FormatMoney(nPayFee), FormatMoney(nMinFee), FormatMoney(nFeeRet));
+
                         if (nFeeRet < max(nPayFee, nMinFee))
                         {
                             nFeeRet = max(nPayFee, nMinFee);
@@ -4731,6 +4753,12 @@ bool CWallet::CreateCLAMSpeechTransaction(CWalletTx& wtxNew, CReserveKey& reserv
                         // Fill vtxPrev by copying from previous transactions vtxPrev
                         wtxNew.SetTx(MakeTransactionRef(std::move(txNew)));
 
+                        // Limit size
+                        if (GetTransactionWeight(wtxNew) >= MAX_STANDARD_TX_WEIGHT)
+                        {
+                            LogPrintf("CWallet::CreateTransaction failed: transaction too big");
+                            return false;
+                        }
                         break;
             }
         }
