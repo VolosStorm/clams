@@ -4614,7 +4614,10 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 blkdat.SetPos(nBlockPos);
                 std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
                 CBlock& block = *pblock;
-                blkdat >> block;
+                CBlockLegacy blockLegacy;
+                blkdat >> blockLegacy;
+                LogPrintf("legacy block: %s\n", blockLegacy.ToString());
+                block = blockLegacy;
                 nRewind = blkdat.GetPos();
 
                 // detect out of order blocks, and store them for later

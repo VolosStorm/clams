@@ -49,6 +49,26 @@ std::string CBlockHeader::ToString() const
     return s.str();
 }
 
+CBlock::CBlock(const CBlockLegacy& block)
+{
+    this->nVersion       = block.nVersion;
+    this->hashPrevBlock  = block.hashPrevBlock;
+    this->hashMerkleRoot = block.hashMerkleRoot;
+    this->nTime          = block.nTime;
+    this->nBits          = block.nBits;
+    this->nNonce         = block.nNonce;
+    for (unsigned int j = 0; j < block.vchBlockSig.size(); j++)
+    {
+        this->vchBlockSig[j] = block.vchBlockSig[j];
+    }
+    this->prevoutStake   = block.vtx[1]->vin[0].prevout;
+    for (unsigned int i = 0; i < block.vtx.size(); i++)
+    {
+        this->vtx[i] = block.vtx[i];
+    }
+    //vtx            = *block.vtx;
+}
+
 std::string CBlock::ToString() const
 {
     std::stringstream s;
