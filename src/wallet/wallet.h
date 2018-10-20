@@ -39,12 +39,14 @@ extern CWallet* pwalletMain;
  * Settings
  */
 extern CAmount nReserveBalance;
+extern int64_t nTransactionFee;
 extern CFeeRate payTxFee;
 extern unsigned int nTxConfirmTarget;
 extern bool bSpendZeroConfChange;
 extern bool fSendFreeTransactions;
 extern bool fWalletRbf;
 extern bool fWalletUnlockStakingOnly;
+
 
 static const unsigned int DEFAULT_KEYPOOL_SIZE = 100;
 //! -paytxfee default
@@ -631,6 +633,8 @@ private:
 
     int64_t nTimeFirstKey;
 
+
+
     /**
      * Private version of AddWatchOnly method which does not accept a
      * timestamp, and which will reset the wallet's nTimeFirstKey value to 1 if
@@ -703,12 +707,13 @@ public:
         nLastResend = 0;
         nTimeFirstKey = 0;
         fBroadcastTransactions = false;
+        fAddressRewardsReady = false;
     }
 
     std::map<uint256, CWalletTx> mapWallet;
     std::list<CAccountingEntry> laccentries;
     std::map<std::string, int64_t> mapAddressRewards; // a running total of staking rewards collected per address
-
+    bool fAddressRewardsReady;
 
     typedef std::pair<CWalletTx*, CAccountingEntry*> TxPair;
     typedef std::multimap<int64_t, TxPair > TxItems;
@@ -1015,6 +1020,7 @@ public:
     static bool ParameterInteraction();
 
     bool BackupWallet(const std::string& strDest);
+    bool CreateCLAMSpeechTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet, std::string clamSpeech, const CCoinControl *coinControl=NULL);
 
     /* Set the HD chain model (chain child index counters) */
     bool SetHDChain(const CHDChain& chain, bool memonly);

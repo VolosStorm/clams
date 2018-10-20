@@ -14,8 +14,10 @@
 #include "random.h"
 #include "serialize.h"
 #include "sync.h"
+#include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "utiltime.h"
+
 
 #include <stdarg.h>
 
@@ -403,6 +405,21 @@ std::string GetArg(const std::string& strArg, const std::string& strDefault)
     if (mapArgs.count(strArg))
         return mapArgs[strArg];
     return strDefault;
+}
+
+int64_t GetMoneyArg(const std::string& strArg, int64_t nDefault)
+{
+    int64_t value;
+
+    if (!(mapArgs.count(strArg)))
+        return nDefault;
+
+    if (!ParseMoney(mapArgs[strArg], value)) {
+        LogPrintf("Error setting %s to %s\n", strArg, mapArgs[strArg]);
+        return nDefault;
+    }
+
+    return value;
 }
 
 int64_t GetArg(const std::string& strArg, int64_t nDefault)
@@ -1728,6 +1745,15 @@ boost::filesystem::path GetClamourClamSpeechFile()
     boost::filesystem::path pathClamourSpeechFile(GetArg("-clamourclamspeech", "clamourclamspeech.txt"));
     if (!pathClamourSpeechFile.is_complete()) pathClamourSpeechFile = GetDataDir() / pathClamourSpeechFile;
     return pathClamourSpeechFile;
+}
+
+string HashToString(unsigned char* hash,int n) {
+    char outputBuffer[2*n+1];
+    for(int i=0;i<n;i++) {
+        sprintf(outputBuffer+(i*2),"%02x",hash[i]);
+    }
+    outputBuffer[2*n]=0;
+    return string(outputBuffer);
 }
 
 bool LoadClamSpeech()

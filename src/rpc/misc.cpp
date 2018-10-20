@@ -20,8 +20,10 @@
 #endif
 
 #include <stdint.h>
+#include <fstream>
 
 #include <boost/assign/list_of.hpp>
+#include <boost/filesystem.hpp>
 
 #include <univalue.h>
 
@@ -514,6 +516,236 @@ UniValue getmemoryinfo(const JSONRPCRequest& request)
     return obj;
 }
 
+UniValue setspeech(const JSONRPCRequest& request)
+{
+    if ( request.fHelp || request.params.size() != 1)
+        throw runtime_error(
+            "setspeech <text>\n"
+            "Sets the text to be used as the transaction comment when making transactions.");
+
+    strDefaultSpeech = request.params[0].get_str();
+
+    LogPrint("speech", "set default speech to \"%s\"\n", strDefaultSpeech);
+
+    return NullUniValue;
+}
+
+UniValue setstakespeech(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw runtime_error(
+            "setstakespeech <text>\n"
+            "Sets the text to be as the transaction comment when staking");
+
+    strDefaultStakeSpeech = request.params[0].get_str();
+
+    LogPrint("stakespeech", "set default stakespeech to \"%s\"\n", strDefaultStakeSpeech);
+
+    return NullUniValue;
+}
+
+UniValue setweightedstakespeech(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw runtime_error(
+            "setweightedstakespeech [path]\n"
+            "Loads a file containing a list of texts to be as the transaction comment when staking.\n"
+            "Each line in the file should contain a positive integer specifying the probabalistic weight for that line, then a space, then the speech.\n"
+            "If no path is provided or any errors occur opening or parsing the file then weighted staking isn't used at all.");
+
+    weightedStakeSpeech.clear();
+
+    if (request.params.size() == 0)
+        return NullUniValue;
+
+    string strPath = request.params[0].get_str();
+
+    if (!boost::filesystem::exists(strPath))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter: file doesn't exist");
+
+    std::ifstream speechfile(strPath.c_str());
+
+    if(!speechfile) //Always test the file open.
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter: can't open file");
+
+    string line;
+    size_t pos;
+    const char *start;
+    char *end;
+    int count = 0;
+    while (getline(speechfile, line, '\n')) {
+        count++;
+        start = line.c_str();
+
+        // blank line and lines starting with '#' are comments
+        if (*start == '\0' || *start == '#')
+            continue;
+
+        unsigned long weight = strtoul(start, &end, 10);
+        if (weight == ULONG_MAX && errno == ERANGE) {
+            weightedStakeSpeech.clear();
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Weight out of range, line %d", count));
+        }
+
+        pos = end - start;
+        if (pos == 0) {
+            weightedStakeSpeech.clear();
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid weight, line %d", count));
+        }
+
+        if (*end == '\0')
+            line = string();
+        else if (*end == ' ')
+            line = line.substr(pos+1);
+        else {
+            weightedStakeSpeech.clear();
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("No space after weight, line %d", count));
+        }
+
+        weightedStakeSpeech.insert(weight, line);
+    }
+
+    return strprintf("loaded %d weighted stake speech text(s)", weightedStakeSpeech.size());
+}
+
+UniValue getclamour(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw runtime_error(
+            "getclamour <pid>\n"
+            "Returns an object containing info about the specified petition ID");
+
+    string pid = request.params[0].get_str();
+
+    map<string, CClamour*>::iterator mi = mapClamour.find(pid);
+    if (mi == mapClamour.end())
+        return NullUniValue;
+
+    UniValue ret(UniValue::VOBJ);
+    CClamour *clamour = mi->second;
+
+    ret.push_back(Pair("pid", pid));
+    ret.push_back(Pair("hash", clamour->strHash));
+    if (clamour->strURL.length())
+        ret.push_back(Pair("url", clamour->strURL));
+    ret.push_back(Pair("txid", clamour->txid.GetHex()));
+    ret.push_back(Pair("confirmations", chainActive.Height() - clamour->nHeight + 1));
+    return ret;
+}
+
+UniValue listclamours(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 2)
+        throw runtime_error(
+            "listclamours [minconf=1] [maxconf=9999999]\n"
+            "Returns an array of objects containing info about all registered petitions\n"
+            "with between minconf and maxconf (inclusive) confirmations.");
+
+    RPCTypeCheck(request.params, boost::assign::list_of(UniValue::VNUM)(UniValue::VNUM));
+
+    int nMinDepth = 1;
+    if (request.params.size() > 0)
+        nMinDepth = request.params[0].get_int();
+
+    int nMaxDepth = 9999999;
+    if (request.params.size() > 1)
+        nMaxDepth = request.params[1].get_int();
+
+    UniValue ret(UniValue::VARR);
+
+    BOOST_FOREACH(const mapClamour_t::value_type pair, mapClamour)
+    {
+        CClamour *clamour = pair.second;
+        int nDepth = chainActive.Height() - clamour->nHeight + 1;
+
+        if (nDepth < nMinDepth || nDepth > nMaxDepth)
+            continue;
+
+        UniValue entry(UniValue::VOBJ);
+
+        entry.push_back(Pair("pid", clamour->strHash.substr(0, 8)));
+        entry.push_back(Pair("hash", clamour->strHash));
+        if (clamour->strURL.length())
+            entry.push_back(Pair("url", clamour->strURL));
+        entry.push_back(Pair("txid", clamour->txid.GetHex()));
+        entry.push_back(Pair("confirmations", nDepth));
+
+        ret.push_back(entry);
+    }
+
+    return ret;
+}
+
+UniValue getsupport(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 3)
+        throw runtime_error(
+            "getsupport [threshold=0] [window=10000] [block=<bestblock>]\n"
+            "Returns an object detailing the number of blocks supporting CLAMour petitions\n"
+            "<threshold> sets a percentage threshold of support below which petitions are ignored.\n"
+            "<window> sets the number of blocks to count and defaults to 10000.\n"
+            "<block> sets which block ends the window, and defaults to the last block in the chain.");
+
+    RPCTypeCheck(request.params, boost::assign::list_of(UniValue::VNUM)(UniValue::VNUM)(UniValue::VNUM));
+
+    double dThreshold;
+    int nWindow, nBlock;
+    map<string,int> mapSupport;
+    typedef pair<string,int> mapSupport_pair;
+
+    if (request.params.size() > 0) {
+        dThreshold = request.params[0].get_real();
+        if (dThreshold < 0 || dThreshold > 100)
+            throw runtime_error("Threshold percentage out of range.");
+    } else
+        dThreshold = 0;
+
+    if (request.params.size() > 1)
+        nWindow = request.params[1].get_int();
+    else
+        nWindow = 10000;
+
+    if (request.params.size() > 2) {
+        nBlock = request.params[2].get_int();
+        if (nBlock < 0 || nBlock > chainActive.Height())
+            throw runtime_error("Block number out of range.");
+    } else
+        nBlock = chainActive.Height();
+
+    if (nWindow < 1)
+        throw runtime_error("Window size must be at least 1.");
+
+    if (nWindow > nBlock + 1)
+        throw runtime_error("Window starts before block 0.");
+
+    for (int i = nBlock + 1 - nWindow; i <= nBlock; i++) {
+        CBlockIndex* pblockindex = chainActive[i];
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
+            throw runtime_error("Error: Failed to read block from disk");
+        set<string> sup = pblockindex->GetSupport(block);
+        BOOST_FOREACH(const string &s, sup) {
+            // LogPrintf("%d supports %s\n", i, s);
+            mapSupport[s]++;
+        }
+    }
+
+    UniValue ret(UniValue::VOBJ);
+    UniValue counts(UniValue::VOBJ);
+    ret.push_back(Pair("threshold", dThreshold));
+    ret.push_back(Pair("window", nWindow));
+    ret.push_back(Pair("endblock", nBlock));
+    ret.push_back(Pair("startblock", nBlock + 1 - nWindow));
+    BOOST_FOREACH(const mapSupport_pair &p, mapSupport)
+        if (p.second * 100 >= dThreshold * nWindow)
+            counts.push_back(Pair(p.first, p.second));
+    ret.push_back(Pair("support", counts));
+
+    return ret;
+}
+
+
+
 UniValue echo(const JSONRPCRequest& request)
 {
     if (request.fHelp)
@@ -536,6 +768,14 @@ static const CRPCCommand commands[] =
     { "util",               "createmultisig",         &createmultisig,         true,  {"nrequired","keys"} },
     { "util",               "verifymessage",          &verifymessage,          true,  {"address","signature","message"} },
     { "util",               "signmessagewithprivkey", &signmessagewithprivkey, true,  {"privkey","message"} },
+
+    //clam related utility commands
+    { "util",               "setspeech",              &setspeech ,             true,  {"text"} },
+    { "util",               "setstakespeech",         &setstakespeech,         true,  {"text"} },
+    { "util",               "setweightedstakespeech", &setweightedstakespeech, true,  {"path"} },
+    { "util",               "getclamour",             &getclamour,             true,  {"pid"} },
+    { "util",               "listclamours",           &listclamours,           true,  {"minconf","maxconf"} },
+    { "util",               "getsupport",             &getsupport,             true,  {"support","threshold","window","end_block"} },
 
     /* Not shown in help */
     { "hidden",             "setmocktime",            &setmocktime,            true,  {"timestamp"}},

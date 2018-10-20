@@ -126,7 +126,7 @@ std::string CTransaction::ToString() const
 {
     std::string str;
     str += IsCoinPoW()? "Coinbase" : (IsCoinStake()? "Coinstake" : "CTransaction");
-    str += strprintf("(hash=%s, nTime=%d, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%u, strCLAMSpeech=%s)\n",
+    str += strprintf("(hash=%s, nTime=%d, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%u, strClamSpeech=%s)\n",
         GetHash().ToString().substr(0,10),
         nTime, 
         nVersion,

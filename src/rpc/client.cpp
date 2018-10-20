@@ -92,6 +92,18 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "createrawtransaction", 0, "transactions" },
     { "createrawtransaction", 1, "outputs" },
     { "createrawtransaction", 2, "locktime" },
+    { "createrawtransaction", 3, "clamspeech" },
+
+    { "getstakedbyaddress", 1, "address" },
+    { "getstakedbyaddress", 2, "minconf" },
+    { "createclamour", 1, "purposal" },
+    { "sendnotarytransaction", 1, "file" },
+    { "getnotarytransaction", 1, "notary_id" },
+    { "getnotarytransaction", 2, "multiple_results" },
+    { "getstaketo", 1, "file" },
+    { "setstaketo", 1, "file" },
+
+    
     { "signrawtransaction", 1, "prevtxs" },
     { "signrawtransaction", 2, "privkeys" },
     { "sendrawtransaction", 1, "allowhighfees" },
@@ -110,11 +122,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "dumpbootstrap", 1 , "verbose"},
     { "dumpbootstrap", 2 , "verbose"},
     { "validateoutputs", 0, "verbose" },
-    { "listclamours", 0, "verbose" },
-    { "listclamours", 1, "verbose" },
-    { "getsupport", 0, "verbose" },
-    { "getsupport", 1, "verbose" },
-    { "getsupport", 2, "verbose" },
+    
+    
     { "verifychain", 0, "checklevel" },
     { "verifychain", 1, "nblocks" },
     { "pruneblockchain", 0, "height" },
