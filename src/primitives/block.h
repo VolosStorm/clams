@@ -15,6 +15,8 @@
 
 static const int SER_WITHOUT_SIGNATURE = 1 << 3;
 
+class CBlock;
+
 class CBlockLegacy
 {
 public:
@@ -40,6 +42,8 @@ public:
         SetNull();
         *((CBlockLegacy*)this) = block;
     }
+
+    CBlockLegacy(const CBlock &block);
 
     ADD_SERIALIZE_METHODS;
 

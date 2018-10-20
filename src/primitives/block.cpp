@@ -69,6 +69,18 @@ std::string CBlock::ToString() const
     return s.str();
 }
 
+CBlockLegacy::CBlockLegacy(const CBlock &block)
+{
+    nVersion = block.nVersion;
+    hashPrevBlock = block.hashPrevBlock;
+    hashMerkleRoot = block.hashMerkleRoot;
+    nTime = block.nTime;
+    nBits = block.nBits;
+    nNonce = block.nNonce;
+    vtx = block.vtx;
+    vchBlockSig = block.vchBlockSig;
+}
+
 std::string CBlockLegacy::ToString() const
 {
     std::stringstream s;
