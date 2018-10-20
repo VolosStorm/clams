@@ -1055,15 +1055,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                     if (inv.type == MSG_BLOCK){
                         //push old block structure to old clients
                         if(pfrom->nVersion <= 70012) { 
-                            CBlockLegacy legacyBlock;
-                            legacyBlock.nVersion = block.nVersion;
-                            legacyBlock.hashPrevBlock = block.hashPrevBlock;
-                            legacyBlock.hashMerkleRoot = block.hashMerkleRoot;
-                            legacyBlock.nTime = block.nTime;
-                            legacyBlock.nBits = block.nBits;
-                            legacyBlock.nNonce = block.nNonce;
-                            legacyBlock.vtx = block.vtx;
-                            legacyBlock.vchBlockSig = block.vchBlockSig;
+                            CBlockLegacy legacyBlock(block);
                             //LogPrint("xp", "- Pushing old block structure %s %s\n", block.ToString(), legacyBlock.ToString());
                             connman.PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, legacyBlock));
                         } else { 

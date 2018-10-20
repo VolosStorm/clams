@@ -230,8 +230,9 @@ UniValue dumpbootstrap(const JSONRPCRequest& request)
             if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
                 throw runtime_error("Error: Failed to read block from disk");
 
-            unsigned int nSize = GetSerializeSize(file, block);
-            file << FLATDATA(Params().MessageStart()) << nSize << block;
+            CBlockLegacy legacyBlock(block);
+            unsigned int nSize = GetSerializeSize(file, legacyBlock);
+            file << FLATDATA(Params().MessageStart()) << nSize << legacyBlock;
         }
     } catch(const boost::filesystem::filesystem_error &e) {
         throw JSONRPCError(RPC_MISC_ERROR, "Error: Bootstrap dump failed!");
