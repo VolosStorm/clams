@@ -11,6 +11,7 @@
 
 #include "addrman.h"
 #include "amount.h"
+#include "base58.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "checkpoints.h"
@@ -76,6 +77,8 @@ int64_t nMaxStakeValue;
 int64_t nSplitSize;
 int64_t nCombineLimit;
 bool fCombineAny;
+std::set<CBitcoinAddress> setSpendLastAddresses;
+std::set<CBitcoinAddress> setStakeAddresses;
 
 
 static const bool DEFAULT_PROXYRANDOMIZE = true;

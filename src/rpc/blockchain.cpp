@@ -237,7 +237,7 @@ UniValue dumpbootstrap(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_MISC_ERROR, "Error: Bootstrap dump failed!");
     }
 
-    return NullUniValue;
+    return strprintf("dumped %d blocks from %d to %d into %s", nEndBlock - nStartBlock + 1, nStartBlock, nEndBlock, pathDest);
 }
 
 
