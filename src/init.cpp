@@ -68,6 +68,8 @@
 #endif
 
 bool fFeeEstimatesInitialized = false;
+bool fStakeTo = false;
+bool fRewardTo = false;
 static const bool DEFAULT_PROXYRANDOMIZE = true;
 static const bool DEFAULT_REST_ENABLE = false;
 static const bool DEFAULT_DISABLE_SAFEMODE = false;
@@ -1696,8 +1698,16 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     uiInterface.InitMessage(_("Done loading"));
 
 #ifdef ENABLE_WALLET
-    if (pwalletMain)
+    if (pwalletMain){
+
         pwalletMain->postInitProcess(threadGroup);
+
+        // if we're going to be running a command each time we stake, sum all existing stake rewards now so we're ready
+        if (!GetArg("-stakenotify", "").empty() && !pwalletMain->fAddressRewardsReady) {
+            LogPrintf("initializing staking rewards map\n");
+            pwalletMain->SumStakingRewards();
+        }
+    }
 #endif
 
     return !fRequestShutdown;

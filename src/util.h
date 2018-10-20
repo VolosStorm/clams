@@ -58,6 +58,8 @@ extern bool fLogTimeMicros;
 extern bool fLogIPs;
 extern std::atomic<bool> fReopenDebugLog;
 extern CTranslationInterface translationInterface;
+extern std::string strDefaultSpeech;
+extern std::string strDefaultStakeSpeech;
 
 extern const char * const BITCOIN_CONF_FILENAME;
 extern const char * const BITCOIN_PID_FILENAME;
@@ -127,6 +129,7 @@ bool LoadClamSpeech();
 bool SaveClamSpeech();
 bool LoadClamourClamSpeech();
 bool SaveClamourClamSpeech();
+std::string HashToString(unsigned char* hash, int n);
 std::string GetDefaultClamSpeech();
 std::string GetDefaultClamourClamSpeech();
 std::string GetRandomClamourClamSpeech();

@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chain.h"
+#include "chainparams.h"
 
 /**
  * CChain implementation
@@ -109,6 +110,59 @@ CBlockIndex* CBlockIndex::GetAncestor(int height)
 const CBlockIndex* CBlockIndex::GetAncestor(int height) const
 {
     return const_cast<CBlockIndex*>(this)->GetAncestor(height);
+}
+
+std::set<std::string> CBlockIndex::GetSupport(CBlock block) const
+{
+    if (fSupportChecked)
+        return setSupport;
+
+    fSupportChecked = true;
+
+    if (block.IsProofOfStake()) {
+        do {
+            if (block.vtx.size() < 2) {
+                //LogPrintf("block only has %d transactions?\n", block.vtx.size());
+                break;
+            }
+
+            const std::string& strSpeech = block.vtx[1]->strClamSpeech;
+            // LogPrintf("stake speech is '%s'\n", strSpeech);
+
+            if (strSpeech.substr(0, 7) != "clamour")
+                break;
+
+            int n = 7;
+            int i;
+            char c = strSpeech[n++];
+            while (true) {
+                // support starts with a space
+                if (c != ' ')
+                    break;
+
+                // then 8 lowercase hex digits
+                for (i = 0; i < 8; i++) {
+                    c = strSpeech[n++];
+                    if ((c < '0' || c > '9') && (c < 'a' || c > 'f'))
+                        break;
+                }
+
+                // break if we exited the loop early
+                if (i != 8)
+                    break;
+
+                // must be followed by space or end of string
+                c = strSpeech[n++];
+                if (c != ' ' && c != '\0')
+                    break;
+
+                // if all that is OK, record the support, and loop to check for other petition IDs
+                setSupport.insert(strSpeech.substr(n-9, 8));
+            }
+        } while (false);
+    }
+
+    return setSupport;
 }
 
 void CBlockIndex::BuildSkip()

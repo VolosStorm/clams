@@ -21,6 +21,7 @@
 #include "wallet.h"
 #include "walletdb.h"
 
+#include "openssl/sha.h"
 #include <stdint.h>
 
 #include <boost/assign/list_of.hpp>
@@ -31,6 +32,11 @@ using namespace std;
 
 int64_t nWalletUnlockTime;
 static CCriticalSection cs_nWalletUnlockTime;
+
+extern CKeyID staketokeyID;
+extern CKeyID rewardtokeyID;
+extern bool fStakeTo;
+extern bool fRewardTo;
 
 std::string HelpRequiringPassphrase()
 {
@@ -81,6 +87,7 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
     entry.push_back(Pair("walletconflicts", conflicts));
     entry.push_back(Pair("time", wtx.GetTxTime()));
     entry.push_back(Pair("timereceived", (int64_t)wtx.nTimeReceived));
+    entry.push_back(Pair("tx-comment", wtx.tx->strClamSpeech));
 
     // Add opt-in RBF status
     std::string rbfStatus = "no";
@@ -339,6 +346,69 @@ UniValue getaddressesbyaccount(const JSONRPCRequest& request)
     }
     return ret;
 }
+
+string SendCLAMSpeech(CWalletTx& wtxNew, string clamSpeech, string prefix)
+{ 
+    if (prefix == "notary") 
+    {
+        uint256 hash;
+        hash.SetHex(clamSpeech);
+        clamSpeech = "notary " + hash.GetHex();
+
+    } 
+    else if (prefix == "clamour") 
+    {
+        clamSpeech = "create clamour " + clamSpeech;
+    } 
+    else if (prefix.length() > 0)
+    {
+        clamSpeech = prefix + clamSpeech;
+    } 
+
+    CReserveKey reservekey(pwalletMain);
+    int64_t nFeeRequired;
+
+    if (pwalletMain->GetBalance() <= 0 ) {
+        LogPrintf("CWallet::SendNotary failed: you require a balance to post a notary entry\n",
+                  FormatMoney(nTransactionFee), FormatMoney(pwalletMain->GetBalance()));
+        return _("Insufficient funds");
+    }
+
+    if (pwalletMain->IsLocked())
+    {
+        string strError = _("Error: Wallet locked, unable to create norary transaction!");
+        LogPrintf("SendNotary() : %s", strError);
+        return strError;
+    }
+    if (fWalletUnlockStakingOnly)
+    {
+        string strError = _("Error: Wallet unlocked for staking only, unable to create notary transaction.");
+        LogPrintf("SendNotary() : %s", strError);
+        return strError;
+    }
+
+    if (!pwalletMain->CreateCLAMSpeechTransaction(wtxNew, reservekey, nFeeRequired, clamSpeech))
+    {
+        string strError;
+        if (nFeeRequired > pwalletMain->GetBalance())
+            strError = strprintf(_("Error: This notary transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!"), FormatMoney(nFeeRequired));
+        else
+            strError = _("Error: Notary transaction creation failed!");
+        LogPrintf("SendNotary() : %s\n", strError);
+
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    CValidationState state;
+    if (!pwalletMain->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
+        string strError = strprintf("Error: The transaction was rejected! Reason given: %s", state.GetRejectReason());
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+
+    return "";
+
+
+}
+
 
 static void SendMoney(const CTxDestination &address, CAmount nValue, int64_t nCount, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, std::string strClamSpeech)
 {
@@ -1109,6 +1179,245 @@ UniValue addmultisigaddress(const JSONRPCRequest& request)
     pwalletMain->SetAddressBook(innerID, strAccount, "send");
     return CBitcoinAddress(innerID).ToString();
 }
+
+
+
+
+
+UniValue getnotarytransaction(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw runtime_error(
+            "getnotarytransaction <notaryid> [multipleResults]\n"
+            "Get detailed information about <notaryid>\n"
+            "\nSearching can take a while\n");
+
+
+    uint256 hash;
+    string strHash;
+    if (request.params.size() > 0) 
+        strHash = request.params[0].get_str();
+    hash.SetHex(strHash);
+
+    bool multipleresults = false;
+    if (request.params.size() > 1) {
+           multipleresults =  request.params[1].get_bool();
+   }
+
+    UniValue notaryinfo(UniValue::VARR);
+    bool notaryFound = false;
+    int blockstogoback = chainActive.Height() - 362500;
+    
+    const CBlockIndex* pindexFirst = chainActive.Tip();
+    for (int i = 0; pindexFirst && i < blockstogoback; i++)
+    {
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pindexFirst, Params().GetConsensus()))
+            throw runtime_error("Error: Failed to read block from disk");
+
+        for (const auto& tx : block.vtx) { 
+            if (tx->strClamSpeech == hash.GetHex()) {
+                    UniValue entry(UniValue::VOBJ);
+                notaryFound = true;
+                
+                entry.push_back(Pair("notaryid", hash.GetHex()));
+                entry.push_back(Pair("txid", tx->GetHash().GetHex()));
+                
+                notaryinfo.push_back(entry);
+
+            }
+        }
+            
+    if (!multipleresults && notaryFound)    
+        break;
+
+    pindexFirst = pindexFirst->pprev;
+    }
+
+    if (!notaryFound) 
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Notary transaction not found");
+    
+    return notaryinfo; 
+}
+
+UniValue sendnotarytransaction(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1)
+        throw runtime_error(
+            "sendnotarytransaction <file>\n"
+            "<file> is either a file or a string you want to notarize\n"
+            + HelpRequiringPassphrase());
+
+    // Wallet comments
+    CWalletTx wtx;
+    std::string prefix = "notary";
+
+    unsigned char hashSha[SHA256_DIGEST_LENGTH];
+    FILE* file=fopen(request.params[0].get_str().c_str(),"rb");
+    if(file==NULL) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot open file");
+    }
+    
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    char buffer[4096];
+    int bytesRead=0;
+    while((bytesRead=fread(buffer,1,4096,file))!=0) {
+        SHA256_Update(&sha256,buffer,bytesRead);
+    }
+    SHA256_Final(hashSha,&sha256);
+    std::string nHash = HashToString(hashSha, SHA256_DIGEST_LENGTH);
+    fclose(file);
+
+    if (pwalletMain->IsLocked())
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+
+    string strError = SendCLAMSpeech(wtx, nHash, prefix);
+    if (strError != "")
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+
+    return wtx.GetHash().GetHex();
+}
+
+UniValue createclamour(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1)
+        throw runtime_error(
+            "createclamour <clamourProposal> [url]\n"
+            "<clamourProposal> is a full 64 character sha256 hash of a CLAMour proposal.\n"
+            "Any string of text that is not 64 characters in length\n"
+            "will be treated as the body of a CLAMour proposal and automatically\n"
+            "hashed into sha256\n\n"
+            "[url] is an optional field to include a link to your CLAMour proposal"
+            + HelpRequiringPassphrase());
+
+    CWalletTx wtx;
+    std::string prefix = "clamour";
+    std::string strHash = request.params[0].get_str();
+    std::string clamSpeech = "";
+    std::string url = "";
+
+    if (request.params.size() > 1) 
+        url = request.params[1].get_str();
+
+    //  if input string is 
+    if (strHash.length() != 64){
+            unsigned char hash[SHA256_DIGEST_LENGTH];
+            SHA256_CTX sha256;
+            SHA256_Init(&sha256);
+            SHA256_Update(&sha256, strHash.c_str(), strHash.size());
+            SHA256_Final(hash, &sha256);
+            stringstream ss;
+            for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+            {
+                ss << hex << setw(2) << setfill('0') << (int)hash[i];
+            }
+            strHash = ss.str();
+    }
+
+    clamSpeech = strHash + url;
+    if (pwalletMain->IsLocked())
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+
+    string strError = SendCLAMSpeech(wtx, clamSpeech, prefix);
+    if (strError != "")
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+
+    return wtx.GetHash().GetHex();
+}
+
+
+
+UniValue getstakedbyaddress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw runtime_error(
+            "getstakedbyaddress <clamaddress|*> [minconf=1]\n"
+            "Returns the total reward (including fees) earned from staking by <clamaddress> with at least [minconf] confirmations.");
+
+    // Bitcoin address
+    string strAddressParam = request.params[0].get_str();
+    bool fAllAddresses = (strAddressParam == "*");
+    CBitcoinAddress address;
+    CScript scriptPubKey;
+    CKeyID keyID;
+    CPubKey key;
+
+    if (!fAllAddresses) {
+        address = CBitcoinAddress(strAddressParam);
+
+        if (!address.IsValid())
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Clam address");
+
+        if (!address.GetKeyID(keyID))
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Can't find keyID for Clam address");
+
+        if (!pwalletMain->GetPubKey(keyID, key))
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Can't find pubkey for Clam address");
+
+        scriptPubKey = GetScriptForDestination(address.Get());
+        if (!IsMine(*pwalletMain,scriptPubKey))
+            return (double)0.0;
+    }
+
+    // Minimum confirmations
+    int nMinDepth = 1;
+    if (request.params.size() > 1) {
+        
+        nMinDepth = request.params[1].get_int();
+        LogPrintf("nMinDepth %d\n", nMinDepth);
+    }
+
+    int64_t nAmount = 0;
+
+    // for nMinDepth==1 we can speed things up by using a cached sum of the staking rewards per address
+    if (nMinDepth == 1) {
+        if (!pwalletMain->fAddressRewardsReady) {
+            LogPrintf("initializing staking rewards map\n");
+            pwalletMain->SumStakingRewards();
+        }
+
+        if (pwalletMain->mapAddressRewards.count(strAddressParam)) {
+            nAmount = pwalletMain->mapAddressRewards[strAddressParam];
+            LogPrint("stake", "staked amount from cache: %s for %s\n", FormatMoney(nAmount), strAddressParam);
+        } else
+            LogPrint("stake", "staked amount not in cache: %s for %s\n", FormatMoney(nAmount), strAddressParam);
+
+        return ValueFromAmount(nAmount);
+    }
+
+    string strAccount;
+
+    // Tally
+    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
+    {
+        const CWalletTx& wtx = (*it).second;
+        if (wtx.IsCoinStake() &&
+            CheckFinalTx(wtx) &&
+            wtx.GetDepthInMainChain() >= nMinDepth &&
+            wtx.tx->vout.size() > 1 &&
+            (fAllAddresses || wtx.tx->vout[1].scriptPubKey == scriptPubKey)) {
+            CAmount allFee;
+            list<COutputEntry> listReceived;
+            list<COutputEntry> listSent;
+            isminefilter filter = ISMINE_SPENDABLE;
+            
+            wtx.GetAmounts(listReceived, listSent, allFee, strAccount, filter);
+            nAmount -= allFee;
+        }
+    }
+
+    return ValueFromAmount(nAmount);
+}
+
+
+
+
+
+
+
+
+
 
 class Witnessifier : public boost::static_visitor<bool>
 {
@@ -3124,6 +3433,42 @@ UniValue bumpfee(const JSONRPCRequest& request)
     return result;
 }
 
+
+UniValue getstaketo(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw runtime_error(
+            "getstaketo\n"
+            "Gets the -staketo address. Returns false if -staketo is turned off.");
+
+    if (!fStakeTo)
+        return false;
+
+    return CBitcoinAddress(staketokeyID).ToString();
+}
+
+UniValue setstaketo(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw runtime_error(
+            "setstaketo [address]\n"
+            "Sets the -staketo address. If address isn't specified, -staketo is turned off.");
+
+    if (request.params.size() == 0)
+        fStakeTo = false;
+    else {
+        std::string address = request.params[0].get_str();
+
+        if (!CBitcoinAddress(address).GetKeyID(staketokeyID))
+            return strprintf(_("Bad -staketo address: '%s'"), address);
+
+        fStakeTo = true;
+    }
+
+    return true;
+}
+
+
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue importprivkey(const JSONRPCRequest& request);
 extern UniValue importaddress(const JSONRPCRequest& request);
@@ -3144,6 +3489,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "addwitnessaddress",        &addwitnessaddress,        true,   {"address"} },
     { "wallet",             "backupwallet",             &backupwallet,             true,   {"destination"} },
     { "wallet",             "bumpfee",                  &bumpfee,                  true,   {"txid", "options"} },
+    { "wallet",             "createclamour",            &createclamour,            true,   {"clamourProposal", "url"} },
     { "wallet",             "dumpprivkey",              &dumpprivkey,              true,   {"address"}  },
     { "wallet",             "dumpwallet",               &dumpwallet,               true,   {"filename"} },
     { "wallet",             "encryptwallet",            &encryptwallet,            true,   {"passphrase"} },
@@ -3152,9 +3498,12 @@ static const CRPCCommand commands[] =
     { "wallet",             "getaddressesbyaccount",    &getaddressesbyaccount,    true,   {"account"} },
     { "wallet",             "getbalance",               &getbalance,               false,  {"account","minconf","include_watchonly"} },
     { "wallet",             "getnewaddress",            &getnewaddress,            true,   {"account"} },
+    { "wallet",             "getnotarytransaction",     &getnotarytransaction,     true,   {"notaryid","multipleResults"} },
     { "wallet",             "getrawchangeaddress",      &getrawchangeaddress,      true,   {} },
     { "wallet",             "getreceivedbyaccount",     &getreceivedbyaccount,     false,  {"account","minconf"} },
     { "wallet",             "getreceivedbyaddress",     &getreceivedbyaddress,     false,  {"address","minconf"} },
+    { "wallet",             "getstakedbyaddress",       &getstakedbyaddress,       true,   {"address","minconf"} },
+    { "wallet",             "getstaketo",               &getstaketo,               true,   {} },
     { "wallet",             "gettransaction",           &gettransaction,           false,  {"txid","include_watchonly"} },
     { "wallet",             "getunconfirmedbalance",    &getunconfirmedbalance,    false,  {} },
     { "wallet",             "getwalletinfo",            &getwalletinfo,            false,  {} },
@@ -3178,8 +3527,10 @@ static const CRPCCommand commands[] =
     { "wallet",             "reservebalance",           &reservebalance,           false,  {"reserve", "amount"}},
     { "wallet",             "sendfrom",                 &sendfrom,                 false,  {"fromaccount","toaddress","amount","minconf","comment","comment_to"} },
     { "wallet",             "sendmany",                 &sendmany,                 false,  {"fromaccount","amounts","minconf","comment","subtractfeefrom"} },
+    { "wallet",             "sendnotarytransaction",    &sendnotarytransaction,    true,   {"file"} },
     { "wallet",             "sendtoaddress",            &sendtoaddress,            false,  {"address","amount","comment","comment_to","subtractfeefromamount"} },
     { "wallet",             "setaccount",               &setaccount,               true,   {"address","account"} },
+    { "wallet",             "setstaketo",               &setstaketo,               true,   {"address"} },
     { "wallet",             "settxfee",                 &settxfee,                 true,   {"amount"} },
     { "wallet",             "signmessage",              &signmessage,              true,   {"address","message"} },
     { "wallet",             "walletlock",               &walletlock,               true,   {} },
