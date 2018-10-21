@@ -3615,52 +3615,10 @@ UniValue validateoutputs(const JSONRPCRequest& request)
             }
         }
 
-        // check whether any confirmed transaction spends this output
-        //if (txindex.vSpent[nOutput].IsNull()) {
-        //    // if not, check for an unconfirmed spend
-        //    validateoutputs_check_unconfirmed_spend(outpoint, tx, entry);
-        //    ret.push_back(entry);
-        //    continue;
-        //}
+        entry.push_back(Pair("status", pcoinsTip->AccessCoin(outpoint).IsSpent() ? "spent" : "unspent"));
 
-        entry.push_back(Pair("status", "spent"));
-
-        UniValue details(UniValue::VOBJ);
-        //CTransaction spending_tx;
-
-        // load the transaction that spends this output
-        //spending_tx.ReadFromDisk(txindex.vSpent[nOutput]);
-
-        //details.push_back(Pair("txid", spending_tx.GetHash().GetHex()));
-
-        // find this output's input number in the spending transaction
-        //int n = 0;
-        //BOOST_FOREACH(CTxIn input, spending_tx.vin) {
-        //   if (input.prevout == outpoint) {
-        //        details.push_back(Pair("vin", n));
-        //        break;
-        //    }
-        //    n++;
-        //}
-
-        // get the spending transaction
-        //if (GetTransaction(uint256(spending_tx.GetHash()), tx, Params().GetConsensus(), hashBlock) && hashBlock != 0) {
-        //    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-        //    if (mi != mapBlockIndex.end() && (*mi).second)
-        //    {
-        //        CBlockIndex* pindex = (*mi).second;
-        //        if (chainActive.Contains(pindex)) {
-        //            details.push_back(Pair("height", pindex->nHeight));
-        //            details.push_back(Pair("confirmations", chainActive.Height() - pindex->nHeight));
-        //        } else {
-        //            LogPrintf("can't find block with hash %s\n", hashBlock.GetHex().c_str());
-        //            details.push_back(Pair("confirmations", 0));
-        //        }
-        //    }
-        //}
-
-        entry.push_back(Pair("spent", details));
         ret.push_back(entry);
+        continue;
     }
 
     return ret;
