@@ -448,7 +448,11 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
 
     set<CBitcoinAddress> setAddress;
     vector<string> addrList = sendTo.getKeys();
+    vector<UniValue> valueList= sendTo.getValues();
+    vector<UniValue>::iterator valueList_iterator = valueList.begin();
     BOOST_FOREACH(const string& name_, addrList) {
+
+        const UniValue& value_ = *valueList_iterator++;
 
         if (name_ == "data") {
             std::vector<unsigned char> data = ParseHexV(sendTo[name_].getValStr(),"Data");
@@ -467,8 +471,42 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             CScript scriptPubKey = GetScriptForDestination(address.Get());
             CAmount nAmount = AmountFromValue(sendTo[name_]);
 
-            CTxOut out(nAmount, scriptPubKey);
-            rawTx.vout.push_back(out);
+            if (value_.isObject()) {
+                        const UniValue& o = value_.get_obj();
+                        const UniValue& count_v = find_value(o, "count");
+                        const UniValue& locktime_v = find_value(o, "locktime");
+                        int64_t count, locktime;
+
+                        if (count_v.isNull())
+                            count = 1;
+                        else if (count_v.isNum())
+                            count = count_v.get_int64();
+                        else
+                            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, count must be integer");
+
+                        if (count < 0)
+                            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, count must not be negative");
+
+                        if (!locktime_v.isNull()) {
+                            if (locktime_v.isNum())
+                                locktime = locktime_v.get_int64();
+                            else
+                                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, locktime must be integer");
+
+                            if (locktime < 0)
+                                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, locktime must not be negative");
+
+                            scriptPubKey << locktime << OP_CHECKLOCKTIMEVERIFY << OP_DROP;
+                        }
+
+                        CTxOut out(AmountFromValue(find_value(o, "amount")), scriptPubKey);
+
+                        while (count--)
+                            rawTx.vout.push_back(out);
+            } else {
+                CTxOut out(nAmount, scriptPubKey);
+                rawTx.vout.push_back(out);
+            }
         }
     }
 
