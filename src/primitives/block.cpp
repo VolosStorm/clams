@@ -61,12 +61,18 @@ CBlock::CBlock(const CBlockLegacy& block)
     {
         this->vchBlockSig[j] = block.vchBlockSig[j];
     }
-    this->prevoutStake   = block.vtx[1]->vin[0].prevout;
+    if(block.IsProofOfStake()){
+        this->prevoutStake   = block.vtx[1]->vin[0].prevout;
+    } else {
+        COutPoint nullStake; 
+        this->prevoutStake = nullStake;
+    }
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
-        this->vtx[i] = block.vtx[i];
+        // this is causing the client to crash
+        const CTransaction &tx = *(block.vtx[i]);
+        this->vtx[i] = MakeTransactionRef(std::move(tx));
     }
-    //vtx            = *block.vtx;
 }
 
 std::string CBlock::ToString() const

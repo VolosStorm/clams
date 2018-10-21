@@ -1047,7 +1047,7 @@ bool AcceptToMemoryPoolWithTime(CTxMemPool& pool, CValidationState &state, const
     }
     // After we've (potentially) uncached entries, ensure our coins cache is still within its size limits
     CValidationState stateDummy;
-    FlushStateToDisk(stateDummy, FLUSH_STATE_PERIODIC);
+    FlushStateToDisk(stateDummy,  FLUSH_STATE_PERIODIC);
     return res;
 }
 
@@ -4612,12 +4612,30 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     dbp->nPos = nBlockPos;
                 blkdat.SetLimit(nBlockPos + nSize);
                 blkdat.SetPos(nBlockPos);
+
                 std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
+                std::shared_ptr<CBlockLegacy> blockLegacy = std::make_shared<CBlockLegacy>();
+
+                blkdat >> *blockLegacy;
+
+                //Convert block structure from old client to one from new client
+                COutPoint prevoutStake;
+                if(blockLegacy->IsProofOfStake())
+                    prevoutStake = blockLegacy->vtx[1]->vin[0].prevout;
+                pblock->nVersion = blockLegacy->nVersion;
+                pblock->hashPrevBlock = blockLegacy->hashPrevBlock; 
+                pblock->hashMerkleRoot = blockLegacy->hashMerkleRoot; 
+                pblock->nTime = blockLegacy->nTime; 
+                pblock->nBits = blockLegacy->nBits; 
+                pblock->nNonce = blockLegacy->nNonce;  
+                pblock->nVersion = blockLegacy->nVersion;
+                pblock->prevoutStake = prevoutStake;
+                pblock->vchBlockSig = blockLegacy->vchBlockSig;
+                pblock->vtx  =   blockLegacy->vtx;
+
+                // serialize it into the current block structure
                 CBlock& block = *pblock;
-                CBlockLegacy blockLegacy;
-                blkdat >> blockLegacy;
-                LogPrintf("legacy block: %s\n", blockLegacy.ToString());
-                block = blockLegacy;
+                //block = blockLegacy;
                 nRewind = blkdat.GetPos();
 
                 // detect out of order blocks, and store them for later
