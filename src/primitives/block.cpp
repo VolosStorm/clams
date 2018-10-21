@@ -51,28 +51,17 @@ std::string CBlockHeader::ToString() const
 
 CBlock::CBlock(const CBlockLegacy& block)
 {
-    this->nVersion       = block.nVersion;
-    this->hashPrevBlock  = block.hashPrevBlock;
-    this->hashMerkleRoot = block.hashMerkleRoot;
-    this->nTime          = block.nTime;
-    this->nBits          = block.nBits;
-    this->nNonce         = block.nNonce;
-    for (unsigned int j = 0; j < block.vchBlockSig.size(); j++)
-    {
-        this->vchBlockSig[j] = block.vchBlockSig[j];
-    }
-    if(block.IsProofOfStake()){
-        this->prevoutStake   = block.vtx[1]->vin[0].prevout;
-    } else {
-        COutPoint nullStake; 
-        this->prevoutStake = nullStake;
-    }
-    for (unsigned int i = 0; i < block.vtx.size(); i++)
-    {
-        // this is causing the client to crash
-        const CTransaction &tx = *(block.vtx[i]);
-        this->vtx[i] = MakeTransactionRef(std::move(tx));
-    }
+    nVersion       = block.nVersion;
+    hashPrevBlock  = block.hashPrevBlock;
+    hashMerkleRoot = block.hashMerkleRoot;
+    nTime          = block.nTime;
+    nBits          = block.nBits;
+    nNonce         = block.nNonce;
+    vchBlockSig    = block.vchBlockSig;
+    vtx            = block.vtx;
+
+    if (block.IsProofOfStake())
+        prevoutStake = vtx[1]->vin[0].prevout;
 }
 
 std::string CBlock::ToString() const
