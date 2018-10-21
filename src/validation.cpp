@@ -1047,7 +1047,7 @@ bool AcceptToMemoryPoolWithTime(CTxMemPool& pool, CValidationState &state, const
     }
     // After we've (potentially) uncached entries, ensure our coins cache is still within its size limits
     CValidationState stateDummy;
-    FlushStateToDisk(stateDummy,  FLUSH_STATE_PERIODIC);
+    FlushStateToDisk(stateDummy, FLUSH_STATE_PERIODIC);
     return res;
 }
 
@@ -4619,32 +4619,17 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 blkdat >> *blockLegacy;
 
                 //Convert block structure from old client to one from new client
-                COutPoint prevoutStake;
-                if(blockLegacy->IsProofOfStake())
-                    prevoutStake = blockLegacy->vtx[1]->vin[0].prevout;
-                pblock->nVersion = blockLegacy->nVersion;
-                pblock->hashPrevBlock = blockLegacy->hashPrevBlock; 
-                pblock->hashMerkleRoot = blockLegacy->hashMerkleRoot; 
-                pblock->nTime = blockLegacy->nTime; 
-                pblock->nBits = blockLegacy->nBits; 
-                pblock->nNonce = blockLegacy->nNonce;  
-                pblock->nVersion = blockLegacy->nVersion;
-                pblock->prevoutStake = prevoutStake;
-                pblock->vchBlockSig = blockLegacy->vchBlockSig;
-                pblock->vtx  =   blockLegacy->vtx;
+                *pblock = *blockLegacy;
 
-                // serialize it into the current block structure
-                CBlock& block = *pblock;
-                //block = blockLegacy;
                 nRewind = blkdat.GetPos();
 
                 // detect out of order blocks, and store them for later
-                uint256 hash = block.GetHash();
-                if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
+                uint256 hash = pblock->GetHash();
+                if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(pblock->hashPrevBlock) == mapBlockIndex.end()) {
                     LogPrint("reindex", "%s: Out of order block %s, parent %s not known\n", __func__, hash.ToString(),
-                            block.hashPrevBlock.ToString());
+                            pblock->hashPrevBlock.ToString());
                     if (dbp)
-                        mapBlocksUnknownParent.insert(std::make_pair(block.hashPrevBlock, *dbp));
+                        mapBlocksUnknownParent.insert(std::make_pair(pblock->hashPrevBlock, *dbp));
                     continue;
                 }
 

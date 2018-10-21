@@ -2434,22 +2434,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
             std::shared_ptr<CBlockLegacy> lblock = std::make_shared<CBlockLegacy>();
             vRecv >> *lblock;
-            //make sure to include the preoutStake for the new clam header structure
-            COutPoint prevoutStake;
-            if(lblock->IsProofOfStake())
-                prevoutStake = lblock->vtx[1]->vin[0].prevout;
-            //Convert block structure from old client to one from new client 
-            pblock->nVersion = lblock->nVersion;
-            pblock->hashPrevBlock = lblock->hashPrevBlock; 
-            pblock->hashMerkleRoot = lblock->hashMerkleRoot; 
-            pblock->nTime = lblock->nTime; 
-            pblock->nBits = lblock->nBits; 
-            pblock->nNonce = lblock->nNonce;  
-            pblock->nVersion = lblock->nVersion;
-            pblock->prevoutStake = prevoutStake;
-            pblock->vchBlockSig = lblock->vchBlockSig;
-            pblock->vtx  =   lblock->vtx;
-
+            *pblock = *lblock;
         } else { 
             vRecv >> *pblock;
         }
