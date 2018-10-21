@@ -2430,8 +2430,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
 
         if(pfrom->nVersion <= 70012) {
-            //LogPrint("xp", "Incomming Block from old client, attempting to convert\n");
-
             std::shared_ptr<CBlockLegacy> lblock = std::make_shared<CBlockLegacy>();
             vRecv >> *lblock;
             *pblock = *lblock;

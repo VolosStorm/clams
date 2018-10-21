@@ -744,6 +744,45 @@ UniValue getsupport(const JSONRPCRequest& request)
     return ret;
 }
 
+UniValue validatepubkey(const JSONRPCRequest& request)
+{
+    if (request.fHelp || !request.params.size() || request.params.size() > 2)
+        throw runtime_error(
+            "validatepubkey <clampubkey>\n"
+            "Return information about <clampubkey>.");
+
+    std::vector<unsigned char> vchPubKey = ParseHex(request.params[0].get_str());
+    CPubKey pubKey(vchPubKey);
+
+    bool isValid = pubKey.IsValid();
+    bool isCompressed = pubKey.IsCompressed();
+    CKeyID keyID = pubKey.GetID();
+
+    CBitcoinAddress address;
+    address.Set(keyID);
+
+    UniValue ret(UniValue::VOBJ);
+    ret.push_back(Pair("isvalid", isValid));
+    if (isValid)
+    {
+        CTxDestination dest = address.Get();
+        string currentAddress = address.ToString();
+        ret.push_back(Pair("address", currentAddress));
+        ret.push_back(Pair("iscompressed", isCompressed));
+#ifdef ENABLE_WALLET
+        bool fMine = pwalletMain ? IsMine(*pwalletMain, dest) : false;
+        ret.push_back(Pair("ismine", fMine));
+        if (fMine) {
+            UniValue detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
+            ret.pushKVs(detail);
+        }
+        if (pwalletMain && pwalletMain->mapAddressBook.count(dest))
+            ret.push_back(Pair("account", pwalletMain->mapAddressBook[dest].name));
+#endif
+    }
+    return ret;
+}
+
 
 
 UniValue echo(const JSONRPCRequest& request)
@@ -765,6 +804,7 @@ static const CRPCCommand commands[] =
     { "control",            "getinfo",                &getinfo,                true,  {} }, /* uses wallet if enabled */
     { "control",            "getmemoryinfo",          &getmemoryinfo,          true,  {} },
     { "util",               "validateaddress",        &validateaddress,        true,  {"address"} }, /* uses wallet if enabled */
+    { "util",               "validatepubkey",         &validatepubkey,         true,  {"pubkey"} }, /* uses wallet if enabled */
     { "util",               "createmultisig",         &createmultisig,         true,  {"nrequired","keys"} },
     { "util",               "verifymessage",          &verifymessage,          true,  {"address","signature","message"} },
     { "util",               "signmessagewithprivkey", &signmessagewithprivkey, true,  {"privkey","message"} },

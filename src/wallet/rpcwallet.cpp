@@ -3507,6 +3507,167 @@ UniValue setstaketo(const JSONRPCRequest& request)
 }
 
 
+static void validateoutputs_check_unconfirmed_spend(COutPoint& outpoint, CTransactionRef& tx, UniValue& entry)
+{
+    // check whether unconfirmed output is already spent
+    LOCK(mempool.cs); // protect mempool.mapNextTx
+    if (mempool.mapNextTx.count(outpoint)) {
+        // pull details from mempool
+        auto in = mempool.mapNextTx.find(outpoint);
+        //CInPoint in = mapNextTx[];
+        UniValue details(UniValue::VOBJ);
+        entry.push_back(Pair("status", "spent"));
+        details.push_back(Pair("txid", in->second->GetHash().GetHex()));
+        //details.push_back(Pair("vin", int(in->second->vin.n)));
+        details.push_back(Pair("confirmations", 0));
+        entry.push_back(Pair("spent", details));
+    } else {
+        entry.push_back(Pair("status", "unspent"));
+    }
+}
+
+UniValue validateoutputs(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw runtime_error(
+            "validateoutputs [{\"txid\":txid,\"vout\":n},...]\n"
+            "Return information about outputs (whether they exist, and whether they have been spent).");
+
+    UniValue inputs = request.params[0].get_array();
+    UniValue ret(UniValue::VARR);
+
+    for (unsigned int idx = 0; idx < inputs.size(); idx++)
+    //BOOST_FOREACH(UniValue::VOBJ input, inputs)
+    {
+        UniValue o = inputs[idx].get_obj();
+
+        const UniValue& txid_v = find_value(o, "txid");
+        if (txid_v.isNull())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing txid key");
+        string txid = txid_v.get_str();
+        if (!IsHex(txid))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, expected hex txid");
+
+        const UniValue& vout_v = find_value(o, "vout");
+        if (!vout_v.isNum())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing vout key");
+        int nOutput = vout_v.get_int();
+        if (nOutput < 0)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, vout must be positive");
+
+        UniValue entry(UniValue::VOBJ);
+        entry.push_back(Pair("txid", txid));
+        entry.push_back(Pair("vout", nOutput));
+
+        CTransactionRef tx;
+        uint256 hashBlock;
+        uint256 hash(uint256S(txid));
+        COutPoint outpoint(hash, nOutput);
+
+        // find the output
+        if (!GetTransaction(hash, tx, Params().GetConsensus(), hashBlock, true)) {
+            entry.push_back(Pair("status", "txid not found"));
+            ret.push_back(entry);
+            continue;
+        }
+
+        // check that the output number is in range
+        if ((unsigned)nOutput >= tx->vout.size()) {
+            entry.push_back(Pair("status", "vout too high"));
+            entry.push_back(Pair("outputs", (int)tx->vout.size()));
+            ret.push_back(entry);
+            continue;
+        }
+
+        entry.push_back(Pair("amount", ValueFromAmount(tx->vout[nOutput].nValue)));
+
+        // get the address and account
+        CTxDestination address;
+        if (ExtractDestination(tx->vout[nOutput].scriptPubKey, address))
+        {
+            entry.push_back(Pair("address", CBitcoinAddress(address).ToString()));
+            if (pwalletMain->mapAddressBook.count(address))
+                entry.push_back(Pair("account", pwalletMain->mapAddressBook[address].name));
+        }
+
+        const CScript& pk = tx->vout[outpoint.n].scriptPubKey;
+        entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
+
+        // is the output confirmed?
+        if (hashBlock.IsNull()) {
+            entry.push_back(Pair("confirmations", 0));
+            validateoutputs_check_unconfirmed_spend(outpoint, tx, entry);
+            ret.push_back(entry);
+            continue;
+        }
+
+        // find the block containing the output
+        BlockMap::iterator it = mapBlockIndex.find(hashBlock);
+        if (mapBlockIndex.count(hashBlock) != 0)
+        {
+            CBlockIndex* pindex = it->second; //(*mi).second;
+            if (chainActive.Contains(pindex)) {
+                entry.push_back(Pair("height", pindex->nHeight));
+                entry.push_back(Pair("confirmations", 1 + chainActive.Height() - pindex->nHeight));
+            } else {
+                LogPrintf("can't find block with hash %s\n", hashBlock.GetHex().c_str());
+                entry.push_back(Pair("confirmations", 0));
+            }
+        }
+
+        // check whether any confirmed transaction spends this output
+        //if (txindex.vSpent[nOutput].IsNull()) {
+        //    // if not, check for an unconfirmed spend
+        //    validateoutputs_check_unconfirmed_spend(outpoint, tx, entry);
+        //    ret.push_back(entry);
+        //    continue;
+        //}
+
+        entry.push_back(Pair("status", "spent"));
+
+        UniValue details(UniValue::VOBJ);
+        //CTransaction spending_tx;
+
+        // load the transaction that spends this output
+        //spending_tx.ReadFromDisk(txindex.vSpent[nOutput]);
+
+        //details.push_back(Pair("txid", spending_tx.GetHash().GetHex()));
+
+        // find this output's input number in the spending transaction
+        //int n = 0;
+        //BOOST_FOREACH(CTxIn input, spending_tx.vin) {
+        //   if (input.prevout == outpoint) {
+        //        details.push_back(Pair("vin", n));
+        //        break;
+        //    }
+        //    n++;
+        //}
+
+        // get the spending transaction
+        //if (GetTransaction(uint256(spending_tx.GetHash()), tx, Params().GetConsensus(), hashBlock) && hashBlock != 0) {
+        //    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+        //    if (mi != mapBlockIndex.end() && (*mi).second)
+        //    {
+        //        CBlockIndex* pindex = (*mi).second;
+        //        if (chainActive.Contains(pindex)) {
+        //            details.push_back(Pair("height", pindex->nHeight));
+        //            details.push_back(Pair("confirmations", chainActive.Height() - pindex->nHeight));
+        //        } else {
+        //            LogPrintf("can't find block with hash %s\n", hashBlock.GetHex().c_str());
+        //            details.push_back(Pair("confirmations", 0));
+        //        }
+        //    }
+        //}
+
+        entry.push_back(Pair("spent", details));
+        ret.push_back(entry);
+    }
+
+    return ret;
+}
+
+
+
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue importprivkey(const JSONRPCRequest& request);
 extern UniValue importaddress(const JSONRPCRequest& request);
@@ -3577,6 +3738,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrasechange",   &walletpassphrasechange,   true,   {"oldpassphrase","newpassphrase"} },
     { "wallet",             "walletpassphrase",         &walletpassphrase,         true,   {"passphrase","timeout"} },
     { "wallet",             "removeprunedfunds",        &removeprunedfunds,        true,   {"txid"} },
+    { "wallet",              "validateoutputs",         &validateoutputs,          true,  {"outputs"} }, /* uses wallet if enabled */
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)
