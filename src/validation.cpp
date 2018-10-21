@@ -2218,10 +2218,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn - nValueBurned;
     pindex->nDigsupply = (pindex->pprev? pindex->pprev->nDigsupply : 0) + nValueDig;
     pindex->nStakeSupply = (pindex->pprev? pindex->pprev->nStakeSupply : 0) + nValueStake;
-    pindex->prevoutStake = block.vtx[1]->vin[0].prevout;
 
-    if (pindex->IsProofOfStake())
+    if (block.IsProofOfStake()){
+        pindex->prevoutStake = block.vtx[1]->vin[0].prevout;
         setStakeSeen.insert(std::make_pair(pindex->prevoutStake, pindex->nTime));
+    }
 
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull() || !pindex->IsValid(BLOCK_VALID_SCRIPTS))
