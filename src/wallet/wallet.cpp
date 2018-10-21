@@ -34,6 +34,7 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 #include <miner.h>
 
@@ -56,13 +57,15 @@ int64_t nTransactionFee = DEFAULT_TRANSACTION_FEE;
 
 static unsigned int GetStakeSplitAge() { return 1 * 24 * 60 * 60; }
 
-extern int64_t nMaxStakeValue;
-extern int64_t nSplitSize;
-extern int64_t nCombineLimit;
-extern bool fCombineAny;
-extern bool fStakeTo, fRewardTo;
-extern std::set<CBitcoinAddress> setStakeAddresses;
-extern CKeyID staketokeyID, rewardtokeyID;
+int64_t nMaxStakeValue;
+int64_t nSplitSize;
+int64_t nCombineLimit;
+bool fCombineAny;
+bool fStakeTo = false;
+bool fRewardTo = false;
+std::set<CBitcoinAddress> setSpendLastAddresses;
+std::set<CBitcoinAddress> setStakeAddresses;
+CKeyID staketokeyID, rewardtokeyID;
 
 /**
  * Fees smaller than this (in satoshi) are considered zero fee (for transaction creation)
@@ -2453,6 +2456,29 @@ bool CWallet::SelectCoins(const vector<COutput>& vAvailableCoins, const CAmount&
     size_t nMaxChainLength = std::min(GetArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT), GetArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT));
     bool fRejectLongChains = GetBoolArg("-walletrejectlongchains", DEFAULT_WALLET_REJECT_LONG_CHAINS);
 
+    if (setSpendLastAddresses.size()) {
+        int64_t nMiscValue = 0;
+        vector<COutput> vMiscCoins;
+        BOOST_FOREACH(const COutput &output, vCoins) {
+            CTxDestination address;
+            const CTxOut &txout = output.tx->tx->vout[output.i];
+            if (!ExtractDestination(txout.scriptPubKey, address) || !setSpendLastAddresses.count(address)) {
+                nMiscValue += txout.nValue;
+                vMiscCoins.push_back(output);
+            }
+        }
+
+        LogPrintf("we have %d (of %d) non-spendlast outputs valued as %s\n", int(vMiscCoins.size()), int(vCoins.size()), FormatMoney(nMiscValue));
+
+        if (nMiscValue >= nTargetValue &&
+            (SelectCoinsMinConf(nTargetValue, 1, 10, 0, vMiscCoins, setCoinsRet, nValueRet) ||
+             SelectCoinsMinConf(nTargetValue, 1, 10, 0, vMiscCoins, setCoinsRet, nValueRet))) {
+            LogPrintf("we can make the transaction without spending any -spendlast coins\n");
+            return true;
+        }
+    }
+
+
     bool res = nTargetValue <= nValueFromPresetInputs ||
         SelectCoinsMinConf(nTargetValue - nValueFromPresetInputs, 1, 6, 0, vCoins, setCoinsRet, nValueRet) ||
         SelectCoinsMinConf(nTargetValue - nValueFromPresetInputs, 1, 1, 0, vCoins, setCoinsRet, nValueRet) ||
@@ -4527,35 +4553,40 @@ bool CWallet::ParameterInteraction()
                                        GetArg("-paytxfee", ""), ::minRelayTxFee.ToString()));
         }
     }
-
+    // we want to avoid spending coins in these addresses if possible
+    if (IsArgSet("-spendlast")) {
+        BOOST_FOREACH(std::string strKeep, mapMultiArgs.at("-spendlast")){
+            setSpendLastAddresses.insert(CBitcoinAddress(strKeep));
+        }
+    }
+    // we only want to stake outputs at these addresses
+    if (IsArgSet("-stake")) {
+        BOOST_FOREACH(std::string strAddr, mapMultiArgs.at("-stake")){
+            setStakeAddresses.insert(CBitcoinAddress(strAddr));
+        }
+    }
     if (IsArgSet("-staketo")) {
         if (!CBitcoinAddress(GetArg("-staketo", "")).GetKeyID(staketokeyID))
             return InitError(strprintf(_("Bad -staketo address: '%s'"), GetArg("-staketo", "")));
         fStakeTo = true;
     }
-
     if (IsArgSet("-rewardto")) {
         if (!CBitcoinAddress(GetArg("-rewardto", "")).GetKeyID(rewardtokeyID))
             return InitError(strprintf(_("Bad -rewardto address: '%s'"), GetArg("-rewardto", "")));
         fRewardTo = true;
     }
-
     if (IsArgSet("-maxstakevalue")) {
         nMaxStakeValue = GetMoneyArg("-maxstakevalue", 0*COIN);
     } 
-
     if (IsArgSet("-splitsize")) {
         nSplitSize     = GetMoneyArg("-splitsize",     0*COIN);
     } 
-
     if (IsArgSet("-combinelimit")) {
         nCombineLimit  = GetMoneyArg("-combinelimit",  1*COIN);
     }   
-
     if (IsArgSet("-combineany")) {
         fCombineAny    = GetBoolArg( "-combineany",    false );
     } 
-    
     if (IsArgSet("-maxtxfee"))
     {
         CAmount nMaxFee = 0;
