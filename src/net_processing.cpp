@@ -1056,10 +1056,8 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                         //push old block structure to old clients
                         if(pfrom->nVersion <= 70012) { 
                             CBlockLegacy legacyBlock(block);
-                            //LogPrint("xp", "- Pushing old block structure %s %s\n", block.ToString(), legacyBlock.ToString());
                             connman.PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, legacyBlock));
                         } else { 
-                            //LogPrint("xp", "- Pushing new block structure %s\n", block.ToString());
                             connman.PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, block));
                         }  
                     }
@@ -2260,13 +2258,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             for (unsigned int n = 0; n < nCount; n++) {
                 CBlockLegacy header;
                 vRecv >> header;
-                
                 // set blank pos if were past PoW stage
                 if( pindexBestHeader->nHeight > chainparams.GetConsensus().LAST_POW_BLOCK ){ 
                     uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
                     COutPoint prevoutStake(a, 0);
                     headers[n].prevoutStake = prevoutStake;
-                } else if (pindexBestHeader->nHeight + (int)n > chainparams.GetConsensus().LAST_POW_BLOCK ) {
+                } else if (pindexBestHeader->nHeight+1 + (int)n > chainparams.GetConsensus().LAST_POW_BLOCK ) {
                     uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
                     COutPoint prevoutStake(a, 0);
                     headers[n].prevoutStake = prevoutStake;
@@ -2280,6 +2277,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 headers[n].nTime = header.nTime;
                 headers[n].nBits = header.nBits;
                 headers[n].nNonce = header.nNonce;
+
             }
         } else { 
             for (unsigned int n = 0; n < nCount; n++) {
@@ -3069,6 +3067,8 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
                         LogPrint("net", "%s: sending header %s to peer=%d\n", __func__,
                                 vHeaders.front().GetHash().ToString(), pto->id);
                     }
+
+
                     connman.PushMessage(pto, msgMaker.Make(NetMsgType::HEADERS, vHeaders));
                     state.pindexBestHeaderSent = pBestIndex;
                 } else
