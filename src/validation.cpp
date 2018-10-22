@@ -1242,7 +1242,8 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
         return error("WriteBlockToDisk: OpenBlockFile failed");
 
     // Write index header
-    unsigned int nSize = GetSerializeSize(fileout, block);
+    CBlockLegacy blockLegacy(block);
+    unsigned int nSize = GetSerializeSize(fileout, blockLegacy);
     fileout << FLATDATA(messageStart) << nSize;
 
     // Write block
@@ -1250,25 +1251,26 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
     if (fileOutPos < 0)
         return error("WriteBlockToDisk: ftell failed");
     pos.nPos = (unsigned int)fileOutPos;
-    fileout << block;
+    fileout << blockLegacy;
 
     return true;
 }
 
-template <typename Block>
-bool ReadBlockFromDisk(Block& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
+static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
 {
-    //LogPrint("xp", "ReadBlockFromDisk %s", pos.ToString());
+    //LogPrint("xp", "ReadCBlockFromDisk %s", pos.ToString());
     block.SetNull();
 
     // Open history file to read
     CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
     if (filein.IsNull())
-        return error("ReadBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
+        return error("ReadCBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
 
     // Read block
     try {
-        filein >> block;
+        CBlockLegacy blockLegacy;
+        filein >> blockLegacy;
+        block = blockLegacy;
     }
     catch (const std::exception& e) {
         return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
@@ -1279,7 +1281,7 @@ bool ReadBlockFromDisk(Block& block, const CDiskBlockPos& pos, const Consensus::
         //PoS blocks can be loaded out of order from disk, which makes PoS impossible to validate. So, do not validate their headers
         //they will be validated later in CheckBlock and ConnectBlock anyway
         if (!CheckHeaderProof(block, consensusParams))
-            return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+            return error("ReadCBlockFromDisk: Errors in block header at %s", pos.ToString());
     }
 
     return true;
@@ -1288,50 +1290,11 @@ bool ReadBlockFromDisk(Block& block, const CDiskBlockPos& pos, const Consensus::
 bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
 {
     //LogPrint("xp", "RBFD %s %s %s\n", block.ToString(), pindex->ToString(), pindex->GetBlockPos().ToString());
-    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
+    if (!ReadCBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
         return false;
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
-    return true;
-}
-
-bool ReadFromDisk(CBlockHeader& block, unsigned int nFile, unsigned int nBlockPos)
-{
-    return ReadBlockFromDisk(block, CDiskBlockPos(nFile, nBlockPos), Params().GetConsensus());
-}
-
-//This function for reading transaction can also be used to re-factorize GetTransaction.
-bool ReadFromDisk(CMutableTransaction& tx, CDiskTxPos txindex)
-{
-    CAutoFile filein(OpenBlockFile(txindex, true), SER_DISK, CLIENT_VERSION);
-    if (filein.IsNull())
-        return error("CTransaction::ReadFromDisk() : OpenBlockFile failed");
-
-    // Read transaction
-    CBlockHeader header;
-    try {
-        filein >> header;
-        fseek(filein.Get(), txindex.nTxOffset, SEEK_CUR);
-        filein >> tx;
-    }
-    catch (const std::exception& e) {
-        return error("%s: Deserialize or I/O error - %s", __func__, e.what());
-    }
-
-    return true;
-}
-
-bool ReadFromDisk(CMutableTransaction& tx, CDiskTxPos& txindex, CBlockTreeDB& txdb, COutPoint prevout)
-{
-    if (!txdb.ReadTxIndex(prevout.hash, txindex))
-        return false;
-    if (!ReadFromDisk(tx, txindex))
-        return false;
-    if (prevout.n >= tx.vout.size())
-    {
-        return false;
-    }
     return true;
 }
 
@@ -4675,7 +4638,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                         std::multimap<uint256, CDiskBlockPos>::iterator it = range.first;
                         std::shared_ptr<CBlock> pblockrecursive = std::make_shared<CBlock>();
                         //("xp", "LoadExternalBlockFile \n");
-                        if (ReadBlockFromDisk(*pblockrecursive, it->second, chainparams.GetConsensus()))
+                        if (ReadCBlockFromDisk(*pblockrecursive, it->second, chainparams.GetConsensus()))
                         {
                             LogPrint("reindex", "%s: Processing out of order child %s of %s\n", __func__, pblockrecursive->GetHash().ToString(),
                                     head.ToString());
