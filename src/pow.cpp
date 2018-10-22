@@ -36,11 +36,8 @@ inline arith_uint256 GetLimit(const Consensus::Params& params, bool fProofOfStak
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
 {
-    if (pindexLast == NULL){
-        arith_uint256 bnTargetLimit;
-        bnTargetLimit.SetCompact(params.powLimit);
-        return bnTargetLimit.GetCompact();
-    }
+    if (!pindexLast)
+        return params.powLimit;
 
     if (pindexLast->nHeight < params.DISTRIBUTION_END && Params().NetworkIDString() == "main")
         return GetNextTargetRequiredV1(pindexLast, params, fProofOfStake);
