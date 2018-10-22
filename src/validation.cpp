@@ -2219,6 +2219,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     pindex->nDigsupply = (pindex->pprev? pindex->pprev->nDigsupply : 0) + nValueDig;
     pindex->nStakeSupply = (pindex->pprev? pindex->pprev->nStakeSupply : 0) + nValueStake;
 
+    if (block.IsProofOfStake()){
+        pindex->prevoutStake = block.vtx[1]->vin[0].prevout;
+        setStakeSeen.insert(std::make_pair(pindex->prevoutStake, pindex->nTime));
+    }
+
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull() || !pindex->IsValid(BLOCK_VALID_SCRIPTS))
     {
@@ -2986,8 +2991,8 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
     // competitive advantage.
     pindexNew->nSequenceId = 0;
     BlockMap::iterator mi = mapBlockIndex.insert(std::make_pair(hash, pindexNew)).first;
-    if (pindexNew->IsProofOfStake())
-        setStakeSeen.insert(std::make_pair(pindexNew->prevoutStake, pindexNew->nTime));
+    //if (pindexNew->IsProofOfStake())
+    //    setStakeSeen.insert(std::make_pair(pindexNew->prevoutStake, pindexNew->nTime));
     pindexNew->phashBlock = &((*mi).first);
     BlockMap::iterator miPrev = mapBlockIndex.find(block.hashPrevBlock);
     if (miPrev != mapBlockIndex.end())
@@ -3319,8 +3324,9 @@ bool CheckBlockSignature(const CBlock& block)
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW)
 {
     // Check proof of work matches claimed amount
-    //("xp", "CheckBlockHeader %s\n", block.ToString());
+    //LogPrint("xp", "CheckBlockHeader %s\n", block.ToString());
     //LogPrint("xp", "CheckBlockHeader 2 %d\n", chainActive.Height());
+
     if (fCheckPOW && block.IsProofOfWork() && !CheckHeaderPoW(block, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
     // PoS header proofs are not validated and always return true
@@ -3591,7 +3597,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     const int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
     // Check proof of work
    
-    LogPrint("xp", "ContextualCheckBlockHeader %d %d %s\n", block.nBits, GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()), block.IsProofOfStake());
+    //LogPrint("xp", "ContextualCheckBlockHeader %d %d %s\n", block.nBits, GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()), block.IsProofOfStake());
     if (block.nBits != GetNextWorkRequired(pindexPrev, consensusParams, block.IsProofOfStake()))
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect difficulty value");
 
