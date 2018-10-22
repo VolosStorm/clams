@@ -1242,7 +1242,8 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
         return error("WriteBlockToDisk: OpenBlockFile failed");
 
     // Write index header
-    unsigned int nSize = GetSerializeSize(fileout, block);
+    CBlockLegacy blockLegacy(block);
+    unsigned int nSize = GetSerializeSize(fileout, blockLegacy);
     fileout << FLATDATA(messageStart) << nSize;
 
     // Write block
@@ -1250,7 +1251,7 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
     if (fileOutPos < 0)
         return error("WriteBlockToDisk: ftell failed");
     pos.nPos = (unsigned int)fileOutPos;
-    fileout << block;
+    fileout << blockLegacy;
 
     return true;
 }
@@ -1267,7 +1268,9 @@ static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Co
 
     // Read block
     try {
-        filein >> block;
+        CBlockLegacy blockLegacy;
+        filein >> blockLegacy;
+        block = blockLegacy;
     }
     catch (const std::exception& e) {
         return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
