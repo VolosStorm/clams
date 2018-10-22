@@ -1257,13 +1257,13 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
 
 static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
 {
-    //LogPrint("xp", "ReadBlockFromDisk %s", pos.ToString());
+    //LogPrint("xp", "ReadCBlockFromDisk %s", pos.ToString());
     block.SetNull();
 
     // Open history file to read
     CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
     if (filein.IsNull())
-        return error("ReadBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
+        return error("ReadCBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
 
     // Read block
     try {
@@ -1278,7 +1278,7 @@ static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Co
         //PoS blocks can be loaded out of order from disk, which makes PoS impossible to validate. So, do not validate their headers
         //they will be validated later in CheckBlock and ConnectBlock anyway
         if (!CheckHeaderProof(block, consensusParams))
-            return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+            return error("ReadCBlockFromDisk: Errors in block header at %s", pos.ToString());
     }
 
     return true;
@@ -1286,13 +1286,13 @@ static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Co
 
 static bool ReadCBlockHeaderFromDisk(CBlockHeader& blockHeader, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
 {
-    //LogPrint("xp", "ReadBlockFromDisk %s", pos.ToString());
+    //LogPrint("xp", "ReadCBlockHeaderFromDisk %s", pos.ToString());
     blockHeader.SetNull();
 
     // Open history file to read
     CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
     if (filein.IsNull())
-        return error("ReadBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
+        return error("ReadCBlockHeaderFromDisk: OpenBlockFile failed for %s", pos.ToString());
 
     // Read block header
     try {
@@ -1307,7 +1307,7 @@ static bool ReadCBlockHeaderFromDisk(CBlockHeader& blockHeader, const CDiskBlock
         //PoS blocks can be loaded out of order from disk, which makes PoS impossible to validate. So, do not validate their headers
         //they will be validated later in CheckBlock and ConnectBlock anyway
         if (!CheckHeaderProof(blockHeader, consensusParams))
-            return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+            return error("ReadCBlockHeaderFromDisk: Errors in block header at %s", pos.ToString());
     }
 
     return true;
