@@ -360,6 +360,9 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,\"data\":\"hex\",...} ( locktime ) ( strClamSpeech )\n"
             "\nCreate a transaction spending the given inputs and creating new outputs.\n"
             "Outputs can be addresses or data.\n"
+            "Each <amount> is either an amount to send or {\"count\":c,\"amount\":a,\"locktime\":t}\n"
+            "which adds <c> outputs each sending <a> CLAMs with a locktime of <t>.\n"
+            "The count <c> and locktime <t> are both optional.\n"
             "Returns hex-encoded raw transaction.\n"
             "Note that the transaction's inputs are not signed, and\n"
             "it is not stored in the wallet or transmitted to the network.\n"
@@ -446,7 +449,6 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
         rawTx.vin.push_back(in);
     }
 
-    set<CBitcoinAddress> setAddress;
     vector<string> addrList = sendTo.getKeys();
     vector<UniValue> valueList= sendTo.getValues();
     vector<UniValue>::iterator valueList_iterator = valueList.begin();
@@ -464,12 +466,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             if (!address.IsValid())
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Bitcoin address: ")+name_);
 
-            if (setAddress.count(address))
-                throw JSONRPCError(RPC_INVALID_PARAMETER, string("Invalid parameter, duplicated address: ")+name_);
-            setAddress.insert(address);
-
             CScript scriptPubKey = GetScriptForDestination(address.Get());
-            CAmount nAmount = AmountFromValue(sendTo[name_]);
 
             if (value_.isObject()) {
                         const UniValue& o = value_.get_obj();
@@ -504,7 +501,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                         while (count--)
                             rawTx.vout.push_back(out);
             } else {
-                CTxOut out(nAmount, scriptPubKey);
+                CTxOut out(AmountFromValue(value_), scriptPubKey);
                 rawTx.vout.push_back(out);
             }
         }
