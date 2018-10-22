@@ -1284,35 +1284,6 @@ static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Co
     return true;
 }
 
-static bool ReadCBlockHeaderFromDisk(CBlockHeader& blockHeader, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
-{
-    //LogPrint("xp", "ReadCBlockHeaderFromDisk %s", pos.ToString());
-    blockHeader.SetNull();
-
-    // Open history file to read
-    CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
-    if (filein.IsNull())
-        return error("ReadCBlockHeaderFromDisk: OpenBlockFile failed for %s", pos.ToString());
-
-    // Read block header
-    try {
-        filein >> blockHeader;
-    }
-    catch (const std::exception& e) {
-        return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
-    }
-
-    // Check the header
-    if(!blockHeader.IsProofOfStake()) {
-        //PoS blocks can be loaded out of order from disk, which makes PoS impossible to validate. So, do not validate their headers
-        //they will be validated later in CheckBlock and ConnectBlock anyway
-        if (!CheckHeaderProof(blockHeader, consensusParams))
-            return error("ReadCBlockHeaderFromDisk: Errors in block header at %s", pos.ToString());
-    }
-
-    return true;
-}
-
 bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
 {
     //LogPrint("xp", "RBFD %s %s %s\n", block.ToString(), pindex->ToString(), pindex->GetBlockPos().ToString());
@@ -1321,45 +1292,6 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
-    return true;
-}
-
-bool ReadFromDisk(CBlockHeader& block, unsigned int nFile, unsigned int nBlockPos)
-{
-    return ReadCBlockHeaderFromDisk(block, CDiskBlockPos(nFile, nBlockPos), Params().GetConsensus());
-}
-
-//This function for reading transaction can also be used to re-factorize GetTransaction.
-bool ReadFromDisk(CMutableTransaction& tx, CDiskTxPos txindex)
-{
-    CAutoFile filein(OpenBlockFile(txindex, true), SER_DISK, CLIENT_VERSION);
-    if (filein.IsNull())
-        return error("CTransaction::ReadFromDisk() : OpenBlockFile failed");
-
-    // Read transaction
-    CBlockHeader header;
-    try {
-        filein >> header;
-        fseek(filein.Get(), txindex.nTxOffset, SEEK_CUR);
-        filein >> tx;
-    }
-    catch (const std::exception& e) {
-        return error("%s: Deserialize or I/O error - %s", __func__, e.what());
-    }
-
-    return true;
-}
-
-bool ReadFromDisk(CMutableTransaction& tx, CDiskTxPos& txindex, CBlockTreeDB& txdb, COutPoint prevout)
-{
-    if (!txdb.ReadTxIndex(prevout.hash, txindex))
-        return false;
-    if (!ReadFromDisk(tx, txindex))
-        return false;
-    if (prevout.n >= tx.vout.size())
-    {
-        return false;
-    }
     return true;
 }
 
