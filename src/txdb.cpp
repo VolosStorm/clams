@@ -417,8 +417,11 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
 
     pcursor->Seek(std::make_pair(DB_BLOCK_INDEX, uint256()));
 
+    int counter = 0;
     // Load mapBlockIndex
     while (pcursor->Valid()) {
+        if (counter % 100000 == 0)
+            LogPrintf("Load mapBlockIndex iteration %d\n", counter);
         boost::this_thread::interruption_point();
         std::pair<char, uint256> key;
         if (pcursor->GetKey(key) && key.first == DB_BLOCK_INDEX) {
@@ -464,7 +467,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
         } else {
             break;
         }
+        counter++;
     }
+    LogPrintf("Load mapBlockIndex finished after iteration %d\n", counter);
 
     return true;
 }
