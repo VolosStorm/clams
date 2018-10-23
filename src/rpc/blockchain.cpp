@@ -905,7 +905,7 @@ UniValue getblock(const JSONRPCRequest& request)
     if (!fVerbose)
     {
         CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
-        ssBlock << block;
+        ssBlock << CBlockLegacy(block);
         std::string strHex = HexStr(ssBlock.begin(), ssBlock.end());
         return strHex;
     }
