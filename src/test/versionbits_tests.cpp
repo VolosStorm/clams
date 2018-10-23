@@ -15,7 +15,7 @@
 /* Define a virtual block time, one block per 10 minutes after Nov 14 2014, 0:55:36am */
 int32_t TestTime(int nHeight) { return 1415926536 + 600 * nHeight; }
 
-static const Consensus::Params paramsDummy = Consensus::Params();
+static const Consensus::CParams paramsDummy = Consensus::CParams();
 
 class TestConditionChecker : public AbstractThresholdConditionChecker
 {
@@ -23,11 +23,11 @@ private:
     mutable ThresholdConditionCache cache;
 
 public:
-    int64_t BeginTime(const Consensus::Params& params) const { return TestTime(10000); }
-    int64_t EndTime(const Consensus::Params& params) const { return TestTime(20000); }
-    int Period(const Consensus::Params& params) const { return 1000; }
-    int Threshold(const Consensus::Params& params) const { return 900; }
-    bool Condition(const CBlockIndex* pindex, const Consensus::Params& params) const { return (pindex->nVersion & 0x100); }
+    int64_t BeginTime(const Consensus::CParams& params) const { return TestTime(10000); }
+    int64_t EndTime(const Consensus::CParams& params) const { return TestTime(20000); }
+    int Period(const Consensus::CParams& params) const { return 1000; }
+    int Threshold(const Consensus::CParams& params) const { return 900; }
+    bool Condition(const CBlockIndex* pindex, const Consensus::CParams& params) const { return (pindex->nVersion & 0x100); }
 
     ThresholdState GetStateFor(const CBlockIndex* pindexPrev) const { return AbstractThresholdConditionChecker::GetStateFor(pindexPrev, paramsDummy, cache); }
     int GetStateSinceHeightFor(const CBlockIndex* pindexPrev) const { return AbstractThresholdConditionChecker::GetStateSinceHeightFor(pindexPrev, paramsDummy, cache); }
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(versionbits_test)
     }
 
     // Sanity checks of version bit deployments
-    const Consensus::Params &mainnetParams = Params(CBaseChainParams::MAIN).GetConsensus();
+    const Consensus::CParams &mainnetParams = Params(CBaseChainParams::MAIN).GetConsensus();
     for (int i=0; i<(int) Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         uint32_t bitmask = VersionBitsMask(mainnetParams, (Consensus::DeploymentPos)i);
         // Make sure that no deployment tries to set an invalid bit.
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(versionbits_computeblockversion)
 {
     // Check that ComputeBlockVersion will set the appropriate bit correctly
     // on mainnet.
-    const Consensus::Params &mainnetParams = Params(CBaseChainParams::MAIN).GetConsensus();
+    const Consensus::CParams &mainnetParams = Params(CBaseChainParams::MAIN).GetConsensus();
 
     // Use the TESTDUMMY deployment for testing purposes.
     int64_t bit = mainnetParams.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit;

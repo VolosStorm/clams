@@ -36,7 +36,7 @@ struct BIP9Deployment {
 /**
  * Parameters that influence chain consensus.
  */
-struct Params {
+struct CParams {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
     /** Block height and hash at which BIP34 becomes active */

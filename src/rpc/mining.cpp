@@ -229,7 +229,7 @@ UniValue getsubsidy(const JSONRPCRequest& request)
     int nTarget = request.params.size() == 1 ? request.params[0].get_int() : chainActive.Height();
     if (nTarget < 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
-    const Consensus::Params& consensusParams = Params().GetConsensus();
+    const Consensus::CParams& consensusParams = Params().GetConsensus();
     CBlockIndex *pb = chainActive.Tip();
     return (uint64_t)GetBlockSubsidy(pb, 0, consensusParams, 0);
 }
@@ -273,7 +273,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     diff.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
     obj.push_back(Pair("difficulty",       diff));
 
-    const Consensus::Params& consensusParams = Params().GetConsensus();
+    const Consensus::CParams& consensusParams = Params().GetConsensus();
     CBlockIndex *pb = chainActive.Tip();
     obj.push_back(Pair("blockvalue",    (uint64_t)GetBlockSubsidy(pb, 0, consensusParams, 0)));
 
@@ -316,7 +316,7 @@ UniValue getstakinginfo(const JSONRPCRequest& request)
 
     uint64_t nNetworkWeight = GetPoSKernelPS()/COIN;
     bool staking = nLastCoinStakeSearchInterval && nWeight;
-    const Consensus::Params& consensusParams = Params().GetConsensus();
+    const Consensus::CParams& consensusParams = Params().GetConsensus();
     int64_t nTargetSpacing = consensusParams.nTargetStakeSpacing;
     uint64_t nExpectedTime = staking ? (nTargetSpacing * nNetworkWeight / nWeight) : 0;
 
@@ -630,7 +630,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         pindexPrev = pindexPrevNew;
     }
     CBlock* pblock = &pblocktemplate->block; // pointer for convenience
-    const Consensus::Params& consensusParams = Params().GetConsensus();
+    const Consensus::CParams& consensusParams = Params().GetConsensus();
 
     // Update nTime
     UpdateTime(pblock, consensusParams, pindexPrev);

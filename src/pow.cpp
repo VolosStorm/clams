@@ -25,7 +25,7 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
-inline arith_uint256 GetLimit(const Consensus::Params& params, bool fProofOfStake)
+inline arith_uint256 GetLimit(const Consensus::CParams& params, bool fProofOfStake)
 {
     arith_uint256 bnTargetLimit;
     if(fProofOfStake) 
@@ -34,7 +34,7 @@ inline arith_uint256 GetLimit(const Consensus::Params& params, bool fProofOfStak
         return bnTargetLimit.SetCompact(params.powLimit);
 }
 
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
+unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::CParams& params, bool fProofOfStake)
 {
     if (!pindexLast)
         return params.powLimit;
@@ -47,7 +47,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus:
         return GetNextTargetRequiredV3(pindexLast, params, fProofOfStake);
 }
 
-unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
+unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consensus::CParams& params, bool fProofOfStake)
 {
     arith_uint256 bnTargetLimit;
     bnTargetLimit.SetCompact(params.powLimit);
@@ -82,7 +82,7 @@ unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, const Consen
     return bnNew.GetCompact();
 }
  
-unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
+unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consensus::CParams& params, bool fProofOfStake)
 {
     arith_uint256 bnTargetLimit;
     if(fProofOfStake) {
@@ -125,7 +125,7 @@ unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, const Consen
     return bnNew.GetCompact();
 }
 
-unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consensus::Params& params, bool fProofOfStake)
+unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consensus::CParams& params, bool fProofOfStake)
 {
     arith_uint256 bnTargetLimit;
     if(fProofOfStake) {
@@ -192,7 +192,7 @@ unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consen
     return bnNew.GetCompact();
 }
 
-bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params, bool fProofOfStake)
+bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::CParams& params, bool fProofOfStake)
 {
     bool fNegative;
     bool fOverflow;

@@ -3217,7 +3217,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         }
     }
 
-    const Consensus::Params& consensusParams = Params().GetConsensus();
+    const Consensus::CParams& consensusParams = Params().GetConsensus();
 
     // Calculate coin age reward
     int64_t nReward;

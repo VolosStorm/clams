@@ -222,11 +222,11 @@ static const unsigned int MAX_TX_COMMENT_LEN = 140; // 128 bytes + little extra
 
 inline int64_t FutureDrift(uint32_t nTime) { return nTime + 15; }
 
-inline int64_t PastDrift(int64_t nTime, int nHeight, const Consensus::Params& params)   { return nHeight > params.nProtocolV2Height ? nTime : nTime - 10 * 60; }
+inline int64_t PastDrift(int64_t nTime, int nHeight, const Consensus::CParams& params)   { return nHeight > params.nProtocolV2Height ? nTime : nTime - 10 * 60; }
 
 inline int64_t FutureDriftV1(int64_t nTime) { return nTime + 10 * 60; }
 inline int64_t FutureDriftV2(int64_t nTime) { return nTime + 15; }
-inline int64_t FutureDrift(int64_t nTime, int nHeight, const Consensus::Params& params) { return nHeight > params.nProtocolV2Height ? FutureDriftV2(nTime) : FutureDriftV1(nTime); }
+inline int64_t FutureDrift(int64_t nTime, int nHeight, const Consensus::CParams& params) { return nHeight > params.nProtocolV2Height ? FutureDriftV2(nTime) : FutureDriftV1(nTime); }
 
 
 /** 
@@ -291,11 +291,11 @@ bool IsInitialBlockDownload();
  */
 std::string GetWarnings(const std::string& strFor);
 /** Retrieve a transaction (from memory pool, or from disk, if possible) */
-bool GetTransaction(const uint256 &hash, CTransactionRef &tx, const Consensus::Params& params, uint256 &hashBlock, bool fAllowSlow = false);
-bool GetCoinAge(const CTransaction& tx, CBlockIndex* pindex, CCoinsViewCache& view, CValidationState& state, const Consensus::Params& consensusParams, uint64_t& nCoinAge);
+bool GetTransaction(const uint256 &hash, CTransactionRef &tx, const Consensus::CParams& params, uint256 &hashBlock, bool fAllowSlow = false);
+bool GetCoinAge(const CTransaction& tx, CBlockIndex* pindex, CCoinsViewCache& view, CValidationState& state, const Consensus::CParams& consensusParams, uint64_t& nCoinAge);
 /** Find the best known block, and make it the tip of the block chain */
 bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock = std::shared_ptr<const CBlock>());
-CAmount GetBlockSubsidy(CBlockIndex* pindex, uint64_t nCoinAge, const Consensus::Params& consensusParams, int64_t nFees);
+CAmount GetBlockSubsidy(CBlockIndex* pindex, uint64_t nCoinAge, const Consensus::CParams& consensusParams, int64_t nFees);
 CAmount GetPOWBlockSubsidy(CBlockIndex* pindex);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
@@ -354,7 +354,7 @@ bool AcceptToMemoryPoolWithTime(CTxMemPool& pool, CValidationState &state, const
 std::string FormatStateMessage(const CValidationState &state);
 
 /** Get the BIP9 state for a given deployment at the current tip. */
-ThresholdState VersionBitsTipState(const Consensus::Params& params, Consensus::DeploymentPos pos);
+ThresholdState VersionBitsTipState(const Consensus::CParams& params, Consensus::DeploymentPos pos);
 
 
 struct CHeightTxIndexIteratorKey {
@@ -423,7 +423,7 @@ struct CHeightTxIndexKey {
 
 
 /** Get the block height at which the BIP9 deployment switched into the state for the block building on the current tip. */
-int VersionBitsTipStateSinceHeight(const Consensus::Params& params, Consensus::DeploymentPos pos);
+int VersionBitsTipStateSinceHeight(const Consensus::CParams& params, Consensus::DeploymentPos pos);
 
 /** 
  * Count ECDSA signature operations the old-fashioned (pre-0.6) way
@@ -562,23 +562,23 @@ public:
 
 /** Functions for disk access for blocks */
 bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart);
-bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams);
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::CParams& consensusParams);
 
 /** Functions for validating blocks and updating the block tree */
 
 /** Context-independent validity checks */
-bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true);
-bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true, bool fCheckMerkleRoot = true, bool fCheckSig=true);
+bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::CParams& consensusParams, bool fCheckPOW = true);
+bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::CParams& consensusParams, bool fCheckPOW = true, bool fCheckMerkleRoot = true, bool fCheckSig=true);
 bool GetBlockPublicKey(const CBlock& block, std::vector<unsigned char>& vchPubKey);
 bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& nTotalFees, uint32_t nTime);
 bool CheckCanonicalBlockSignature(const std::shared_ptr<const CBlock> pblock);
-bool CheckIndexProof(const CBlockIndex& block, const Consensus::Params& consensusParams);
+bool CheckIndexProof(const CBlockIndex& block, const Consensus::CParams& consensusParams);
 
 /** Context-dependent validity checks.
  *  By "context", we mean only the previous block headers, but not the UTXO
  *  set; UTXO-related validity checks are done in ConnectBlock(). */
-bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev, int64_t nAdjustedTime);
-bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev);
+bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::CParams& consensusParams, const CBlockIndex* pindexPrev, int64_t nAdjustedTime);
+bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Consensus::CParams& consensusParams, const CBlockIndex* pindexPrev);
 
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
@@ -596,16 +596,16 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW = true, bool fCheckMerkleRoot = true);
 
 /** Check whether witness commitments are required for block. */
-bool IsWitnessEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params);
+bool IsWitnessEnabled(const CBlockIndex* pindexPrev, const Consensus::CParams& params);
 
 /** When there are blocks in the active chain with missing data, rewind the chainstate and remove them from the block index */
 bool RewindBlockIndex(const CChainParams& params);
 
 /** Update uncommitted block structures (currently: only the witness nonce). This is safe for submitted blocks. */
-void UpdateUncommittedBlockStructures(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
+void UpdateUncommittedBlockStructures(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::CParams& consensusParams);
 
 /** Produce the necessary coinbase commitment for a block (modifies the hash, don't call for mined blocks). */
-std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams, bool fProofOfStake=false);
+std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::CParams& consensusParams, bool fProofOfStake=false);
 
 /** RAII wrapper for VerifyDB: Verify consistency of the block and coin databases */
 class CVerifyDB {
@@ -648,7 +648,7 @@ extern VersionBitsCache versionbitscache;
 /**
  * Determine what nVersion a new block should use.
  */
-int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params);
+int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::CParams& params);
 
 /** Reject codes greater or equal to this can be returned by AcceptToMemPool
  * for transactions, to signal internal conditions. They cannot and should not

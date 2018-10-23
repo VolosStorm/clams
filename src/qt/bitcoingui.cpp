@@ -1205,7 +1205,7 @@ void BitcoinGUI::updateStakingIcon()
     {
         uint64_t nWeight = this->nWeight;
         uint64_t nNetworkWeight = GetPoSKernelPS();
-        const Consensus::Params& consensusParams = Params().GetConsensus();
+        const Consensus::CParams& consensusParams = Params().GetConsensus();
         int64_t nTargetSpacing = consensusParams.nTargetStakeSpacing;
 
         unsigned nEstimateTime = nTargetSpacing * nNetworkWeight / nWeight;

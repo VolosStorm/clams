@@ -14,7 +14,7 @@
 BOOST_FIXTURE_TEST_SUITE(main_tests, TestingSetup)
 
 /*
-static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
+static void TestBlockSubsidyHalvings(const Consensus::CParams& consensusParams)
 {
     //int maxHalvings = 7;
     //CAmount nInitialSubsidy = 4 * COIN;
@@ -33,7 +33,7 @@ static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
 
 static void TestBlockSubsidyHalvings(int nSubsidyHalvingInterval)
 {
-    Consensus::Params consensusParams;
+    Consensus::CParams consensusParams;
     consensusParams.nSubsidyHalvingInterval = nSubsidyHalvingInterval;
     TestBlockSubsidyHalvings(consensusParams);
 }
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 {
 	/*
-    const Consensus::Params& consensusParams = Params(CBaseChainParams::MAIN).GetConsensus();
+    const Consensus::CParams& consensusParams = Params(CBaseChainParams::MAIN).GetConsensus();
     CAmount nSum = 0;
     for (int nHeight = 1; nHeight < 14000000; nHeight++) {
         CAmount nSubsidy = COIN;

@@ -17,7 +17,7 @@ BOOST_FIXTURE_TEST_SUITE(pow_tests, BasicTestingSetup)
 BOOST_AUTO_TEST_CASE(get_next_work)
 {
     SelectParams(CBaseChainParams::MAIN);
-    //const Consensus::Params& params = Params().GetConsensus();
+    //const Consensus::CParams& params = Params().GetConsensus();
 
     //int64_t nLastRetargetTime = 1261130161; // Block #30240
     CBlockIndex pindexLast;
@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(get_next_work)
 BOOST_AUTO_TEST_CASE(get_next_work_pow_limit)
 {
     SelectParams(CBaseChainParams::MAIN);
-    //const Consensus::Params& params = Params().GetConsensus();
+    //const Consensus::CParams& params = Params().GetConsensus();
 
     //int64_t nLastRetargetTime = 1231006505; // Block #0
     CBlockIndex pindexLast;
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(get_next_work_pow_limit)
 BOOST_AUTO_TEST_CASE(get_next_work_lower_limit_actual)
 {
     SelectParams(CBaseChainParams::MAIN);
-    //const Consensus::Params& params = Params().GetConsensus();
+    //const Consensus::CParams& params = Params().GetConsensus();
 
     //int64_t nLastRetargetTime = 1279008237; // Block #66528
     CBlockIndex pindexLast;
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(get_next_work_lower_limit_actual)
 BOOST_AUTO_TEST_CASE(get_next_work_upper_limit_actual)
 {
     SelectParams(CBaseChainParams::MAIN);
-    //const Consensus::Params& params = Params().GetConsensus();
+    //const Consensus::CParams& params = Params().GetConsensus();
 
     //int64_t nLastRetargetTime = 1263163443; // NOTE: Not an actual block time
     CBlockIndex pindexLast;
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(get_next_work_upper_limit_actual)
 BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)
 {
     SelectParams(CBaseChainParams::MAIN);
-    const Consensus::Params& params = Params().GetConsensus();
+    const Consensus::CParams& params = Params().GetConsensus();
 
     std::vector<CBlockIndex> blocks(10000);
     for (int i = 0; i < 10000; i++) {
