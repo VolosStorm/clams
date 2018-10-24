@@ -20,6 +20,7 @@ class CBlock;
 class CBlockLegacyHeader
 {
 public:
+    uint256 blockHash;
     // header
     static const int CURRENT_VERSION=7;
     int32_t nVersion;
@@ -126,6 +127,7 @@ public:
 class CBlockHeader
 {
 public:
+    uint256 blockHash;
     // header
     static const int CURRENT_VERSION=7;
     int32_t nVersion;
@@ -226,6 +228,7 @@ public:
     {
         if (this != &other)
         {
+            this->blockHash      = other.blockHash;
             this->nVersion       = other.nVersion;
             this->hashPrevBlock  = other.hashPrevBlock;
             this->hashMerkleRoot = other.hashMerkleRoot;
@@ -296,6 +299,7 @@ public:
     CBlockHeader GetBlockHeader() const
     {
         CBlockHeader block;
+        block.blockHash      = blockHash;
         block.nVersion       = nVersion;
         block.hashPrevBlock  = hashPrevBlock;
         block.hashMerkleRoot = hashMerkleRoot;
