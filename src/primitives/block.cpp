@@ -17,6 +17,9 @@ uint256 CBlockLegacyHeader::GetHash() const
     time_t start_time, end_time;
     uint256 ret;
 
+    if (!blockHash.IsNull())
+        return blockHash;
+
     time(&start_time);
 
     if (nVersion > 6 ) { //&& !IsProofOfWork()) {
@@ -29,8 +32,10 @@ uint256 CBlockLegacyHeader::GetHash() const
 
     time(&end_time);
 
-    // LogPrintf("version %d hash %s took %d\n", nVersion, ret.ToString(), end_time - start_time);
+    // LogPrintf("version %d legacy hash %s took %d\n", nVersion, ret.ToString(), end_time - start_time);
 
+    const_cast<CBlockLegacyHeader*>(this)->blockHash = ret;
+ 
     return ret;
 }
 
@@ -46,6 +51,9 @@ uint256 CBlockHeader::GetHash() const
     time_t start_time, end_time;
     uint256 ret;
 
+    if (!blockHash.IsNull())
+        return blockHash;
+
     time(&start_time);
 
     if (nVersion > 6 ) { //&& !IsProofOfWork()) {
@@ -59,6 +67,8 @@ uint256 CBlockHeader::GetHash() const
     time(&end_time);
 
     // LogPrintf("version %d hash %s took %d\n", nVersion, ret.ToString(), end_time - start_time);
+
+    const_cast<CBlockHeader*>(this)->blockHash = ret;
 
     return ret;
 }
@@ -86,6 +96,7 @@ std::string CBlockHeader::ToString() const
 
 CBlock::CBlock(const CBlockLegacy& block)
 {
+    blockHash      = block.blockHash;
     nVersion       = block.nVersion;
     hashPrevBlock  = block.hashPrevBlock;
     hashMerkleRoot = block.hashMerkleRoot;
@@ -121,6 +132,7 @@ std::string CBlock::ToString() const
 
 CBlockLegacy::CBlockLegacy(const CBlock &block)
 {
+    blockHash = block.blockHash;
     nVersion = block.nVersion;
     hashPrevBlock = block.hashPrevBlock;
     hashMerkleRoot = block.hashMerkleRoot;
