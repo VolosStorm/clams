@@ -311,6 +311,23 @@ UniValue getblockcount(const JSONRPCRequest& request)
     return chainActive.Height();
 }
 
+UniValue getheadercount(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw runtime_error(
+            "getheadercount\n"
+            "\nReturns the number of headers in the longest blockchain.\n"
+            "\nResult:\n"
+            "n    (numeric) The current header count\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getheadercount", "")
+            + HelpExampleRpc("getheadercount", "")
+        );
+
+    LOCK(cs_main);
+    return pindexBestHeader->nHeight;
+}
+
 UniValue getbestblockhash(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 0)
@@ -1588,6 +1605,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "getblockchaininfo",      &getblockchaininfo,      true,  {} },
     { "blockchain",         "getbestblockhash",       &getbestblockhash,       true,  {} },
     { "blockchain",         "getblockcount",          &getblockcount,          true,  {} },
+    { "blockchain",         "getheadercount",         &getheadercount,         true,  {} },
     { "blockchain",         "getblock",               &getblock,               true,  {"blockhash","verbose"} },
     { "blockchain",         "getblockhash",           &getblockhash,           true,  {"height"} },
     { "blockchain",         "getblockheader",         &getblockheader,         true,  {"blockhash","verbose"} },
