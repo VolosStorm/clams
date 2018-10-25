@@ -2259,8 +2259,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 CBlockLegacy header;
                 vRecv >> header;
                 // set blank pos if were past PoW stage
-                if (currentHeight + n > chainparams.GetConsensus().LAST_POW_BLOCK)
-                    headers[n].prevoutStake = prevoutStake(1, 0);
+                if (pindexBestHeader->nHeight + n + 1 > chainparams.GetConsensus().LAST_POW_BLOCK)
+                    headers[n].prevoutStake = COutPoint(uint256S("1"), 0);
                 else
                     headers[n].prevoutStake.SetNull();
 
