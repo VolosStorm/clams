@@ -2975,8 +2975,10 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
         pindexBestHeader = pindexNew;
 
     // Add to current best branch
-    if(pindexNew->pprev )
+    if (pindexNew->pprev) {
         pindexNew->pprev->pnext = pindexNew;
+        setDirtyBlockIndex.insert(pindexNew->pprev);
+    }
     setDirtyBlockIndex.insert(pindexNew);
 
     return pindexNew;

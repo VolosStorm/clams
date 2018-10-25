@@ -2259,8 +2259,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 CBlockLegacy header;
                 vRecv >> header;
                 // set blank pos if were past PoW stage
-
-
+                if (currentHeight + n > chainparams.GetConsensus().LAST_POW_BLOCK)
+                    headers[n].prevoutStake = prevoutStake(1, 0);
+                else
+                    headers[n].prevoutStake.SetNull();
 
                 headers[n].nVersion = header.nVersion;
                 headers[n].hashPrevBlock = header.hashPrevBlock;
@@ -2268,18 +2270,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 headers[n].nTime = header.nTime;
                 headers[n].nBits = header.nBits;
                 headers[n].nNonce = header.nNonce;
-
-                if (currentHeight + (int)n > chainparams.GetConsensus().LAST_POW_BLOCK ) {
-                    LogPrintf("xploited HEADERS pos %d %d %d %d\n", currentHeight, pindexBestHeader->nHeight +1, n, chainparams.GetConsensus().LAST_POW_BLOCK);
-                    LogPrintf("xploited HEADERS pos %s %d\n", headers[n].GetHash().ToString(), pfrom->id);
-                    uint256 a = uint256S("0x0000000000000000000000000000000000000000000000000000000000010000");
-                    COutPoint prevoutStake(a, 0);
-                    headers[n].prevoutStake = prevoutStake;
-                } else { 
-                    LogPrintf("xploited HEADERS pow %d %d %d %d\n", currentHeight, pindexBestHeader->nHeight,  n, chainparams.GetConsensus().LAST_POW_BLOCK);
-                    LogPrintf("xploited HEADERS pow %s %d\n", headers[n].GetHash().ToString(), pfrom->id);
-                    headers[n].prevoutStake.SetNull();
-                }
 
             }
         } else { 
