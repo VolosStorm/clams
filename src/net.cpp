@@ -2321,6 +2321,10 @@ void CConnman::Interrupt()
     if (semOutbound)
         for (int i=0; i<(nMaxOutbound + nMaxFeeler); i++)
             semOutbound->post();
+
+    if (semAddnode)
+        for (int i=0; i<nMaxAddnode; i++)
+            semAddnode->post();
 }
 
 void CConnman::Stop()
@@ -2336,9 +2340,13 @@ void CConnman::Stop()
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
 
+    if (semOutbound)
+        for (int i=0; i<(nMaxOutbound + nMaxFeeler); i++)
+            semOutbound->post();
+
     if (semAddnode)
         for (int i=0; i<nMaxAddnode; i++)
-            semOutbound->post();
+            semAddnode->post();
 
     if (fAddressesInitialized)
     {
