@@ -18,30 +18,6 @@
  *  zero. This is be compatible with older versions which expect to see
  *  the transaction version there.
  */
-class TxInUndoSerializer
-{
-    const Coin* txout;
-
-public:
-    template<typename Stream>
-    void Serialize(Stream &s) const {
-        ::Serialize(s, *txout);
-    }
-
-    TxInUndoSerializer(const Coin* coin) : txout(coin) {}
-};
-
-class TxInUndoDeserializer
-{
-    Coin* txout;
-
-public:
-    template<typename Stream>
-    void Unserialize(Stream &s) {
-        ::Unserialize(s, *txout);
-    }
-    TxInUndoDeserializer(Coin* coin) : txout(coin) {}
-};
 
 static const size_t MIN_TRANSACTION_INPUT_WEIGHT = WITNESS_SCALE_FACTOR * ::GetSerializeSize(CTxIn(), PROTOCOL_VERSION);
 static const size_t MAX_INPUTS_PER_BLOCK = MAX_BLOCK_WEIGHT / MIN_TRANSACTION_INPUT_WEIGHT;
@@ -59,7 +35,7 @@ public:
         uint64_t count = vprevout.size();
         ::Serialize(s, COMPACTSIZE(REF(count)));
         for (const auto& prevout : vprevout) {
-            ::Serialize(s, REF(TxInUndoSerializer(&prevout)));
+            ::Serialize(s, prevout);
         }
     }
 
@@ -73,7 +49,7 @@ public:
         }
         vprevout.resize(count);
         for (auto& prevout : vprevout) {
-            ::Unserialize(s, REF(TxInUndoDeserializer(&prevout)));
+            ::Unserialize(s, prevout);
         }
     }
 };
