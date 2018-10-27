@@ -25,13 +25,7 @@ class TxInUndoSerializer
 public:
     template<typename Stream>
     void Serialize(Stream &s) const {
-        unsigned int nCode = (txout->nHeight << 2) + (txout->fCoinStake ? 2 : 0) + (txout->fCoinBase ? 1 : 0);
-        ::Serialize(s, VARINT(nCode));
-        if (txout->nHeight > 0) {
-            // Required to maintain compatibility with older undo format.
-            ::Serialize(s, (unsigned char)0);
-        }
-        ::Serialize(s, CTxOutCompressor(REF(txout->out)));
+        ::Serialize(s, *txout);
     }
 
     TxInUndoSerializer(const Coin* coin) : txout(coin) {}
@@ -61,7 +55,9 @@ public:
     TxInUndoDeserializer(Coin* coin) : txout(coin) {}
 };
 
-static const size_t MAX_INPUTS_PER_BLOCK = ::GetSerializeSize(CTxIn(), SER_NETWORK, PROTOCOL_VERSION);
+static const size_t MIN_TRANSACTION_INPUT_WEIGHT = WITNESS_SCALE_FACTOR * ::GetSerializeSize(CTxIn(), PROTOCOL_VERSION);
+static const size_t MAX_INPUTS_PER_BLOCK = MAX_BLOCK_WEIGHT / MIN_TRANSACTION_INPUT_WEIGHT;
+
 /** Undo information for a CTransaction */
 class CTxUndo
 {
