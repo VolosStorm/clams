@@ -38,19 +38,7 @@ class TxInUndoDeserializer
 public:
     template<typename Stream>
     void Unserialize(Stream &s) {
-        unsigned int nCode = 0;
-        ::Unserialize(s, VARINT(nCode));
-        txout->nHeight = nCode >> 2;
-        txout->fCoinBase = nCode & 1;
-        txout->fCoinStake = (nCode >> 1) & 1;
-        if (txout->nHeight > 0) {
-            // Old versions stored the version number for the last spend of
-            // a transaction's outputs. Non-final spends were indicated with
-            // height = 0.
-            int nVersionDummy;
-            ::Unserialize(s, VARINT(nVersionDummy));
-        }
-        ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
+        ::Unserialize(s, *txout);
     }
     TxInUndoDeserializer(Coin* coin) : txout(coin) {}
 };
