@@ -178,7 +178,7 @@ public:
         consensus.nTargetTimespan = 16 * 60;  // 16 mins
 
         consensus.nProtocolV2Height = 203500;
-        consensus.nProtocolV3Height = 3000000;
+        consensus.nProtocolV3Height = 9999999;
 
         consensus.DISTRIBUTION_END = 10000;
         consensus.LAST_POW_BLOCK = 10000;
