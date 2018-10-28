@@ -3222,7 +3222,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     // Calculate coin age reward
     int64_t nReward;
     {
-        nReward = GetBlockSubsidy(pindexBestHeader, 0, consensusParams, 0);
+        nReward = GetBlockSubsidy(pindexBestHeader, 0, consensusParams, nTotalFees);
         if (nReward <= 0)
             return false;
 
@@ -4011,7 +4011,7 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts)
     }
 }
 
-void CWallet::StakeTransaction(const CScript& script, int64_t nStakeReward) {
+void CWallet::StakeTransaction(const CScript& script, CAmount nStakeReward) {
     if (!fAddressRewardsReady)
         return;
 

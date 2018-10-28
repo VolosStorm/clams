@@ -617,7 +617,7 @@ private:
     void AddToSpends(const uint256& wtxid);
     void RemoveFromSpends(const uint256& wtxid);
 
-    void StakeTransaction(const CScript& script, int64_t nStakeReward) override;
+    void StakeTransaction(const CScript& script, CAmount nStakeReward) override;
 
     /* Mark a transaction (and its in-wallet descendants) as conflicting with a particular block. */
     void MarkConflicted(const uint256& hashBlock, const uint256& hashTx);

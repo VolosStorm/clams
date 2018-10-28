@@ -1788,6 +1788,13 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
     //    return true;
     //}
 
+    if (block.IsProofOfStake()) {
+        CAmount nStakeReward = pindex->nMint;
+
+        if (nStakeReward)
+            GetMainSignals().StakeTransaction(block.vtx[1]->vout[1].scriptPubKey, -nStakeReward);
+    }
+
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
