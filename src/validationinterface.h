@@ -63,7 +63,7 @@ struct CMainSignals {
      * disconnected block.*/
     boost::signals2::signal<void (const CTransaction &, const CBlockIndex *pindex, int posInBlock)> SyncTransaction;
     // Notifies listeners of updated staking reward (passing receiving script, reward amount, and whether the reward is being added or taken away).
-    boost::signals2::signal<void (const CScript &, int64_t, bool)> StakeTransaction;
+    boost::signals2::signal<void (const CScript &, int64_t)> StakeTransaction;
     /** Notifies listeners of an updated transaction without new data (for now: a coinbase potentially becoming visible). */
     boost::signals2::signal<void (const uint256 &)> UpdatedTransaction;
     /** Notifies listeners of a new active block chain. */
