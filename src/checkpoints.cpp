@@ -13,8 +13,6 @@
 
 #include <boost/foreach.hpp>
 
-static const int nCheckpointSpan = 500;
-
 namespace Checkpoints {
 
     CBlockIndex* GetLastCheckpoint(const CCheckpointData& data)
