@@ -2250,15 +2250,14 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
         headers.resize(nCount);
 
-        // if its an older client convert the incomming block
+        // if it's an older client convert the incoming block
         // because it will not include prevoutStake in the header 
         // for pos blocks
         if(pfrom->nVersion <= 70012){ 
-            int currentHeight = pindexBestHeader->nHeight;
             for (unsigned int n = 0; n < nCount; n++) {
                 CBlockLegacy header;
                 vRecv >> header;
-                // set blank pos if were past PoW stage
+                // set blank pos if we're past PoW stage
                 if (pindexBestHeader->nHeight + int(n) + 1 > chainparams.GetConsensus().LAST_POW_BLOCK)
                     headers[n].prevoutStake = COutPoint(uint256S("1"), 0);
                 else
