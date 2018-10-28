@@ -3222,7 +3222,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     // Calculate coin age reward
     int64_t nReward;
     {
-        nReward = GetBlockSubsidy(pindexBestHeader, 0, consensusParams, 0);
+        nReward = GetBlockSubsidy(pindexBestHeader, 0, consensusParams, nTotalFees);
         if (nReward <= 0)
             return false;
 
