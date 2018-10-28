@@ -4011,7 +4011,7 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts)
     }
 }
 
-void CWallet::StakeTransaction(const CScript& script, int64_t nStakeReward) {
+void CWallet::StakeTransaction(const CScript& script, CAmount nStakeReward) {
     if (!fAddressRewardsReady)
         return;
 
