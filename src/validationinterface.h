@@ -35,7 +35,7 @@ class CValidationInterface {
 protected:
     virtual void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) {}
     virtual void SyncTransaction(const CTransaction &tx, const CBlockIndex *pindex, int posInBlock) {}
-    virtual void StakeTransaction(const CScript& script, int64_t nStakeReward, int posInBlock) {}
+    virtual void StakeTransaction(const CScript& script, int64_t nStakeReward) {}
     virtual void SetBestChain(const CBlockLocator &locator) {}
     virtual void UpdatedTransaction(const uint256 &hash) {}
     virtual void Inventory(const uint256 &hash) {}
