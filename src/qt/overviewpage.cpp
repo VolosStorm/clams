@@ -127,7 +127,8 @@ OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) 
     currentWatchOnlyBalance(-1),
     currentWatchUnconfBalance(-1),
     currentWatchImmatureBalance(-1),
-    currentWatchOnlyStake(-1)
+    currentWatchOnlyStake(-1),
+    txdelegate(new TxViewDelegate(platformStyle, this))
 {
     ui->setupUi(this);
 
