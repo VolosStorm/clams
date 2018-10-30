@@ -4085,7 +4085,6 @@ void CWallet::SumStakingRewards()
             wtx.GetAmounts(listReceived, listSent, nFee, strAccount, filter);
             mapAddressRewards["*"] -= nFee;
             mapAddressRewards[addr] -= nFee;
-            LogPrintf("tx %s reward %s\n", wtx.GetHash().ToString(), FormatMoney(-nFee));
             nStakeTx++;
         }
         
