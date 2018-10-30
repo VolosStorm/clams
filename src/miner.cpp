@@ -967,7 +967,9 @@ void ThreadStakeMiner(CWallet *pwallet)
                     SetThreadPriority(THREAD_PRIORITY_LOWEST);
                 }
             }
-        }
+        } else
+            LogPrint("miner", "!HaveAvailableCoinsForStaking()\n");
+
         MilliSleep(nMinerSleep);
     }
 }
