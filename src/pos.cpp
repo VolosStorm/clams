@@ -15,6 +15,7 @@
 #include "script/sign.h"
 #include "consensus/params.h"
 #include "consensus/consensus.h"
+#include "utilmoneystr.h"
 
 #include "bignum.h"
 
@@ -373,15 +374,13 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
 
     // Now check if proof-of-stake hash meets target protocol
     if (CBigNum(hashProofOfStake) > bnTarget) {
-        LogPrint("miner", "[STAKE] fail: hash %64s\n", UintToArith256(hashProofOfStake).GetHex());
+        LogPrint("miner", "[STAKE] fail: hash %64s (%s CLAM)\n", UintToArith256(hashProofOfStake).GetHex(), FormatMoney(nValueIn));
         LogPrint("miner", "[STAKE]   > target %64s\n", bnTarget.GetHex());
-        LogPrint("miner", "[STAKE] fail: hash %64s\n", CBigNum(hashProofOfStake).GetHex());
-        LogPrint("miner", "[STAKE]   > target %s\n", bnTarget.GetCompact());
         return false;
     }
 
     if (fPrintProofOfStake) {
-        LogPrint("miner", "[STAKE] PASS: hash %64s\n", UintToArith256(hashProofOfStake).GetHex());
+        LogPrint("miner", "[STAKE] PASS: hash %64s (%s CLAM)\n", UintToArith256(hashProofOfStake).GetHex(), FormatMoney(nValueIn));
         LogPrint("miner", "[STAKE]  <= target %64s\n", bnTarget.GetHex());
     }
 
@@ -443,7 +442,7 @@ bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const C
     }
 
 
-    if (!CheckStakeKernelHash(pindexPrev, nBits, block, nTxOffset, txPrev, txin.prevout, tx.nTime, hashProofOfStake, targetProofOfStake, fDebug)) {
+    if (!CheckStakeKernelHash(pindexPrev, nBits, block, nTxOffset, txPrev, txin.prevout, tx.nTime, hashProofOfStake, targetProofOfStake, false)) {
         LogPrint("miner", "CheckProofOfStake() : INFO: check kernel failed on coinstake %s, hashProof=%s\n", tx.GetHash().ToString(), hashProofOfStake.ToString());
         return state.DoS(1, error("CheckProofOfStake() : INFO: check kernel failed on coinstake %s, hashProof=%s", tx.GetHash().ToString(), hashProofOfStake.ToString())); // may occur during initial download or if behind on block chain sync
     }
@@ -514,20 +513,3 @@ bool CheckKernel(CBlockIndex* pindexPrev, unsigned int nBits, const COutPoint& p
     return CheckStakeKernelHash(pindexPrev, nBits, block, nTxOffset, txPrev, prevout,
                                 txTime, hashProofOfStake, targetProofOfStake, false, params);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
