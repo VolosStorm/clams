@@ -113,7 +113,6 @@ CLAM_CORE_H = \
   miner.h \
   net.h \
   net_processing.h \
-  netaddress.h \
   netbase.h \
   netmessagemaker.h \
   noui.h \
@@ -143,12 +142,10 @@ CLAM_CORE_H = \
   sync.h \
   threadsafety.h \
   threadinterrupt.h \
-  timedata.h \
   torcontrol.h \
   txdb.h \
   txmempool.h \
   txoffset.h \
-  ui_interface.h \
   undo.h \
   util.h \
   utilmoneystr.h \
@@ -162,7 +159,6 @@ CLAM_CORE_H = \
   wallet/rpcwallet.h \
   wallet/wallet.h \
   wallet/walletdb.h \
-  warnings.h \
   zmq/zmqabstractnotifier.h \
   zmq/zmqconfig.h\
   zmq/zmqnotificationinterface.h \
@@ -207,11 +203,9 @@ libclam_server_a_SOURCES = \
   rpc/server.cpp \
   script/sigcache.cpp \
   script/ismine.cpp \
-  timedata.cpp \
   torcontrol.cpp \
   txdb.cpp \
   txmempool.cpp \
-  ui_interface.cpp \
   validation.cpp \
   validationinterface.cpp \
   versionbits.cpp \
@@ -239,7 +233,6 @@ libclam_wallet_a_SOURCES = \
   wallet/wallet.cpp \
   wallet/walletdb.cpp \
   policy/rbf.cpp \
-  pos.cpp \
   $(CLAM_CORE_H)
 
 # crypto primitives library
@@ -278,8 +271,8 @@ libclam_consensus_a_SOURCES = \
   consensus/validation.h \
   hash.cpp \
   hash.h \
-  netaddress.h \
   netaddress.cpp \
+  netaddress.h \
   prevector.h \
   primitives/block.cpp \
   primitives/block.h \
@@ -295,21 +288,19 @@ libclam_consensus_a_SOURCES = \
   script/script_error.cpp \
   script/script_error.h \
   serialize.h \
+  timedata.cpp \
+  timedata.h \
   tinyformat.h \
+  ui_interface.cpp \
+  ui_interface.h \
+  warnings.cpp \
+  warnings.h \
   crypto/scrypt.cpp \
   crypto/scrypt-sse2.cpp \
   crypto/scrypt.h \
-  timedata.h \
-  timedata.cpp \
-  ui_interface.h \
-  ui_interface.cpp \
   uint256.cpp \
   uint256.h \
-  utilstrencodings.cpp \
-  utilstrencodings.h \
-  version.h \
-  warnings.cpp \
-  warings.h
+  version.h
 
 # common: shared between clamd, and clam-qt and non-server tools
 libclam_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(CLAM_INCLUDES)
@@ -325,13 +316,11 @@ libclam_common_a_SOURCES = \
   core_write.cpp \
   key.cpp \
   keystore.cpp \
-  netaddress.cpp \
   netbase.cpp \
   protocol.cpp \
   scheduler.cpp \
   script/sign.cpp \
   script/standard.cpp \
-  warnings.cpp \
   $(CLAM_CORE_H)
 
 # util: shared between all executables.
@@ -354,6 +343,7 @@ libclam_util_a_SOURCES = \
   util.cpp \
   utilmoneystr.cpp \
   utilstrencodings.cpp \
+  utilstrencodings.h \
   utiltime.cpp \
   $(CLAM_CORE_H)
 
