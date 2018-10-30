@@ -3116,9 +3116,10 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         static int nMaxStakeSearchInterval = 60;
         nBlockTime = block.GetBlockTime();
         if (nBlockTime + chainParams.GetConsensus().nStakeMinAge > txNew.nTime - nMaxStakeSearchInterval) {
-            LogPrint("stake", "[STAKE] skip %s:%-3d (%s CLAM) - only %d minutes old\n",
-                      pcoin.first->GetHash().ToString(), pcoin.second, FormatMoney(pcoin.first->tx->vout[pcoin.second].nValue),
-                      (txNew.nTime - nMaxStakeSearchInterval - nBlockTime) / 60);
+            LogPrint("stake", "[STAKE] skip %s:%-3d (%s CLAM) - only %d minutes old (needs to be %d)\n",
+                     pcoin.first->GetHash().ToString(), pcoin.second, FormatMoney(pcoin.first->tx->vout[pcoin.second].nValue),
+                     (txNew.nTime - nMaxStakeSearchInterval - nBlockTime) / 60,
+                     chainParams.GetConsensus().nStakeMinAge);
             continue; // only count coins meeting min age requirement
         }
 
@@ -4084,6 +4085,7 @@ void CWallet::SumStakingRewards()
             wtx.GetAmounts(listReceived, listSent, nFee, strAccount, filter);
             mapAddressRewards["*"] -= nFee;
             mapAddressRewards[addr] -= nFee;
+            LogPrintf("tx %s reward %s\n", wtx.GetHash().ToString(), FormatMoney(-nFee));
             nStakeTx++;
         }
         
