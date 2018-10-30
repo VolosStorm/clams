@@ -3130,7 +3130,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             // Search backward in time from the given txNew timestamp
             // Search nSearchInterval seconds back up to nMaxStakeSearchInterval
             uint256 targetProofOfStake;
-            if (CheckStakeKernelHashV2(pindexPrev, nBits, blockFrom->nTime, *pcoin.first, prevoutStake, txNew.nTime - n, hashProofOfStake, targetProofOfStake, false))
+            if (CheckStakeKernelHashV2(pindexPrev, nBits, blockFrom->nTime, *pcoin.first, prevoutStake, txNew.nTime - n, hashProofOfStake, targetProofOfStake, fDebug))
             {
                 // Found a kernel
                 vector<valtype> vSolutions;
