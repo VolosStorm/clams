@@ -3119,7 +3119,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             LogPrint("stake", "[STAKE] skip %s:%-3d (%s CLAM) - only %d minutes old (needs to be %d)\n",
                      pcoin.first->GetHash().ToString(), pcoin.second, FormatMoney(pcoin.first->tx->vout[pcoin.second].nValue),
                      (txNew.nTime - nMaxStakeSearchInterval - nBlockTime) / 60,
-                     chainParams.GetConsensus().nStakeMinAge);
+                     chainParams.GetConsensus().nStakeMinAge / 60);
             continue; // only count coins meeting min age requirement
         }
 
