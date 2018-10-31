@@ -350,6 +350,8 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
     CBigNum bnWeight = CBigNum(nValueIn);
     bnTarget *= bnWeight;
 
+    targetProofOfStake = bnTarget.getuint256();
+
     uint64_t nStakeModifier = pindexPrev->nStakeModifier;
     //int nStakeModifierHeight = pindexPrev->nHeight;
     //int64_t nStakeModifierTime = pindexPrev->nTime;
