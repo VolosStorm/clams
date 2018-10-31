@@ -3374,6 +3374,71 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CCon
     return true;
 }
 
+
+
+
+
+string CWallet::SendCLAMSpeech(CWalletTx& wtxNew, string clamSpeech, string prefix, bool fAskFee)
+{ 
+    if (prefix == "notary") 
+    {
+        uint256 hash;
+        hash.SetHex(clamSpeech);
+        clamSpeech = "notary " + hash.GetHex();
+
+    } 
+    else if (prefix == "clamour") 
+    {
+        clamSpeech = "create clamour " + clamSpeech;
+    } 
+    else if (prefix.length() > 0)
+    {
+        clamSpeech = prefix + clamSpeech;
+    } 
+
+    CReserveKey reservekey(pwalletMain);
+    int64_t nFeeRequired;
+
+    if (GetBalance() <= 0 ) {
+        LogPrintf("CWallet::SendNotary failed: you require a balance to post a notary entry\n",
+                  FormatMoney(nTransactionFee), FormatMoney(pwalletMain->GetBalance()));
+        return _("Insufficient funds");
+    }
+
+    if (IsLocked())
+    {
+        string strError = _("Error: Wallet locked, unable to create norary transaction!");
+        LogPrintf("SendNotary() : %s", strError);
+        return strError;
+    }
+    if (fWalletUnlockStakingOnly)
+    {
+        string strError = _("Error: Wallet unlocked for staking only, unable to create notary transaction.");
+        LogPrintf("SendNotary() : %s", strError);
+        return strError;
+    }
+
+    if (!CreateCLAMSpeechTransaction(wtxNew, reservekey, nFeeRequired, clamSpeech))
+    {
+        string strError;
+        if (nFeeRequired > pwalletMain->GetBalance())
+            strError = strprintf(_("Error: This notary transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!"), FormatMoney(nFeeRequired));
+        else
+            strError = _("Error: Notary transaction creation failed!");
+        LogPrintf("SendNotary() : %s\n", strError);
+
+        return strError;
+    }
+    CValidationState state;
+    if (!CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) 
+        return _("Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
+
+    return "";
+}
+
+
+
+
 void CWallet::ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries) {
     CWalletDB walletdb(strWalletFile);
     return walletdb.ListAccountCreditDebit(strAccount, entries);

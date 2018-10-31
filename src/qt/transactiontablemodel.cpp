@@ -384,7 +384,7 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
     case TransactionRecord::SendToSelf:
         return tr("Payment to yourself");
     case TransactionRecord::Generated:
-        return tr("Mined");
+        return tr("Staked");
     default:
         return QString();
     }
@@ -440,9 +440,8 @@ QString TransactionTableModel::formatTxComment(const TransactionRecord *wtx, boo
     case TransactionRecord::SendToAddress:
     case TransactionRecord::SendToOther:
     case TransactionRecord::SendToSelf:
-        return QString::fromStdString(wtx->txcomment);
     case TransactionRecord::Generated:
-         return "";
+        return QString::fromStdString(wtx->txcomment);
       default:
         return tr("(n/a)");
     }
@@ -633,7 +632,7 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         return priv->describe(rec, walletModel->getOptionsModel()->getDisplayUnit());
     case AddressRole:
         return QString::fromStdString(rec->address);
-    case TxComment:
+    case TxCommentRole:
         return QString::fromStdString(rec->txcomment);
     case LabelRole:
         return walletModel->getAddressTableModel()->labelForAddress(QString::fromStdString(rec->address));

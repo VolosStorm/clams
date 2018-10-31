@@ -410,7 +410,7 @@ public:
             nFlags |= BLOCK_STAKE_MODIFIER;
     }
 
-    std::set<std::string> GetSupport(CBlock block) const;
+    std::set<std::string> GetSupport(CBlock block);
 
     std::string ToString() const
     {

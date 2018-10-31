@@ -112,7 +112,7 @@ const CBlockIndex* CBlockIndex::GetAncestor(int height) const
     return const_cast<CBlockIndex*>(this)->GetAncestor(height);
 }
 
-std::set<std::string> CBlockIndex::GetSupport(CBlock block) const
+std::set<std::string> CBlockIndex::GetSupport(CBlock block)
 {
     if (fSupportChecked)
         return setSupport;

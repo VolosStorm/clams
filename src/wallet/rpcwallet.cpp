@@ -347,68 +347,6 @@ UniValue getaddressesbyaccount(const JSONRPCRequest& request)
     return ret;
 }
 
-string SendCLAMSpeech(CWalletTx& wtxNew, string clamSpeech, string prefix)
-{ 
-    if (prefix == "notary") 
-    {
-        uint256 hash;
-        hash.SetHex(clamSpeech);
-        clamSpeech = "notary " + hash.GetHex();
-
-    } 
-    else if (prefix == "clamour") 
-    {
-        clamSpeech = "create clamour " + clamSpeech;
-    } 
-    else if (prefix.length() > 0)
-    {
-        clamSpeech = prefix + clamSpeech;
-    } 
-
-    CReserveKey reservekey(pwalletMain);
-    int64_t nFeeRequired;
-
-    if (pwalletMain->GetBalance() <= 0 ) {
-        LogPrintf("CWallet::SendNotary failed: you require a balance to post a notary entry\n",
-                  FormatMoney(nTransactionFee), FormatMoney(pwalletMain->GetBalance()));
-        return _("Insufficient funds");
-    }
-
-    if (pwalletMain->IsLocked())
-    {
-        string strError = _("Error: Wallet locked, unable to create norary transaction!");
-        LogPrintf("SendNotary() : %s", strError);
-        return strError;
-    }
-    if (fWalletUnlockStakingOnly)
-    {
-        string strError = _("Error: Wallet unlocked for staking only, unable to create notary transaction.");
-        LogPrintf("SendNotary() : %s", strError);
-        return strError;
-    }
-
-    if (!pwalletMain->CreateCLAMSpeechTransaction(wtxNew, reservekey, nFeeRequired, clamSpeech))
-    {
-        string strError;
-        if (nFeeRequired > pwalletMain->GetBalance())
-            strError = strprintf(_("Error: This notary transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!"), FormatMoney(nFeeRequired));
-        else
-            strError = _("Error: Notary transaction creation failed!");
-        LogPrintf("SendNotary() : %s\n", strError);
-
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-    CValidationState state;
-    if (!pwalletMain->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
-        string strError = strprintf("Error: The transaction was rejected! Reason given: %s", state.GetRejectReason());
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-
-    return "";
-
-
-}
-
 
 static void SendMoney(const CTxDestination &address, CAmount nValue, int64_t nCount, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, std::string strClamSpeech)
 {
@@ -1276,7 +1214,7 @@ UniValue sendnotarytransaction(const JSONRPCRequest& request)
     if (pwalletMain->IsLocked())
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
 
-    string strError = SendCLAMSpeech(wtx, nHash, prefix);
+    string strError = pwalletMain->SendCLAMSpeech(wtx, nHash, prefix);
     if (strError != "")
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
 
@@ -1323,7 +1261,7 @@ UniValue createclamour(const JSONRPCRequest& request)
     if (pwalletMain->IsLocked())
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
 
-    string strError = SendCLAMSpeech(wtx, clamSpeech, prefix);
+    string strError = pwalletMain->SendCLAMSpeech(wtx, clamSpeech, prefix);
     if (strError != "")
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
 

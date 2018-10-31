@@ -42,10 +42,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     uint256 hash = wtx.GetHash();
     uint256 hashPrev;
     std::string txcomment = "";
-  //  if (!wtx.strTxComment.empty())
-  //  {
-  //      txcomment = wtx.strTxComment;
-  //  }
+    if (!wtx.tx->strClamSpeech.empty())
+    {
+        txcomment = wtx.tx->strClamSpeech;
+    }
+
     std::map<std::string, std::string> mapValue = wtx.mapValue;
 
     if (nNet > 0 || wtx.IsCoinBase() || wtx.IsCoinStake())

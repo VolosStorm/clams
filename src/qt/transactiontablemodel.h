@@ -53,6 +53,8 @@ public:
         LongDescriptionRole,
         /** Address of transaction */
         AddressRole,
+        /** Label of comments related to transaction */
+        TxCommentRole, 
         /** Label of address related to transaction */
         LabelRole,
         /** Net amount of transaction */

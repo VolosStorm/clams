@@ -29,6 +29,7 @@ class COutput;
 class CPubKey;
 class CWallet;
 class uint256;
+class CClamour;
 
 QT_BEGIN_NAMESPACE
 class QTimer;
@@ -192,6 +193,21 @@ public:
 
     UnlockContext requestUnlock();
 
+    // Search for a proof-of-existence
+    void searchNotaryTx(uint256 hash);
+
+    // Create a proof-of-existence
+    void sendNotaryTx(std::string hash);
+
+    // Search for a petition
+    void searchClamours(std::string pid);
+
+    // Create a petition
+    void sendClamourTx(std::string hash);
+
+    // Retrieve support for petitions
+    void getPetitionSupport(int nWindow = 10000);
+
     bool getPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const;
     bool havePrivKey(const CKeyID &address) const;
     bool getPrivKey(const CKeyID &address, CKey& vchPrivKeyOut) const;
@@ -272,6 +288,21 @@ Q_SIGNALS:
 
     // Watch-only address added
     void notifyWatchonlyChanged(bool fHaveWatchonly);
+
+    // Notary search results
+    void notarySearchComplete(std::vector<std::pair<std::string, int> > txResults);
+
+    // Notary transaction ID
+    void notaryTxSent(std::string txID, std::string txError);
+
+    // Petition search results
+    void clamourSearchComplete(CClamour *pResult);
+
+    // Petition created
+    void clamourTxSent(std::string txID, std::string txError);
+
+    // Petition support retrieved
+    void petitionSupportRetrieved(std::map<std::string, int> mapSupport);
 
 public Q_SLOTS:
     /* Wallet status might have changed */

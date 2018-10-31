@@ -850,6 +850,7 @@ public:
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CConnman* connman, CValidationState& state);
 
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);
+    std::string SendCLAMSpeech(CWalletTx& wtxNew, std::string clamSpeech, std::string prefix = "", bool fAskFee=false);
     uint64_t GetStakeWeight() const;
     bool CreateCoinStake(const CKeyStore &keystore, unsigned int nBits, int64_t nSearchInterval, const CAmount& nTotalFees, uint32_t nTimeBlock, CMutableTransaction& tx, CKey& key);
     bool AddAccountingEntry(const CAccountingEntry&);
