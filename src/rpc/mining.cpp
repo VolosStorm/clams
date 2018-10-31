@@ -314,11 +314,11 @@ UniValue getstakinginfo(const JSONRPCRequest& request)
     }
 #endif
 
-    uint64_t nNetworkWeight = GetPoSKernelPS()/COIN;
+    double dNetworkWeight = GetPoSKernelPS()/COIN;
     bool staking = nLastCoinStakeSearchInterval && nWeight;
     const Consensus::CParams& consensusParams = Params().GetConsensus();
     int64_t nTargetSpacing = consensusParams.nTargetStakeSpacing;
-    uint64_t nExpectedTime = staking ? (nTargetSpacing * nNetworkWeight / nWeight) : 0;
+    uint64_t nExpectedTime = staking ? (nTargetSpacing * dNetworkWeight / nWeight) : 0;
 
     UniValue obj(UniValue::VOBJ);
 
@@ -334,7 +334,7 @@ UniValue getstakinginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
 
     obj.push_back(Pair("weight", (uint64_t)nWeight/COIN));
-    obj.push_back(Pair("netstakeweight", (uint64_t)nNetworkWeight));
+    obj.push_back(Pair("netstakeweight", dNetworkWeight));
 
     obj.push_back(Pair("expectedtime", nExpectedTime));
 
