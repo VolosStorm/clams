@@ -40,6 +40,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
     uint256 hash = wtx.GetHash();
+    uint256 hashPrev;
     std::string txcomment = "";
   //  if (!wtx.strTxComment.empty())
   //  {
@@ -49,6 +50,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 
     if (nNet > 0 || wtx.IsCoinBase() || wtx.IsCoinStake())
     {
+
         //
         // Credit
         //
@@ -60,18 +62,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             {
                 TransactionRecord sub(hash, nTime);
                 CTxDestination address;
-                if(wtx.IsCoinStake()) // Combine into single output for coinstake
-                {
-                    sub.idx = 1; // vout index
-                    sub.credit = nNet;
-                }
-                else
-                {
-                    sub.idx = i; // vout index
-                    sub.credit = txout.nValue;
-                }
-				sub.txcomment = txcomment;
+                sub.txcomment = txcomment;
+                sub.credit = txout.nValue;
+                sub.idx = parts.size();
                 sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
+
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address))
                 {
                     // Received by Bitcoin Address
@@ -84,16 +79,23 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                     sub.type = TransactionRecord::RecvFromOther;
                     sub.address = mapValue["from"];
                 }
-                if (wtx.IsCoinBase() || wtx.IsCoinStake())
+                if (wtx.IsCoinBase())
                 {
-                    // Generated
+                    // Generated (proof-of-work)
                     sub.type = TransactionRecord::Generated;
                 }
 
-                parts.append(sub);
+                if(wtx.IsCoinStake()) // Combine into single output for coinstake
+                {
+                    if (hashPrev == hash)
+                        continue; // last coinstake output
 
-                if(wtx.IsCoinStake()) 
-                    break; // Single output for coinstake
+                    sub.type = TransactionRecord::Generated;
+                    sub.credit = nNet > 0 ? nNet : wtx.tx->GetValueOut() - nDebit;
+                    hashPrev = hash;
+                }
+    
+                parts.append(sub);
             }
         }
     }
@@ -121,9 +123,15 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             // Payment to self
             CAmount nChange = wtx.GetChange();
 
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::SendToSelf, "",
-                            -(nDebit - nChange), nCredit - nChange, txcomment));
-            parts.last().involvesWatchAddress = involvesWatchAddress;   // maybe pass to TransactionRecord as constructor argument
+            TransactionRecord sub(hash, nTime, TransactionRecord::SendToSelf, "",
+                             -(nDebit - nChange), nCredit - nChange, txcomment);
+            if (txcomment.length() == 71 && txcomment.compare(0, 7, "notary ") == 0) {
+                sub.type = TransactionRecord::Notary;
+            } else if (txcomment.length() >= 79 && txcomment.compare(0, 15, "create clamour ") == 0) {
+                sub.type = TransactionRecord::CreateClamour;
+            }
+            parts.append(sub);
+            parts.last().involvesWatchAddress = involvesWatchAddress;
         }
         else if (fAllFromMe)
         {
@@ -153,12 +161,16 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                     // Sent to Bitcoin Address
                     sub.type = TransactionRecord::SendToAddress;
                     sub.address = CBitcoinAddress(address).ToString();
+                    if (txcomment.length() == 71 && txcomment.compare(0, 7, "notary ") == 0)
+                        sub.type = TransactionRecord::NotarySendToAddress;
                 }
                 else
                 {
                     // Sent to IP, or other non-address transaction like OP_EVAL
                     sub.type = TransactionRecord::SendToOther;
                     sub.address = mapValue["to"];
+                    if (txcomment.length() == 71 && txcomment.compare(0, 7, "notary ") == 0)
+                        sub.type = TransactionRecord::NotarySendToAddress;
                 }
 
                 CAmount nValue = txout.nValue;
@@ -178,7 +190,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             //
             // Mixed debit transaction, can't break down payees
             //
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0, txcomment));
+            TransactionRecord sub(hash, nTime, TransactionRecord::Other, "", nNet, 0, txcomment);
+            if (txcomment.length() == 71 && txcomment.compare(0, 7, "notary ") == 0)
+                sub.type = TransactionRecord::Notary;
+            parts.append(sub);
             parts.last().involvesWatchAddress = involvesWatchAddress;
         }
     }
@@ -270,13 +285,13 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
             status.status = TransactionStatus::Confirmed;
         }
     }
-
+    status.needsUpdate = false;
 }
 
-bool TransactionRecord::statusUpdateNeeded()
+bool TransactionRecord::statusUpdateNeeded() const
 {
     AssertLockHeld(cs_main);
-    return status.cur_num_blocks != chainActive.Height();
+    return status.cur_num_blocks != chainActive.Height() || status.needsUpdate;
 }
 
 QString TransactionRecord::getTxID() const

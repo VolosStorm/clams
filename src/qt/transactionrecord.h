@@ -61,6 +61,8 @@ public:
 
     /** Current number of blocks (to know whether cached status is still valid) */
     int cur_num_blocks;
+
+    bool needsUpdate;
 };
 
 /** UI model for a transaction. A core transaction can be represented by multiple UI transactions if it has
@@ -77,7 +79,11 @@ public:
         SendToOther,
         RecvWithAddress,
         RecvFromOther,
-        SendToSelf
+        SendToSelf,
+        Notary,
+        NotarySendToAddress,
+        NotarySendToOther,
+        CreateClamour
     };
 
     /** Number of confirmation recommended for accepting a transaction */
@@ -140,7 +146,7 @@ public:
 
     /** Return whether a status update is needed.
      */
-    bool statusUpdateNeeded();
+    bool statusUpdateNeeded() const;
 };
 
 #endif // BITCOIN_QT_TRANSACTIONRECORD_H
