@@ -135,7 +135,7 @@ double GetPoSKernelPS()
     if (nStakesTime)
         result = dStakeKernelsTriedAvg / nStakesTime;
 
-    if (pindexBestHeader->nHeight > 203500)
+    if (pindexBestHeader->nHeight > Params().GetConsensus().nProtocolV2Height)
         result *= STAKE_TIMESTAMP_MASK + 1;
 
     return result;
