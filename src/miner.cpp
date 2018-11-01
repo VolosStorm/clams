@@ -910,7 +910,6 @@ void ThreadStakeMiner(CWallet *pwallet)
 
                 if (chainActive.Tip()->GetBlockHash() != pblock->hashPrevBlock) {
                     //another block was received while building ours, scrap progress
-                    LogPrintf("ThreadStakeMiner(): Valid future PoS block was orphaned before becoming valid\n");
                     break;
                 }
                 // Create a block that's properly populated with transactions
@@ -921,13 +920,11 @@ void ThreadStakeMiner(CWallet *pwallet)
                     return;
                 if (chainActive.Tip()->GetBlockHash() != pblock->hashPrevBlock) {
                     //another block was received while building ours, scrap progress
-                    LogPrintf("ThreadStakeMiner(): Valid future PoS block was orphaned before becoming valid\n");
                     break;
                 }
                 // Sign the full block and use the timestamp from earlier for a valid stake
                 std::shared_ptr<CBlock> pblockfilled = std::make_shared<CBlock>(pblocktemplatefilled->block);
                 if (SignBlock(pblockfilled, *pwallet, nTotalFees, i)) {
-                    // Should always reach here unless we spent too much time processing transactions and the timestamp is now invalid
                     // CheckStake also does CheckBlock and AcceptBlock to propogate it to the network
                     bool validBlock = false;
                     while(!validBlock) {
