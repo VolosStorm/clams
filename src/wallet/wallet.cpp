@@ -3182,6 +3182,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 nCredit += pcoin.first->tx->vout[pcoin.second].nValue;
                 vwtxPrev.push_back(pcoin.first);
                 txNew.vout.push_back(CTxOut(0, scriptPubKeyOut));
+                setCoins.erase(pcoin); // don't consider the staking coin for merging later
 
                 fKernelFound = true;
                 break;
