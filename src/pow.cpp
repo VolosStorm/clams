@@ -187,8 +187,6 @@ unsigned int GetNextTargetRequiredV3(const CBlockIndex* pindexLast, const Consen
     if (bnNew <= 0 || bnNew > bnTargetLimit)
         bnNew = bnTargetLimit;
  
-
-    //LogPrintf("xploited GetNextTargetRequired V3: %d %d %d %d\n", bnNew.GetCompact(), nActualSpacing, nInterval, params.nTargetStakeSpacing);
     return bnNew.GetCompact();
 }
 

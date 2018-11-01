@@ -10,7 +10,6 @@
 #include "utilstrencodings.h"
 #include "crypto/common.h"
 #include "crypto/scrypt.h"
-#include "util.h"
 
 uint256 CBlockLegacyHeader::GetHash() const
 {
@@ -23,10 +22,8 @@ uint256 CBlockLegacyHeader::GetHash() const
     time(&start_time);
 
     if (nVersion > 6 ) { //&& !IsProofOfWork()) {
-        //LogPrint("xp", "> 6 %s %d %d\n", Hash(BEGIN(nVersion), END(nNonce)).ToString(), nVersion, nNonce);
         ret = Hash(BEGIN(nVersion), END(nNonce));
     } else {
-        //LogPrint("xp", "< 6 %s %d\n", GetPoWHash().ToString(), nVersion);
         ret = GetPoWHash();  
     }
 
@@ -57,10 +54,8 @@ uint256 CBlockHeader::GetHash() const
     time(&start_time);
 
     if (nVersion > 6 ) { //&& !IsProofOfWork()) {
-        //LogPrint("xp", "> 6 %s %d %d\n", Hash(BEGIN(nVersion), END(nNonce)).ToString(), nVersion, nNonce);
         ret = Hash(BEGIN(nVersion), END(nNonce));
     } else {
-        //LogPrint("xp", "< 6 %s %d\n", GetPoWHash().ToString(), nVersion);
         ret = GetPoWHash();  
     }
 
