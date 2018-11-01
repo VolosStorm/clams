@@ -907,58 +907,67 @@ void ThreadStakeMiner(CWallet *pwallet)
                 // Try to sign a block (this also checks for a PoS stake)
                 pblocktemplate->block.nTime = i;
                 std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>(pblocktemplate->block);
+                if (SignBlock(pblock, *pwallet, nTotalFees, i)) {
+                    // increase priority so we can build the full PoS block ASAP to ensure the timestamp doesn't expire
+                    SetThreadPriority(THREAD_PRIORITY_ABOVE_NORMAL);
 
-                if (chainActive.Tip()->GetBlockHash() != pblock->hashPrevBlock) {
-                    //another block was received while building ours, scrap progress
-                    break;
-                }
-                // Create a block that's properly populated with transactions
-                std::unique_ptr<CBlockTemplate> pblocktemplatefilled(
-                    BlockAssembler(Params()).CreateNewBlock(pblock->vtx[1]->vout[1].scriptPubKey, true, &nTotalFees,
-                                                            i, FutureDrift(GetAdjustedTime()) - STAKE_TIME_BUFFER));
-                if (!pblocktemplatefilled.get())
-                    return;
-                if (chainActive.Tip()->GetBlockHash() != pblock->hashPrevBlock) {
-                    //another block was received while building ours, scrap progress
-                    break;
-                }
-                // Sign the full block and use the timestamp from earlier for a valid stake
-                std::shared_ptr<CBlock> pblockfilled = std::make_shared<CBlock>(pblocktemplatefilled->block);
-                if (SignBlock(pblockfilled, *pwallet, nTotalFees, i)) {
-                    // CheckStake also does CheckBlock and AcceptBlock to propogate it to the network
-                    bool validBlock = false;
-                    while(!validBlock) {
-                        if (chainActive.Tip()->GetBlockHash() != pblockfilled->hashPrevBlock) {
-                            //another block was received while building ours, scrap progress
-                            LogPrintf("ThreadStakeMiner(): Valid future PoS block was orphaned before becoming valid\n");
-                            break;
-                        }
-                        //check timestamps
-                        if (pblockfilled->GetBlockTime() <= pindexPrev->GetBlockTime() ||
-                            FutureDrift(pblockfilled->GetBlockTime()) < pindexPrev->GetBlockTime()) {
-                            LogPrintf("ThreadStakeMiner(): Valid PoS block took too long to create and has expired\n");
-                            break; //timestamp too late, so ignore
-                        }
-                        if (pblockfilled->GetBlockTime() > FutureDrift(GetAdjustedTime())) {
-                            if (IsArgSet("-aggressive-staking")) {
-                                //if being agressive, then check more often to publish immediately when valid. This might allow you to find more blocks, 
-                                //but also increases the chance of broadcasting invalid blocks and getting DoS banned by nodes,
-                                //or receiving more stale/orphan blocks than normal. Use at your own risk.
-                                MilliSleep(100);
-                            }else{
-                                //too early, so wait 3 seconds and try again
-                                MilliSleep(3000);
+                    if (chainActive.Tip()->GetBlockHash() != pblock->hashPrevBlock) {
+                        //another block was received while building ours, scrap progress
+                        LogPrintf("ThreadStakeMiner(): Valid future PoS block was orphaned before becoming valid\n");
+                        break;
+                    }
+                    // Create a block that's properly populated with transactions
+                    std::unique_ptr<CBlockTemplate> pblocktemplatefilled(
+                            BlockAssembler(Params()).CreateNewBlock(pblock->vtx[1]->vout[1].scriptPubKey, true, &nTotalFees,
+                                                                    i, FutureDrift(GetAdjustedTime()) - STAKE_TIME_BUFFER));
+                    if (!pblocktemplatefilled.get())
+                        return;
+                    if (chainActive.Tip()->GetBlockHash() != pblock->hashPrevBlock) {
+                        //another block was received while building ours, scrap progress
+                        LogPrintf("ThreadStakeMiner(): Valid future PoS block was orphaned before becoming valid\n");
+                        break;
+                    }
+                    // Sign the full block and use the timestamp from earlier for a valid stake
+                    std::shared_ptr<CBlock> pblockfilled = std::make_shared<CBlock>(pblocktemplatefilled->block);
+                    if (SignBlock(pblockfilled, *pwallet, nTotalFees, i)) {
+                        // Should always reach here unless we spent too much time processing transactions and the timestamp is now invalid
+                        // CheckStake also does CheckBlock and AcceptBlock to propogate it to the network
+                        bool validBlock = false;
+                        while(!validBlock) {
+                            if (chainActive.Tip()->GetBlockHash() != pblockfilled->hashPrevBlock) {
+                                //another block was received while building ours, scrap progress
+                                LogPrintf("ThreadStakeMiner(): Valid future PoS block was orphaned before becoming valid\n");
+                                break;
                             }
-                            continue;
+                            //check timestamps
+                            if (pblockfilled->GetBlockTime() <= pindexPrev->GetBlockTime() ||
+                                FutureDrift(pblockfilled->GetBlockTime()) < pindexPrev->GetBlockTime()) {
+                                LogPrintf("ThreadStakeMiner(): Valid PoS block took too long to create and has expired\n");
+                                break; //timestamp too late, so ignore
+                            }
+                            if (pblockfilled->GetBlockTime() > FutureDrift(GetAdjustedTime())) {
+                                if (IsArgSet("-aggressive-staking")) {
+                                    //if being agressive, then check more often to publish immediately when valid. This might allow you to find more blocks, 
+                                    //but also increases the chance of broadcasting invalid blocks and getting DoS banned by nodes,
+                                    //or receiving more stale/orphan blocks than normal. Use at your own risk.
+                                    MilliSleep(100);
+                                }else{
+                                    //too early, so wait 3 seconds and try again
+                                    MilliSleep(3000);
+                                }
+                                continue;
+                            }
+                            validBlock=true;
                         }
-                        validBlock=true;
+                        if(validBlock) {
+                            CheckStake(pblockfilled, *pwallet);
+                            // Update the search time when new valid block is created, needed for status bar icon
+                            nLastCoinStakeSearchTime = pblockfilled->GetBlockTime();
+                        }
+                        break;
                     }
-                    if(validBlock) {
-                        CheckStake(pblockfilled, *pwallet);
-                        // Update the search time when new valid block is created, needed for status bar icon
-                        nLastCoinStakeSearchTime = pblockfilled->GetBlockTime();
-                    }
-                    break;
+                    //return back to low priority
+                    SetThreadPriority(THREAD_PRIORITY_LOWEST);
                 }
             }
         } else
