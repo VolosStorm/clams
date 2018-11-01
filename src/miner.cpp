@@ -814,9 +814,12 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
     }
 
     //// debug print
-    LogPrintf("CheckStake() : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", hashBlock.GetHex(), proofHash.GetHex(), hashTarget.GetHex());
-    LogPrintf("%s\n", pblock->ToString());
-    LogPrintf("out %s\n", FormatMoney(pblock->vtx[1]->GetValueOut()));
+    LogPrintf("CheckStake() : new proof-of-stake block found:\n\n       hash: %s\n     target: %s\n  proofhash: %s\n        out: %s\n\n%s",
+              hashBlock.GetHex(), // hash
+              hashTarget.GetHex(), // target
+              proofHash.GetHex(), // proofhash
+              FormatMoney(pblock->vtx[1]->GetValueOut()), // out
+              pblock->ToString()); // block
 
     // Found a solution
     {
