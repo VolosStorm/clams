@@ -797,7 +797,7 @@ void InitLogging()
     fLogIPs = GetBoolArg("-logips", DEFAULT_LOGIPS);
 
     LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    LogPrintf("Bitcoin version %s\n", FormatFullVersion());
+    LogPrintf("Clam version %s\n", FormatFullVersion());
 }
 
 namespace { // Variables internal to initialization process only
