@@ -100,8 +100,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "sendnotarytransaction", 1, "file" },
     { "getnotarytransaction", 1, "notary_id" },
     { "getnotarytransaction", 2, "multiple_results" },
-    { "getstaketo", 1, "file" },
-    { "setstaketo", 1, "file" },
+    { "setcombineany", 0, "state" },
 
     
     { "signrawtransaction", 1, "prevtxs" },
