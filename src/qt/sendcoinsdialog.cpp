@@ -116,6 +116,7 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     ui->groupCustomFee->button((int)std::max(0, std::min(1, settings.value("nCustomFeeRadio").toInt())))->setChecked(true);
     ui->customFee->setValue(settings.value("nTransactionFee").toLongLong());
     ui->checkBoxMinimumFee->setChecked(settings.value("fPayOnlyMinFee").toBool());
+    ui->editTxComment->setPlaceholderText(tr("Enter text to include with the transaction that will be saved to the blockchain. (optional)"));
     minimizeFeeSection(true);
 }
 
@@ -202,7 +203,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     if(!model || !model->getOptionsModel())
         return;
 
-    //QString txcomment = ui->editTxComment->text();
+    QString txcomment = ui->editTxComment->text(); //= ui->editTxComment->text();
 
     QList<SendCoinsRecipient> recipients;
     bool valid = true;
@@ -250,7 +251,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     else
         ctrl.nConfirmTarget = 0;
 
-    prepareStatus = model->prepareTransaction("", currentTransaction, &ctrl);
+    prepareStatus = model->prepareTransaction(txcomment, currentTransaction, &ctrl);
 
     // process prepareStatus and on error generate message shown to user
     processSendCoinsReturn(prepareStatus,
@@ -341,7 +342,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     }
 
     // now send the prepared transaction
-    WalletModel::SendCoinsReturn sendStatus = model->sendCoins("", currentTransaction);
+    WalletModel::SendCoinsReturn sendStatus = model->sendCoins(txcomment, currentTransaction);
     // process sendStatus and on error generate message shown to user
     processSendCoinsReturn(sendStatus);
 
@@ -356,7 +357,7 @@ void SendCoinsDialog::on_sendButton_clicked()
 
 void SendCoinsDialog::clear()
 {
-    //ui->editTxComment->clear();
+    ui->editTxComment->clear();
     // Remove entries until only one left
     while(ui->entries->count())
     {
