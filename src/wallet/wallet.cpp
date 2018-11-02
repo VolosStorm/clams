@@ -61,12 +61,12 @@ int64_t nMaxStakeValue;
 int64_t nSplitSize;
 int64_t nCombineLimit;
 bool fCombineAny;
-bool fStakeTo = false;
-bool fRewardTo = false;
+
 vector<CKeyID> vChangeAddresses;
+bool fStakeTo = false, fRewardTo = false;
+CKeyID staketokeyID, rewardtokeyID;
 std::set<CBitcoinAddress> setSpendLastAddresses;
 std::set<CBitcoinAddress> setStakeAddresses;
-CKeyID staketokeyID, rewardtokeyID;
 
 /**
  * Fees smaller than this (in satoshi) are considered zero fee (for transaction creation)
