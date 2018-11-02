@@ -345,7 +345,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
         CNode* pnode = FindNode((CService)addrConnect);
         if (pnode)
         {
-            LogPrintf("Failed to open new connection, already connected\n");
+            LogPrintf("%s:%d Failed to open new connection %s, already connected\n", __FILE__, __LINE__, addrConnect.ToString());
             return NULL;
         }
     }
@@ -378,7 +378,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
             {
                 pnode->MaybeSetAddrName(std::string(pszDest));
                 CloseSocket(hSocket);
-                LogPrintf("Failed to open new connection, already connected\n");
+                LogPrintf("%s:%d Failed to open new connection %s, already connected\n", __FILE__, __LINE__, pszDest);
                 return NULL;
             }
         }
