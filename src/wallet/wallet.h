@@ -39,6 +39,7 @@ extern CWallet* pwalletMain;
  * Settings
  */
 extern CAmount nReserveBalance;
+extern int64_t nMinimumInputValue;
 extern int64_t nTransactionFee;
 extern CFeeRate payTxFee;
 extern unsigned int nTxConfirmTarget;
@@ -55,6 +56,8 @@ static const CAmount DEFAULT_TRANSACTION_FEE = 10000;
 static const CAmount DEFAULT_FALLBACK_FEE = 20000;
 //! -mintxfee default
 static const CAmount DEFAULT_TRANSACTION_MINFEE = 1000;
+//! -mininput default
+static const CAmount DEFAULT_MININPUT = 0;
 //! minimum recommended increment for BIP 125 replacement txs
 static const CAmount WALLET_INCREMENTAL_RELAY_FEE = 5000;
 //! target minimum change amount

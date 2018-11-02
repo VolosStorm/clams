@@ -52,6 +52,7 @@ const char * DEFAULT_WALLET_DAT = "wallet.dat";
 const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x80000000;
 
 CAmount nReserveBalance = 0;
+int64_t nMinimumInputValue = DEFAULT_MININPUT;
 int64_t nTransactionFee = DEFAULT_TRANSACTION_FEE;
 
 
@@ -1360,7 +1361,7 @@ CAmount CWallet::GetChange(const CTxOut& txout) const
 bool CWallet::IsMine(const CTransaction& tx) const
 {
     BOOST_FOREACH(const CTxOut& txout, tx.vout)
-        if (IsMine(txout))
+        if (IsMine(txout) && txout.nValue >= nMinimumInputValue)
             return true;
     return false;
 }
@@ -2171,6 +2172,7 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
             for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
                 isminetype mine = IsMine(pcoin->tx->vout[i]);
                 if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
+                    pcoin->tx->vout[i].nValue >= nMinimumInputValue &&
                     !IsLockedCoin((*it).first, i) && (pcoin->tx->vout[i].nValue > 0 || fIncludeZeroValue) &&
                     (!coinControl || !coinControl->HasSelected() || coinControl->fAllowOtherInputs || coinControl->IsSelected(COutPoint((*it).first, i))))
                         vCoins.push_back(COutput(pcoin, i, nDepth,
@@ -2204,6 +2206,7 @@ void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins) const
             for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
                 isminetype mine = IsMine(pcoin->tx->vout[i]);
                 if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO && pcoin->tx->vout[i].nValue > 0 &&
+                    pcoin->tx->vout[i].nValue >= nMinimumInputValue &&
                     (!nMaxStakeValue || pcoin->tx->vout[i].nValue <= nMaxStakeValue) &&
                     !IsLockedCoin((*it).first, i) &&
                     (!setStakeAddresses.size() || (ExtractDestination(pcoin->tx->vout[i].scriptPubKey, address) && setStakeAddresses.count(address)))) {
@@ -4309,6 +4312,8 @@ std::string CWallet::GetWalletHelpString(bool showDebug)
                                                             CURRENCY_UNIT, FormatMoney(DEFAULT_TRANSACTION_MINFEE)));
     strUsage += HelpMessageOpt("-paytxfee=<amt>", strprintf(_("Fee (in %s/kB) to add to transactions you send (default: %s)"),
                                                             CURRENCY_UNIT, FormatMoney(payTxFee.GetFeePerK())));
+    strUsage += HelpMessageOpt("-mininput=<amt>", strprintf(_("When creating transactions, ignore inputs with value less than this (default: %s)"),
+                                                            FormatMoney(DEFAULT_MININPUT)));
     strUsage += HelpMessageOpt("-rescan", _("Rescan the block chain for missing wallet transactions on startup"));
     strUsage += HelpMessageOpt("-salvagewallet", _("Attempt to recover private keys from a corrupt wallet on startup"));
     if (showDebug)
@@ -4660,6 +4665,9 @@ bool CWallet::ParameterInteraction()
     if (IsArgSet("-combineany")) {
         fCombineAny    = GetBoolArg( "-combineany",    false );
     } 
+    if (IsArgSet("-mininput")) {
+        nMinimumInputValue = GetMoneyArg("-mininput",  0*COIN);
+    }
     if (IsArgSet("-maxtxfee"))
     {
         CAmount nMaxFee = 0;
