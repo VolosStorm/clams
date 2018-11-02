@@ -297,10 +297,11 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(const QString &clam
         CAmount nFeeRequired = 0;
         int nChangePosRet = -1;
         std::string strFailReason;
+        std::string strTxComment = clamspeech.toStdString();
 
         CWalletTx *newTx = transaction.getTransaction();
         CReserveKey *keyChange = transaction.getPossibleKeyChange();
-        bool fCreated = wallet->CreateTransaction(vecSend, *newTx, *keyChange, nFeeRequired, nChangePosRet, strFailReason, coinControl);
+        bool fCreated = wallet->CreateTransaction(vecSend, *newTx, *keyChange, nFeeRequired, nChangePosRet, strFailReason, coinControl, true, false, strTxComment);
         transaction.setTransactionFee(nFeeRequired);
         if (fSubtractFeeFromAmount && fCreated)
             transaction.reassignAmounts(nChangePosRet);
