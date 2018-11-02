@@ -37,6 +37,7 @@ extern CKeyID staketokeyID;
 extern CKeyID rewardtokeyID;
 extern bool fStakeTo;
 extern bool fRewardTo;
+extern bool fCombineAny;
 
 std::string HelpRequiringPassphrase()
 {
@@ -3444,6 +3445,25 @@ UniValue setstaketo(const JSONRPCRequest& request)
     return true;
 }
 
+UniValue getcombineany(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw runtime_error(
+            "getcombineany\n"
+            "Gets the -combineany state and returns the new state.");
+
+    return fCombineAny;
+}
+
+UniValue setcombineany(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw runtime_error(
+            "setcombineany [state]\n"
+            "Sets the -combineany state. If state isn't specified, -combineany is turned off. Returns the new state.");
+
+    return fCombineAny = request.params.size() ? request.params[0].get_bool() : false;
+}
 
 static void validateoutputs_check_unconfirmed_spend(COutPoint& outpoint, CTransactionRef& tx, UniValue& entry)
 {
@@ -3600,6 +3620,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getstakedbyaddress",       &getstakedbyaddress,       true,   {"address","minconf"} },
     { "wallet",             "getstaketo",               &getstaketo,               true,   {} },
     { "wallet",             "getrewardto",              &getrewardto,              true,   {} }, 
+    { "wallet",             "getcombineany",            &getcombineany,            true,   {} }, 
     { "wallet",             "gettransaction",           &gettransaction,           false,  {"txid","include_watchonly"} },
     { "wallet",             "getunconfirmedbalance",    &getunconfirmedbalance,    false,  {} },
     { "wallet",             "getwalletinfo",            &getwalletinfo,            false,  {} },
@@ -3628,6 +3649,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "setaccount",               &setaccount,               true,   {"address","account"} },
     { "wallet",             "setstaketo",               &setstaketo,               true,   {"address"} },
     { "wallet",             "setrewardto",              &setrewardto,              true,   {"address"} },
+    { "wallet",             "setcombineany",            &setcombineany,            true,   {"state"} },
     { "wallet",             "settxfee",                 &settxfee,                 true,   {"amount"} },
     { "wallet",             "signmessage",              &signmessage,              true,   {"address","message"} },
     { "wallet",             "walletlock",               &walletlock,               true,   {} },
