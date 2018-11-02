@@ -63,6 +63,7 @@ int64_t nCombineLimit;
 bool fCombineAny;
 bool fStakeTo = false;
 bool fRewardTo = false;
+vector<CKeyID> vChangeAddresses;
 std::set<CBitcoinAddress> setSpendLastAddresses;
 std::set<CBitcoinAddress> setStakeAddresses;
 CKeyID staketokeyID, rewardtokeyID;
@@ -2756,6 +2757,12 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                     if (coinControl && !boost::get<CNoDestination>(&coinControl->destChange))
                         scriptChange = GetScriptForDestination(coinControl->destChange);
 
+                    // send change to one of the specified change addresses, if specified at init
+                    else if (vChangeAddresses.size()) {
+                        CKeyID keyID = vChangeAddresses[GetRandInt(vChangeAddresses.size())];
+                        scriptChange = GetScriptForDestination(keyID);
+                    }
+
                     // no coin control: send change to newly generated address
                     else
                     {
@@ -4630,6 +4637,15 @@ bool CWallet::ParameterInteraction()
         if (!CBitcoinAddress(GetArg("-rewardto", "")).GetKeyID(rewardtokeyID))
             return InitError(strprintf(_("Bad -rewardto address: '%s'"), GetArg("-rewardto", "")));
         fRewardTo = true;
+    }
+    if (mapMultiArgs.count("-change")) {
+        BOOST_FOREACH(std::string strChange, mapMultiArgs.at("-change")) {
+            CBitcoinAddress address(strChange);
+            CKeyID keyID;
+            if (!address.GetKeyID(keyID))
+                return InitError(strprintf(_("Bad -change address: '%s'"), strChange));
+            vChangeAddresses.push_back(keyID);
+        }
     }
     if (IsArgSet("-maxstakevalue")) {
         nMaxStakeValue = GetMoneyArg("-maxstakevalue", 0*COIN);
