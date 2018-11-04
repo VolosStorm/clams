@@ -2506,7 +2506,7 @@ bool CWallet::SelectCoinsForStaking(CAmount& nTargetValue, std::set<std::pair<co
         int i = output.i;
 
         // Stop if we've chosen enough inputs
-        if (nValueRet >= nTargetValue)
+        if (nValueRet > nTargetValue)
             break;
 
         int64_t n = pcoin->tx->vout[i].nValue;
