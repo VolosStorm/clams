@@ -3209,29 +3209,6 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     if (nCredit == 0 || nCredit > nBalance - nReserveBalance)
         return false;
 
-    BOOST_FOREACH(const PAIRTYPE(const CWalletTx*, unsigned int)& pcoin, setCoins)
-    {
-        // Attempt to add more inputs
-        // Only add coins of the same key/address as kernel
-        if (txNew.vout.size() == 2 && ((pcoin.first->tx->vout[pcoin.second].scriptPubKey == scriptPubKeyKernel || pcoin.first->tx->vout[pcoin.second].scriptPubKey == txNew.vout[1].scriptPubKey))
-                && pcoin.first->GetHash() != txNew.vin[0].prevout.hash)
-        {
-            // Stop adding more inputs if already too many inputs
-            if (txNew.vin.size() >= GetStakeMaxCombineInputs())
-                break;
-            // Stop adding inputs if reached reserve limit
-            if (nCredit + pcoin.first->tx->vout[pcoin.second].nValue > nBalance - nReserveBalance)
-                break;
-            // Do not add additional significant input
-            if (pcoin.first->tx->vout[pcoin.second].nValue >= GetStakeCombineThreshold())
-                continue;
-
-            txNew.vin.push_back(CTxIn(pcoin.first->GetHash(), pcoin.second));
-            nCredit += pcoin.first->tx->vout[pcoin.second].nValue;
-            vwtxPrev.push_back(pcoin.first);
-        }
-    }
-
     const Consensus::CParams& consensusParams = Params().GetConsensus();
 
     // Calculate coin age reward
