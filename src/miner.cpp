@@ -798,7 +798,8 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
 bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
 {
-    uint256 proofHash, hashTarget;
+    uint256 proofHash;
+    CBigNum bnHashTarget;
     uint256 hashBlock = pblock->GetHash();
 
     if(!pblock->IsProofOfStake())
@@ -808,15 +809,15 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
     pblocktree->ReadTxIndex(pblock->vtx[1]->vin[0].prevout.hash, postx);
     // verify hash target and signature of coinstake tx
     CValidationState state;
-    if (!CheckProofOfStake(mapBlockIndex[pblock->hashPrevBlock], state, *pblock->vtx[1], pblock->nBits, proofHash, hashTarget, *pcoinsTip, *pblocktree, Params().GetConsensus())){
+    if (!CheckProofOfStake(mapBlockIndex[pblock->hashPrevBlock], state, *pblock->vtx[1], pblock->nBits, proofHash, bnHashTarget, *pcoinsTip, *pblocktree, Params().GetConsensus())){
         LogPrint("miner", "CheckStake() : proof-of-stake checking failed\n");
         return error("CheckStake() : proof-of-stake checking failed");
     }
 
     //// debug print
-    LogPrintf("CheckStake() : new proof-of-stake block found:\n\n       hash: %s\n     target: %s\n  proofhash: %s\n        out: %s\n\n%s",
+    LogPrintf("CheckStake() : new proof-of-stake block found:\n\n       hash: %72s\n     target: %72s\n  proofhash: %72s\n        out: %-72s\n\n%s",
               hashBlock.GetHex(), // hash
-              hashTarget.GetHex(), // target
+              bnHashTarget.GetHex(), // target
               proofHash.GetHex(), // proofhash
               FormatMoney(pblock->vtx[1]->GetValueOut()), // out
               pblock->ToString()); // block

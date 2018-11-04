@@ -3662,8 +3662,8 @@ static bool UpdateHashProof(const CBlock& block, CValidationState& state, const 
     // Verify hash target and signature of coinstake tx
     if (block.IsProofOfStake())
     {
-        uint256 targetProofOfStake;
-        if (!CheckProofOfStake(pindex->pprev, state, *block.vtx[1], block.nBits,  hashProof, targetProofOfStake, view, *pblocktree))
+        CBigNum bnTargetProofOfStake;
+        if (!CheckProofOfStake(pindex->pprev, state, *block.vtx[1], block.nBits,  hashProof, bnTargetProofOfStake, view, *pblocktree))
         {
             return error("UpdateHashProof() : check proof-of-stake failed for block %s", hash.ToString());
         }
