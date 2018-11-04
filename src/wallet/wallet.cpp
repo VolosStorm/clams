@@ -85,18 +85,6 @@ const uint256 CMerkleTx::ABANDON_HASH(uint256S("00000000000000000000000000000000
 
 extern map<string, CClamour*> mapClamour;
 
-/**
- * Proof-of-stake functions needed in the wallet but wallet independent
- */
-unsigned int GetStakeMaxCombineInputs() { return 100; }
-
-int64_t GetStakeCombineThreshold() { return 100 * COIN; }
-
-unsigned int GetStakeSplitOutputs() { return 2; }
-
-int64_t GetStakeSplitThreshold() { return GetStakeSplitOutputs() * GetStakeCombineThreshold(); }
-
-
 /** @defgroup mapWallet
  *
  * @{

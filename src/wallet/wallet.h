@@ -179,10 +179,6 @@ struct COutputEntry
     int vout;
 };
 
-unsigned int GetStakeSplitOutputs();
-
-int64_t GetStakeSplitThreshold();
-
 /** A transaction with a merkle branch linking it to the block chain. */
 class CMerkleTx
 {
