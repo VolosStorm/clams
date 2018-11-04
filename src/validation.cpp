@@ -2664,6 +2664,16 @@ static bool ActivateBestChainStep(CValidationState& state, const CChainParams& c
     const CBlockIndex *pindexOldTip = chainActive.Tip();
     const CBlockIndex *pindexFork = chainActive.FindFork(pindexMostWork);
 
+    if (chainActive.Tip() && pindexFork && chainActive.Tip()->nHeight - pindexFork->nHeight > 60) {
+        LogPrintf("disallowing fork that wants to rewind %d blocks from height %d to %d; new best height is %d\n",
+                  chainActive.Tip()->nHeight - pindexFork->nHeight,
+                  chainActive.Tip()->nHeight,  pindexFork->nHeight,
+                  pindexMostWork->nHeight);
+        CValidationState state;
+        InvalidateBlock(state, Params(), pindexMostWork);
+        return false;
+    }
+
     // Disconnect active blocks which are no longer in the best chain.
     bool fBlocksDisconnected = false;
     while (chainActive.Tip() && chainActive.Tip() != pindexFork) {
