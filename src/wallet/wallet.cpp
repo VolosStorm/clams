@@ -2195,7 +2195,7 @@ void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins) const
             CTxDestination address;
             for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
                 isminetype mine = IsMine(pcoin->tx->vout[i]);
-                if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO && pcoin->tx->vout[i].nValue > 0 &&
+                if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
                     ((nMinimumInputValue >= 0 && pcoin->tx->vout[i].nValue >= nMinimumInputValue) ||
                      (nMinimumInputValue <  0 && pcoin->tx->vout[i].nValue < -nMinimumInputValue)) &&
                     (!nMaxStakeValue || pcoin->tx->vout[i].nValue <= nMaxStakeValue) &&
