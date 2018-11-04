@@ -64,6 +64,8 @@ static const CAmount DEFAULT_TRANSACTION_MAXFEE = 0.1 * COIN;
 static const CAmount HIGH_TX_FEE_PER_KB = 0.01 * COIN;
 //! -maxtxfee will warn if called with a higher fee than this amount (in satoshis)
 static const CAmount HIGH_MAX_TX_FEE = 100 * HIGH_TX_FEE_PER_KB;
+/** Default for -maxreorgdepth, maximum number of blocks to roll back when switching forks */
+static const unsigned int DEFAULT_MAX_REORG_DEPTH = 60;
 /** Default for -limitancestorcount, max number of in-mempool ancestors */
 static const unsigned int DEFAULT_ANCESTOR_LIMIT = 25;
 /** Default for -limitancestorsize, maximum kilobytes of tx + all in-mempool ancestors */

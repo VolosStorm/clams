@@ -2663,12 +2663,13 @@ static bool ActivateBestChainStep(CValidationState& state, const CChainParams& c
     AssertLockHeld(cs_main);
     const CBlockIndex *pindexOldTip = chainActive.Tip();
     const CBlockIndex *pindexFork = chainActive.FindFork(pindexMostWork);
+    int nMaxReorgDepth = GetArg("-maxreorgdepth", DEFAULT_MAX_REORG_DEPTH);
 
-    if (chainActive.Tip() && pindexFork && chainActive.Tip()->nHeight - pindexFork->nHeight > 60) {
-        LogPrintf("disallowing fork that wants to rewind %d blocks from height %d to %d; new best height is %d\n",
+    if (chainActive.Tip() && pindexFork && chainActive.Tip()->nHeight - pindexFork->nHeight > nMaxReorgDepth) {
+        LogPrintf("blocking fork that wants to rewind %d blocks from height %d to %d because -maxreorgdepth=%d; new best height is %d\n",
                   chainActive.Tip()->nHeight - pindexFork->nHeight,
                   chainActive.Tip()->nHeight,  pindexFork->nHeight,
-                  pindexMostWork->nHeight);
+                  nMaxReorgDepth, pindexMostWork->nHeight);
         CValidationState state;
         InvalidateBlock(state, Params(), pindexMostWork);
         return false;
