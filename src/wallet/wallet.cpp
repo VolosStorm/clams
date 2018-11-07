@@ -2467,7 +2467,8 @@ bool CWallet::SelectCoins(const vector<COutput>& vAvailableCoins, const CAmount&
 
         if (nMiscValue >= nTargetValue &&
             (SelectCoinsMinConf(nTargetValue, 1, 10, 0, vMiscCoins, setCoinsRet, nValueRet) ||
-             SelectCoinsMinConf(nTargetValue, 1, 10, 0, vMiscCoins, setCoinsRet, nValueRet))) {
+             SelectCoinsMinConf(nTargetValue, 1,  1, 0, vMiscCoins, setCoinsRet, nValueRet) ||
+             SelectCoinsMinConf(nTargetValue, 0,  1, 0, vMiscCoins, setCoinsRet, nValueRet))) {
             LogPrintf("we can make the transaction without spending any -spendlast coins\n");
             return true;
         }
