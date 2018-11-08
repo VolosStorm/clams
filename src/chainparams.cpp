@@ -151,20 +151,38 @@ public:
 
         checkpointData = (CCheckpointData) {
             boost::assign::map_list_of
-            (   6666,  uint256S("0x000002129d8a2b43509d2abb0aa24932b7af2f760e869d5952dee97d4b8ea8bf") )
-            (  10000,  uint256S("0x00000de398b1ec72c393c5c54574a1e1784eb178d683e1ad0856c12fac34f603") )
-            (  29000,  uint256S("0x068769a2ab0e35fc3ac31690158401b9538a7cce2a97096b22d47e50355b2e1f") )
-            ( 175000,  uint256S("0xec64deeb7f1295216f20ce5dbe68b0bd28189a5a644a111e722c05451d51e66c") )
-            ( 250000,  uint256S("0xb560c121438f630401c102767587b70cb0cc7d1e0c09114dd0b91455262aa64c") )
-            ( 530000,  uint256S("0xf89eedd61837c581b4b8fcb85782066b04f7266b4bd946b583805d330a0ae0cc") )
-            ( 777000,  uint256S("0x43213b22020b78dab01d5457611a55d7b471ab980a1749898ac9f2b496c5ed3d") )
-            ( 2260000, uint256S("0x7de222bdc6a50ffaa85dbef8491557f333e1176eb2ba77509eaa16110765e7ce") )
+            (    5000, uint256S("0x0000062a14145c32edd657a1576087c183312a62ccb59883cfab5eb5e8e2f984") )
+            (   10000, uint256S("0x00000de398b1ec72c393c5c54574a1e1784eb178d683e1ad0856c12fac34f603") )
+            (   20000, uint256S("0xe83f9c8d6f07222274e4a7105437ac2d297455f6b19f77766e8c528356283677") )
+            (  100000, uint256S("0x41148b9796e65ddbefea175f6372b2448fc2f6b22b66da64fc3a15d29c8ed843") )
+            (  200001, uint256S("0xc9228ec146f5a959c3e6d183419157a7c53d8a07e1dd810f8c478d66f71ac493") ) // block 199999's time is later than the following 2 blocks
+            (  300000, uint256S("0x144de2a2169e1a98e0b121bfdd7cdee6192dba71c10cde65e785e39f00f05c2b") )
+            (  400000, uint256S("0x6ec2869889333270e1eb549bfe5d19b6423ad8b36a05807a71d2301accfadf0b") )
+            (  500000, uint256S("0xaf388da4175404ebac7be210e1ed092e4e283d167505db617f009d9bc56f42fc") )
+            (  600000, uint256S("0x7b8e45a49a80036e6001d56332202d87354bcf6f29c52f2dd5616a92cdbcb587") )
+            (  700000, uint256S("0x8bec13dbec630f40ed510698ec530610ab4941b6c98f7ccab89728b071c685a0") )
+            (  800000, uint256S("0xfe190fa9449f261552325e4e771a4745373a062c4b4478e303b931787f16cfb3") )
+            (  900000, uint256S("0x179c18fad48240b7ee5bea0b58ad4ba430ac73c585098d32d0704edf9e86e762") )
+            ( 1000000, uint256S("0x4bb58b747f305b04d7f71946a9650b059a58f26b44ec05b1f8bd211424c5a586") )
+            ( 1100000, uint256S("0x7ae10e91b28df2ffbc085c10304886b0494be3fad331c7eb90163298df79c3d0") )
+            ( 1200000, uint256S("0xea14770cc6c3221bd846d47616dde32cf542714328beb17a1a0caace1c3f45a5") )
+            ( 1300000, uint256S("0x75b89e41b2329c07d2f7bf20dd57c42be0b9c6bbe8f4efb1bdbfa94866ee9c1c") )
+            ( 1400000, uint256S("0x0302c17f034ba74d1effa776bacb8d00e33d7943b24658d87e1284973462f5e4") )
+            ( 1500000, uint256S("0x2aea9081720f4c04208967f190ddeb942cac4b712ccad2e4e34fbfba08369486") )
+            ( 1600000, uint256S("0x4a2352b132204bc47681d6f1dd38762bda3fb65510b3e80ffd39b37502d80baa") )
+            ( 1700000, uint256S("0xd7107cd318b223801951a7b8da481c64caaccf0ee973cb7c1e59987e6dccd2bc") )
+            ( 1800000, uint256S("0x1a98f3ae87de517a53ba0de643f31f055a22cb2060238904285a5920371b9b8e") )
+            ( 1900000, uint256S("0xcc31b05431c8bc4866ce0e3ba3e0cd9d8535c5028f1a7e08678201bcb580030b") )
+            ( 2000000, uint256S("0xeec5059373725515e2423c15661978d55ff08b2a139f16ebcebf5c01fcdaf813") )
+            ( 2100000, uint256S("0x2803ef082f2a5b1d95984949fd404c01f6848794ce51cbdb074b390c4a422a93") )
+            ( 2200000, uint256S("0xfc3f25c1bd27e2a20a5fa0f3fd9f235249063a6eda726e7a7e7af741591e3e5c") )
+            ( 2280000, uint256S("0x37558d2153a41e277bf9c9393cf9b41fe318e4c766b3e16c55b51c01e7423048") )
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 00000000000000000166d612d5595e2b1cd88d71d695fc580af64d8da8658c23 (height 446482).
-            1540135056, // * UNIX timestamp of last known number of transactions
-            5601186,    // * total number of transactions between genesis and that timestamp
+            // Data as of block 37558d2153a41e277bf9c9393cf9b41fe318e4c766b3e16c55b51c01e7423048 (height 2280000).
+            1541345216, // * UNIX timestamp of last known number of transactions
+            5642352,    // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
             0.034       // * estimated number of transactions per second after that timestamp
         };
