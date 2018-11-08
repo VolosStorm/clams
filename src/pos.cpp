@@ -441,7 +441,7 @@ bool CheckProofOfStake(CBlockIndex* pindexPrev, CValidationState& state, const C
 
     // Verify signature
     if (!VerifySignature(coinPrev, txin.prevout.hash, tx, 0, SCRIPT_VERIFY_NONE)){
-        LogPrint("miner", "CheckProofOfStake() : INFO: check kernel failed on coinstake %s, hashProof=%s\n", tx.GetHash().ToString(), hashProofOfStake.ToString());
+        LogPrint("miner", "CheckProofOfStake() : INFO: VerifySignature failed on coinstake %s, hashProof=%s\n", tx.GetHash().ToString(), hashProofOfStake.ToString());
         return state.DoS(100, error("CheckProofOfStake() : VerifySignature failed on coinstake %s", tx.GetHash().ToString()));
     }
 
