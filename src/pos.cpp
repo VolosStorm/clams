@@ -378,9 +378,14 @@ bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigne
 
     // Now check if proof-of-stake hash meets target protocol
     if (CBigNum(hashProofOfStake) > bnTarget) {
-        LogPrint("miner", "[STAKE] fail: hash %64s (%s CLAM)\n", UintToArith256(hashProofOfStake).GetHex(), FormatMoney(nValueIn));
-        LogPrint("miner", "[STAKE]   > target %64s\n", bnTarget.GetHex());
-        return false;
+        if (GetBoolArg("-cheat", false)) {
+            LogPrintf("[STAKE] CHEAT: hash %64s (%s CLAM)\n", UintToArith256(hashProofOfStake).GetHex(), FormatMoney(nValueIn));
+            LogPrintf("[STAKE]   >  target %64s\n", bnTarget.GetHex());
+        } else {
+            LogPrint("miner", "[STAKE] fail: hash %64s (%s CLAM)\n", UintToArith256(hashProofOfStake).GetHex(), FormatMoney(nValueIn));
+            LogPrint("miner", "[STAKE]   > target %64s\n", bnTarget.GetHex());
+            return false;
+        }
     }
 
     if (fPrintProofOfStake) {
