@@ -583,7 +583,7 @@ static bool IsCurrentForFeeEstimation()
         return false;
     if (chainActive.Tip()->GetBlockTime() < (GetTime() - MAX_FEE_ESTIMATION_TIP_AGE))
         return false;
-    if (chainActive.Height() < pindexBestHeader->nHeight - 1)
+    if (chainActive.Height() < chainActive.Tip()->nHeight - 1)
         return false;
     return true;
 }
@@ -3181,7 +3181,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
         int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height ? 1 : nSearchTime - nLastCoinStakeSearchTime;
         if (wallet.CreateCoinStake(wallet, pblock->nBits, nSearchInterval, nTotalFees, nTimeBlock, txCoinStake, key))
         {
-            if (txCoinStake.nTime >= std::max(pindexBestHeader->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height )+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())))
+            if (txCoinStake.nTime >= std::max(chainActive.Tip()->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height )+1, PastDrift(chainActive.Tip()->GetBlockTime(), chainActive.Tip()->nHeight+1, Params().GetConsensus())))
             {
                 // make sure coinstake would meet timestamp protocol
                 //    as it would be the same as the block timestamp
@@ -3189,8 +3189,8 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
                 CMutableTransaction txCoinbase(*pblock->vtx[0]);
                 txCoinbase.nTime = pblock->nTime = txCoinStake.nTime;
                 pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
-                //pblock->nTime = std::max(pindexBestHeader->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
-                ///pblock->nTime = std::max(pblock->GetBlockTime(), PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()));
+                //pblock->nTime = std::max(chainActive.Tip()->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
+                ///pblock->nTime = std::max(pblock->GetBlockTime(), PastDrift(chainActive.Tip()->GetBlockTime(), chainActive.Tip()->nHeight+1, Params().GetConsensus()));
 
                 pblock->vtx[1] = MakeTransactionRef(std::move(txCoinStake));
                 pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
@@ -3204,11 +3204,11 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
             } else {
                 LogPrintf("found stake, but cannot use it : txCoinStake.nTime (%d) < max(%d+1, PastDrift(%d, %d+1) = %d) = %d\n",
                           txCoinStake.nTime,
-                          pindexBestHeader->GetPastTimeLimit(Params().GetConsensus().nProtocolV2Height),
-                          pindexBestHeader->GetBlockTime(),
-                          pindexBestHeader->nHeight,
-                          PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus()),
-                          std::max(pindexBestHeader->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height )+1, PastDrift(pindexBestHeader->GetBlockTime(), pindexBestHeader->nHeight+1, Params().GetConsensus())));
+                          chainActive.Tip()->GetPastTimeLimit(Params().GetConsensus().nProtocolV2Height),
+                          chainActive.Tip()->GetBlockTime(),
+                          chainActive.Tip()->nHeight,
+                          PastDrift(chainActive.Tip()->GetBlockTime(), chainActive.Tip()->nHeight+1, Params().GetConsensus()),
+                          std::max(chainActive.Tip()->GetPastTimeLimit( Params().GetConsensus().nProtocolV2Height )+1, PastDrift(chainActive.Tip()->GetBlockTime(), chainActive.Tip()->nHeight+1, Params().GetConsensus())));
             }
         }
 

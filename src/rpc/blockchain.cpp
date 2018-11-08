@@ -81,7 +81,7 @@ double GetDifficulty(const CBlockIndex* blockindex)
 
 double GetPoWMHashPS()
 {
-    if (pindexBestHeader->nHeight >= Params().GetConsensus().LAST_POW_BLOCK)//toniqtum edit
+    if (chainActive.Tip()->nHeight >= Params().GetConsensus().LAST_POW_BLOCK)//toniqtum edit
         return 0;
 
     int nPoWInterval = 72;
@@ -113,7 +113,7 @@ double GetPoSKernelPS()
     double dStakeKernelsTriedAvg = 0;
     int nStakesHandled = 0, nStakesTime = 0;
 
-    CBlockIndex* pindex = pindexBestHeader;
+    CBlockIndex* pindex = chainActive.Tip();
     CBlockIndex* pindexPrevStake = NULL;
 
     while (pindex && nStakesHandled <= nPoSInterval)
@@ -135,7 +135,7 @@ double GetPoSKernelPS()
     if (nStakesTime)
         result = dStakeKernelsTriedAvg / nStakesTime;
 
-    if (pindexBestHeader->nHeight > Params().GetConsensus().nProtocolV2Height)
+    if (chainActive.Tip()->nHeight > Params().GetConsensus().nProtocolV2Height)
         result *= STAKE_TIMESTAMP_MASK + 1;
 
     return result;
@@ -203,7 +203,7 @@ UniValue dumpbootstrap(const JSONRPCRequest& request)
 
     string strDest = request.params[0].get_str();
     int nEndBlock = request.params[1].get_int();
-    if (nEndBlock < 0 || nEndBlock > pindexBestHeader->nHeight)
+    if (nEndBlock < 0 || nEndBlock > chainActive.Tip()->nHeight)
         throw runtime_error("End block number out of range.");
     int nStartBlock = 0;
     if (request.params.size() > 2)
@@ -224,7 +224,7 @@ UniValue dumpbootstrap(const JSONRPCRequest& request)
         for (int nHeight = nStartBlock; nHeight <= nEndBlock; nHeight++)
         {
             CBlock block;
-            CBlockIndex* pblockindex = pindexBestHeader->GetAncestor(nHeight);
+            CBlockIndex* pblockindex = chainActive.Tip()->GetAncestor(nHeight);
             if(!pblockindex)
                 throw runtime_error("Error: Failed to find block index");
             if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
@@ -494,8 +494,8 @@ UniValue getdifficulty(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     UniValue obj(UniValue::VOBJ);
-    obj.push_back(Pair("proof-of-work",        GetDifficulty(GetLastBlockIndex(pindexBestHeader, false))));
-    obj.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBestHeader, true))));
+    obj.push_back(Pair("proof-of-work",        GetDifficulty(GetLastBlockIndex(chainActive.Tip(), false))));
+    obj.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(chainActive.Tip(), true))));
     return obj;
 }
 

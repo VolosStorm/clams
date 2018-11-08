@@ -268,8 +268,8 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("currentblockweight", (uint64_t)nLastBlockWeight));
     obj.push_back(Pair("currentblocktx",   (uint64_t)nLastBlockTx));
 
-    diff.push_back(Pair("proof-of-work",   GetDifficulty(GetLastBlockIndex(pindexBestHeader, false))));
-    diff.push_back(Pair("proof-of-stake",  GetDifficulty(GetLastBlockIndex(pindexBestHeader, true))));
+    diff.push_back(Pair("proof-of-work",   GetDifficulty(GetLastBlockIndex(chainActive.Tip(), false))));
+    diff.push_back(Pair("proof-of-stake",  GetDifficulty(GetLastBlockIndex(chainActive.Tip(), true))));
     diff.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
     obj.push_back(Pair("difficulty",       diff));
 
@@ -330,7 +330,7 @@ UniValue getstakinginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("currentblocktx", (uint64_t)nLastBlockTx));
     obj.push_back(Pair("pooledtx", (uint64_t)mempool.size()));
 
-    obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(pindexBestHeader, true))));
+    obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(chainActive.Tip(), true))));
     obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
 
     obj.push_back(Pair("weight", (uint64_t)nWeight/COIN));

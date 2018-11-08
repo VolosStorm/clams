@@ -3019,11 +3019,11 @@ uint64_t CWallet::GetStakeWeight() const
 
 void CWallet::SearchNotaryTransactions(uint256 hash, std::vector<std::pair<std::string, int> >& vTxResults)
 {
-    int blockstogoback = pindexBestHeader->nHeight - 362500;
+    int blockstogoback = chainActive.Tip()->nHeight - 362500;
     std::string matchingCLAMSpeech = "notary " + hash.GetHex();
     const CChainParams& chainParams = Params();
 
-    const CBlockIndex* pindexFirst = pindexBestHeader;
+    const CBlockIndex* pindexFirst = chainActive.Tip();
     for (int i = 0; pindexFirst && i < blockstogoback; i++) {
 
         CBlock block;
@@ -3055,7 +3055,7 @@ CClamour* CWallet::GetClamour(std::string pid)
 bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, const CAmount& nTotalFees, uint32_t nTimeBlock, CMutableTransaction& tx, CKey& key)
 {
     const CChainParams& chainParams = Params();
-    CBlockIndex* pindexPrev = pindexBestHeader;
+    CBlockIndex* pindexPrev = chainActive.Tip();
     arith_uint256 bnTargetPerCoinDay;
     bnTargetPerCoinDay.SetCompact(nBits);
 
@@ -3126,7 +3126,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         }
 
         bool fKernelFound = false;
-        for (unsigned int n=0; n<min(nSearchInterval,(int64_t)nMaxStakeSearchInterval) && !fKernelFound && pindexPrev == pindexBestHeader; n++)
+        for (unsigned int n=0; n<min(nSearchInterval,(int64_t)nMaxStakeSearchInterval) && !fKernelFound && pindexPrev == chainActive.Tip(); n++)
         {
             boost::this_thread::interruption_point();
             // Search backward in time from the given txNew timestamp
@@ -3203,7 +3203,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     // Calculate coin age reward
     int64_t nReward;
     {
-        nReward = GetBlockSubsidy(pindexBestHeader, 0, consensusParams, nTotalFees);
+        nReward = GetBlockSubsidy(chainActive.Tip(), 0, consensusParams, nTotalFees);
         if (nReward <= 0)
             return false;
 

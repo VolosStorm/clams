@@ -106,15 +106,15 @@ UniValue getinfo(const JSONRPCRequest& request)
 #endif
     obj.push_back(Pair("blocks",        (int)chainActive.Height()));
     obj.push_back(Pair("timeoffset",    GetTimeOffset()));
-    obj.push_back(Pair("moneysupply",   ValueFromAmount(pindexBestHeader->nMoneySupply)));
-    obj.push_back(Pair("digsupply",     ValueFromAmount(pindexBestHeader->nDigsupply)));
-    obj.push_back(Pair("stakesupply",   ValueFromAmount(pindexBestHeader->nStakeSupply)));
-    obj.push_back(Pair("activesupply",  ValueFromAmount(pindexBestHeader->nDigsupply + pindexBestHeader->nStakeSupply)));
+    obj.push_back(Pair("moneysupply",   ValueFromAmount(chainActive.Tip()->nMoneySupply)));
+    obj.push_back(Pair("digsupply",     ValueFromAmount(chainActive.Tip()->nDigsupply)));
+    obj.push_back(Pair("stakesupply",   ValueFromAmount(chainActive.Tip()->nStakeSupply)));
+    obj.push_back(Pair("activesupply",  ValueFromAmount(chainActive.Tip()->nDigsupply + chainActive.Tip()->nStakeSupply)));
     if(g_connman)
         obj.push_back(Pair("connections",   (int)g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL)));
     obj.push_back(Pair("proxy",         (proxy.IsValid() ? proxy.proxy.ToStringIPPort() : string())));
-    diff.push_back(Pair("proof-of-work",        GetDifficulty(GetLastBlockIndex(pindexBestHeader, false))));
-    diff.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBestHeader, true))));
+    diff.push_back(Pair("proof-of-work",        GetDifficulty(GetLastBlockIndex(chainActive.Tip(), false))));
+    diff.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(chainActive.Tip(), true))));
     obj.push_back(Pair("difficulty",    diff));
     obj.push_back(Pair("testnet",       Params().NetworkIDString() == CBaseChainParams::TESTNET));
 #ifdef ENABLE_WALLET
