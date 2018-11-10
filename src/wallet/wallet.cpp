@@ -4298,6 +4298,15 @@ std::string CWallet::GetWalletHelpString(bool showDebug)
     strUsage += HelpMessageOpt("-zapwallettxes=<mode>", _("Delete all wallet transactions and only recover those parts of the blockchain through -rescan on startup") +
                                " " + _("(1 = keep tx meta data e.g. account owner and payment request information, 2 = drop tx meta data)"));
     strUsage += HelpMessageOpt("-staking=<true/false>", _("Enables or disables staking (enabled by default)"));
+    strUsage += HelpMessageOpt("-staketo=<addr>", _("Address to move coins to as they stake"));
+    strUsage += HelpMessageOpt("-rewardto=<addr>", _("Address to credit with just the reward from staking a block"));
+    strUsage += HelpMessageOpt("-change=<addr>", _("Address to send change to"));
+    strUsage += HelpMessageOpt("-spendlast=<addr>", _("Avoid spending outputs from given address(es) if possible"));
+    strUsage += HelpMessageOpt("-stake=<addr>", _("Stake only outputs at the specified address(es)"));
+    strUsage += HelpMessageOpt("-splitsize=<amt>", _("The target output size when splitting staked outputs"));
+    strUsage += HelpMessageOpt("-combinelimit=<amt>", _("The maximum output size when combining staking inputs"));
+    strUsage += HelpMessageOpt("-combineany=<true/false>", _("Whether to combine outputs from different addresses when staking"));
+    strUsage += HelpMessageOpt("-stakenotify=<cmd>",_("Execute command each time we stake a block. (%r in cmd is replaced by the block reward, %a in cmd is replaced by the address which staked, %t in cmd is replaced by the total amount staked by this wallet, and %s in cmd is replaced by the total amount staked by the address which just staked)"));
 
     if (showDebug)
     {
