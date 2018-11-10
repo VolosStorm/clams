@@ -4890,10 +4890,12 @@ int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet) const
     // Find the block it claims to be in
     BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
     if (mi == mapBlockIndex.end())
-        return 0;
+        return IsCoinBase() ? -1 : 0;
     CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !chainActive.Contains(pindex))
-        return 0;
+    if (!pindex)
+        return IsCoinBase() ? -1 : 0;
+    if (!chainActive.Contains(pindex))
+        return IsCoinBase() ? -(chainActive.Height() - pindex->nHeight + 1) : 0;
 
     pindexRet = pindex;
     return ((nIndex == -1) ? (-1) : 1) * (chainActive.Height() - pindex->nHeight + 1);
