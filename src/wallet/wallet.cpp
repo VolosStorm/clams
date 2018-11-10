@@ -4298,7 +4298,6 @@ std::string CWallet::GetWalletHelpString(bool showDebug)
     strUsage += HelpMessageOpt("-zapwallettxes=<mode>", _("Delete all wallet transactions and only recover those parts of the blockchain through -rescan on startup") +
                                " " + _("(1 = keep tx meta data e.g. account owner and payment request information, 2 = drop tx meta data)"));
     strUsage += HelpMessageOpt("-staking=<true/false>", _("Enables or disables staking (enabled by default)"));
-    strUsage += HelpMessageOpt("-stakecache=<true/false>", _("Enables or disables the staking cache; significantly improves staking performance, but can use a lot of memory (enabled by default)"));
 
     if (showDebug)
     {
