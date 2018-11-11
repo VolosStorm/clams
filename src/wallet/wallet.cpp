@@ -2047,7 +2047,8 @@ CAmount CWallet::GetImmatureBalance() const
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
-            nTotal += pcoin->GetImmatureCredit();
+            if (pcoin->IsCoinPoW() && pcoin->GetBlocksToMaturity() > 0 && pcoin->IsInMainChain())
+                nTotal += pcoin->GetImmatureCredit();
         }
     }
     return nTotal;
