@@ -4107,6 +4107,8 @@ void CWallet::SumStakingRewards()
     list<COutputEntry> listReceived;
     list<COutputEntry> listSent;
 
+    LOCK(cs_main);
+
     typedef std::map<uint256, CWalletTx> TMapWallet;
     BOOST_FOREACH(TMapWallet::value_type& entry, mapWallet)
     {
