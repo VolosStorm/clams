@@ -1304,15 +1304,16 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
     int64_t now = GetTime();
     if (nLastBlockCacheCleanTime < now - nBlockCacheCleanInterval) {
-        LogPrint("stake", "%s:%d cleaning mapBlockCache from size %d %d\n", __FILE__, __LINE__, mapBlockCacheAges.size(), mapBlockCache.size());
+        LogPrint("stake", "%s:%d cleaning mapBlockCache from size %d\n", __FILE__, __LINE__, mapBlockCacheAges.size());
         nLastBlockCacheCleanTime = now;
 
-        BOOST_FOREACH(PAIRTYPE(uint256, int64_t) entry, mapBlockCacheAges)
+        for (auto it = mapBlockCacheAges.cbegin(), next_it = it; it != mapBlockCacheAges.cend(); it = next_it)
         {
-            if (entry.second < now - nBlockCacheMaxAge) {
-                LogPrint("stake", "%s:%d entry %s is too old %d\n", __FILE__, __LINE__, entry.first.GetHex(), now - entry.second);
-                mapBlockCache.erase(entry.first);
-                mapBlockCacheAges.erase(entry.first);
+            ++next_it;
+            if (it->second < now - nBlockCacheMaxAge) {
+                LogPrint("stake", "%s:%d entry %s is too old %d\n", __FILE__, __LINE__, it->first.GetHex(), now - it->second);
+                mapBlockCache.erase(it->first);
+                mapBlockCacheAges.erase(it->first);
             }
         }
     }
