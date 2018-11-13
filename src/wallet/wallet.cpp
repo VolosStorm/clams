@@ -3112,7 +3112,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         }
 
         CBlock block;
-        if (!ReadBlockFromDisk(block, blockFrom, chainParams.GetConsensus()))
+        if (!ReadBlockFromDisk(block, blockFrom, chainParams.GetConsensus(), GetBoolArg("-cacheblocksforstaking", true)))
             return false;
 
 

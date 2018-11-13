@@ -564,7 +564,7 @@ public:
 
 /** Functions for disk access for blocks */
 bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart);
-bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::CParams& consensusParams);
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::CParams& consensusParams, bool fUpdateCache = false);
 
 /** Functions for validating blocks and updating the block tree */
 

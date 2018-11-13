@@ -1287,13 +1287,61 @@ static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Co
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::CParams& consensusParams)
+/* Some blocks contain thousands of small outputs all owned by the
+ * same client, all trying to stake. ReadBlockFromDisk() is called for
+ * each of them and it was re-reading the same block over and
+ * over. These maps cache the block data to save having to repeatedly
+ * read and parse the block data
+ */
+static std::map<uint256, CBlock> mapBlockCache;
+static std::map<uint256, int64_t> mapBlockCacheAges;
+static int nBlockCacheCleanInterval = 60 * 5; // clean block cache every 5 minutes
+static int nBlockCacheMaxAge = 60;            // delete blocks from cache if they weren't accessed in the last minute
+
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::CParams& consensusParams, bool fUpdateCache)
 {
-    if (!ReadCBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
-        return false;
-    if (block.GetHash() != pindex->GetBlockHash())
-        return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
-                pindex->ToString(), pindex->GetBlockPos().ToString());
+    static int64_t nLastBlockCacheCleanTime = 0;
+
+    int64_t now = GetTime();
+    if (nLastBlockCacheCleanTime < now - nBlockCacheCleanInterval) {
+        LogPrint("stake", "%s:%d cleaning mapBlockCache from size %d %d\n", __FILE__, __LINE__, mapBlockCacheAges.size(), mapBlockCache.size());
+        nLastBlockCacheCleanTime = now;
+
+        BOOST_FOREACH(PAIRTYPE(uint256, int64_t) entry, mapBlockCacheAges)
+        {
+            if (entry.second < now - nBlockCacheMaxAge) {
+                LogPrint("stake", "%s:%d entry %s is too old %d\n", __FILE__, __LINE__, entry.first.GetHex(), now - entry.second);
+                mapBlockCache.erase(entry.first);
+                mapBlockCacheAges.erase(entry.first);
+            }
+        }
+    }
+    std::map<uint256, CBlock>::iterator mi;
+
+    // if the block is in the cache, use it and update the timestamp
+    // of when it was last used
+    if (pindex->phashBlock && (mi = mapBlockCache.find(*pindex->phashBlock)) != mapBlockCache.end()) {
+        block = mi->second;
+        mapBlockCacheAges[*pindex->phashBlock] = now;
+    } else {
+        if (!pindex->phashBlock)
+            LogPrint("stake", "%s:%d no phashBlock set\n", __FILE__, __LINE__);
+        else
+            LogPrint("stake", "%s:%d block %s not in map\n", __FILE__, __LINE__, pindex->phashBlock->GetHex());
+
+        if (!ReadCBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
+            return false;
+
+        if (block.GetHash() != pindex->GetBlockHash())
+            return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
+                         pindex->ToString(), pindex->GetBlockPos().ToString());
+
+        if (fUpdateCache) {
+            mapBlockCache[*pindex->phashBlock] = block;
+            mapBlockCacheAges[*pindex->phashBlock] = now;
+        }
+    }
+
     return true;
 }
 
