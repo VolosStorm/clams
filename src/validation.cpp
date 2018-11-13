@@ -1304,14 +1304,14 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
     int64_t now = GetTime();
     if (nLastBlockCacheCleanTime < now - nBlockCacheCleanInterval) {
-        LogPrint("stake", "%s:%d cleaning mapBlockCache from size %d\n", __FILE__, __LINE__, mapBlockCacheAges.size());
+        LogPrint("cache", "%s:%d cleaning mapBlockCache from size %d\n", __FILE__, __LINE__, mapBlockCacheAges.size());
         nLastBlockCacheCleanTime = now;
 
         for (auto it = mapBlockCacheAges.cbegin(), next_it = it; it != mapBlockCacheAges.cend(); it = next_it)
         {
             ++next_it;
             if (it->second < now - nBlockCacheMaxAge) {
-                LogPrint("stake", "%s:%d entry %s is too old %d\n", __FILE__, __LINE__, it->first.GetHex(), now - it->second);
+                LogPrint("cache", "%s:%d entry %s is too old %d\n", __FILE__, __LINE__, it->first.GetHex(), now - it->second);
                 mapBlockCache.erase(it->first);
                 mapBlockCacheAges.erase(it->first);
             }
@@ -1326,9 +1326,9 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
         mapBlockCacheAges[*pindex->phashBlock] = now;
     } else {
         if (!pindex->phashBlock)
-            LogPrint("stake", "%s:%d no phashBlock set\n", __FILE__, __LINE__);
+            LogPrint("cache", "%s:%d no phashBlock set\n", __FILE__, __LINE__);
         else
-            LogPrint("stake", "%s:%d block %s not in map\n", __FILE__, __LINE__, pindex->phashBlock->GetHex());
+            LogPrint("cache", "%s:%d block %s not in map\n", __FILE__, __LINE__, pindex->phashBlock->GetHex());
 
         if (!ReadCBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
             return false;
