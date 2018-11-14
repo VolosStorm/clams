@@ -1338,6 +1338,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
                          pindex->ToString(), pindex->GetBlockPos().ToString());
 
         if (fUpdateCache) {
+            LogPrint("cache", "%s:%d inserting block %s into map\n", __FILE__, __LINE__, pindex->phashBlock->GetHex());
             mapBlockCache[*pindex->phashBlock] = block;
             mapBlockCacheAges[*pindex->phashBlock] = now;
         }
