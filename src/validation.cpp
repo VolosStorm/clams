@@ -1296,7 +1296,7 @@ static bool ReadCBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Co
 static std::map<uint256, CBlock> mapBlockCache;
 static std::map<uint256, int64_t> mapBlockCacheAges;
 static int nBlockCacheCleanInterval = 60 * 5; // clean block cache every 5 minutes
-static int nBlockCacheMaxAge = 60;            // delete blocks from cache if they weren't accessed in the last minute
+static int nBlockCacheMaxAge        = 60 * 2; // delete blocks from cache if they weren't accessed in the last 2 minutes
 
 bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::CParams& consensusParams, bool fUpdateCache)
 {
