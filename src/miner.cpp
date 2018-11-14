@@ -878,7 +878,9 @@ void ThreadStakeMiner(CWallet *pwallet)
         while (pwallet->IsLocked())
         {
             nLastCoinStakeSearchInterval = 0;
+            LogPrint("minerdebug", "%s:%d before sleep\n", __FILE__, __LINE__);
             MilliSleep(10000);
+            LogPrint("minerdebug", "%s:%d after sleep\n", __FILE__, __LINE__);
         }
         
         //don't disable PoS mining for no connections if in regtest mode
@@ -886,14 +888,18 @@ void ThreadStakeMiner(CWallet *pwallet)
             while (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 || IsInitialBlockDownload()) {
                 nLastCoinStakeSearchInterval = 0;
                 fTryToSync = true;
+                LogPrint("minerdebug", "%s:%d before sleep\n", __FILE__, __LINE__);
                 MilliSleep(1000);
+                LogPrint("minerdebug", "%s:%d after sleep\n", __FILE__, __LINE__);
             }
             if (fTryToSync) {
                 fTryToSync = false;
                 if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) < 3 ||
                     chainActive.Tip()->GetBlockTime() < GetTime() - 10 * 60) {
                     LogPrintf("sleeping 5 seconds before staking\n");
+                    LogPrint("minerdebug", "%s:%d before sleep\n", __FILE__, __LINE__);
                     MilliSleep(5000);
+                    LogPrint("minerdebug", "%s:%d after sleep\n", __FILE__, __LINE__);
                     continue;
                 }
             }
@@ -902,8 +908,10 @@ void ThreadStakeMiner(CWallet *pwallet)
         //
         // Create new block
         //
+        LogPrint("minerdebug", "%s:%d before HaveAvailableCoinsForStaking\n", __FILE__, __LINE__);
         if(pwallet->HaveAvailableCoinsForStaking())
         {
+            LogPrint("minerdebug", "%s:%d after HaveAvailableCoinsForStaking\n", __FILE__, __LINE__);
             int64_t nTotalFees = 0;
             // First just create an empty block. No need to process transactions until we know we can create a block
             std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateEmptyBlock(reservekey.reserveScript, true, &nTotalFees));
@@ -940,7 +948,9 @@ void ThreadStakeMiner(CWallet *pwallet)
                 }
                 // Sign the full block and use the timestamp from earlier for a valid stake
                 std::shared_ptr<CBlock> pblockfilled = std::make_shared<CBlock>(pblocktemplatefilled->block);
+                LogPrint("minerdebug", "%s:%d before SignBlock\n", __FILE__, __LINE__);
                 if (SignBlock(pblockfilled, *pwallet, nTotalFees, i)) {
+                    LogPrint("minerdebug", "%s:%d after SignBlock\n", __FILE__, __LINE__);
                     // CheckStake also does CheckBlock and AcceptBlock to propogate it to the network
                     bool validBlock = false;
                     while(!validBlock) {
@@ -960,10 +970,14 @@ void ThreadStakeMiner(CWallet *pwallet)
                                 //if being agressive, then check more often to publish immediately when valid. This might allow you to find more blocks, 
                                 //but also increases the chance of broadcasting invalid blocks and getting DoS banned by nodes,
                                 //or receiving more stale/orphan blocks than normal. Use at your own risk.
+                                LogPrint("minerdebug", "%s:%d before sleep\n", __FILE__, __LINE__);
                                 MilliSleep(100);
+                                LogPrint("minerdebug", "%s:%d after sleep\n", __FILE__, __LINE__);
                             }else{
                                 //too early, so wait 3 seconds and try again
+                                LogPrint("minerdebug", "%s:%d before sleep\n", __FILE__, __LINE__);
                                 MilliSleep(3000);
+                                LogPrint("minerdebug", "%s:%d after sleep\n", __FILE__, __LINE__);
                             }
                             continue;
                         }
@@ -975,12 +989,18 @@ void ThreadStakeMiner(CWallet *pwallet)
                         nLastCoinStakeSearchTime = pblockfilled->GetBlockTime();
                     }
                     break;
+                } else {
+                    LogPrint("minerdebug", "%s:%d after SignBlock\n", __FILE__, __LINE__);
                 }
             }
-        } else
+        } else {
+            LogPrint("minerdebug", "%s:%d after HaveAvailableCoinsForStaking\n", __FILE__, __LINE__);
             LogPrint("miner", "!HaveAvailableCoinsForStaking()\n");
+        }
 
+        LogPrint("minerdebug", "%s:%d before sleep %d\n", __FILE__, __LINE__, nMinerSleep);
         MilliSleep(nMinerSleep);
+        LogPrint("minerdebug", "%s:%d after sleep\n", __FILE__, __LINE__);
     }
 }
 
