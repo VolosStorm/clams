@@ -814,8 +814,23 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
         return error("CheckStake() : proof-of-stake checking failed");
     }
 
+    std::string sPrevStakeBlockHash;
+    std::map<uint256, CWalletTx>::const_iterator mit;
+    if ((mit = wallet.mapWallet.find(pblock->vtx[1]->vin[0].prevout.hash)) != wallet.mapWallet.end()) {
+        if (!mit->second.hashUnset()) {
+            BlockMap::iterator mi = mapBlockIndex.find(mit->second.hashBlock);
+            if (mi != mapBlockIndex.end())
+                sPrevStakeBlockHash = mi->second->phashBlock->GetHex();
+            else
+                sPrevStakeBlockHash = _("can't find block containing staking tx");
+        } else
+            sPrevStakeBlockHash = _("hashblock is unset");
+    } else
+        sPrevStakeBlockHash = _("can't find staking tx in wallet");
+
     //// debug print
-    LogPrintf("CheckStake() : new proof-of-stake block found:\n\n       hash: %72s\n     target: %72s\n  proofhash: %72s\n        out: %-72s\n\n%s",
+    LogPrintf("CheckStake() : new proof-of-stake block found:\n\n      block: %72s\n       hash: %72s\n     target: %72s\n  proofhash: %72s\n        out: %-72s\n\n%s",
+              sPrevStakeBlockHash,
               hashBlock.GetHex(), // hash
               bnHashTarget.GetHex(), // target
               proofHash.GetHex(), // proofhash
