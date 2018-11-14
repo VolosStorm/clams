@@ -2183,7 +2183,7 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
     }
 }
 
-void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins) const
+void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins, bool fThereCanBeOnlyOne) const
 {
     vCoins.clear();
 
@@ -2214,6 +2214,8 @@ void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins) const
                                                  ((mine & ISMINE_SPENDABLE) != ISMINE_NO) ||
                                                  (mine & ISMINE_WATCH_SOLVABLE) != ISMINE_NO,
                                                  (mine & (ISMINE_SPENDABLE | ISMINE_WATCH_SOLVABLE)) != ISMINE_NO));
+                    if (fThereCanBeOnlyOne)
+                        return;
                 }
             }
 
@@ -2225,9 +2227,19 @@ void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins) const
 
 bool CWallet::HaveAvailableCoinsForStaking() const
 {
+    const int      nCheckInterval = 60;
+    static int64_t nLastCheckTime;
+    static bool    nLastResult;
     vector<COutput> vCoins;
-    AvailableCoinsForStaking(vCoins);
-    return vCoins.size() > 0;
+    int64_t now = GetTime();
+
+    if (nLastCheckTime < now - nCheckInterval) {
+        AvailableCoinsForStaking(vCoins, true);
+        nLastResult = vCoins.size() > 0;
+        nLastCheckTime = now;
+    }
+
+    return nLastResult;
 }
 
 static void ApproximateBestSubset(vector<pair<CAmount, pair<const CWalletTx*,unsigned int> > >vValue, const CAmount& nTotalLower, const CAmount& nTargetValue,
