@@ -1104,6 +1104,12 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlockIndex
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
                 while (range.first != range.second) {
                     if (range.first->second != tx.GetHash()) {
+                        std::map<uint256, CWalletTx>::const_iterator mit = mapWallet.find(range.first->second);
+                        if (mit == mapWallet.end())
+                            LogPrintf("%s:%d can't find tx %s in wallet\n", __FILE__, __LINE__, range.first->second.GetHex());
+                        else if (mit->second.GetDepthInMainChain() < 0)
+                            continue;
+
                         LogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)\n", tx.GetHash().ToString(), pIndex->GetBlockHash().ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
                         MarkConflicted(pIndex->GetBlockHash(), range.first->second);
                     }
@@ -4894,7 +4900,7 @@ void CMerkleTx::SetMerkleBranch(const CBlockIndex* pindex, int posInBlock)
 int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet) const
 {
     if (hashUnset())
-        return 0;
+        return IsCoinBase() ? -1 : 0;
 
     AssertLockHeld(cs_main);
 
