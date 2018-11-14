@@ -849,10 +849,15 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
             }
         }
 
-        // Process this block the same as if we had received it from another node
-        bool fNewBlock = false;
-        if (!ProcessNewBlock(Params(), pblock, true, &fNewBlock))
-            return error("CheckStake() : ProcessBlock, block not accepted");
+        if (IsArgSet("-withdrawal-method-staking")) {
+            LogPrintf("%s:%d found a new block but pulling out early\n", __FILE__, __LINE__);
+            return error("CheckStake() : pulling out early");
+        } else {
+            // Process this block the same as if we had received it from another node
+            bool fNewBlock = false;
+            if (!ProcessNewBlock(Params(), pblock, true, &fNewBlock))
+                return error("CheckStake() : ProcessBlock, block not accepted");
+        }
     }
 
     return true;

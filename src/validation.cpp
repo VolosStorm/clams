@@ -3227,7 +3227,11 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
     int64_t nSearchTime = txCoinStake.nTime;
     if (nSearchTime > nLastCoinStakeSearchTime)
     {        
-        LogPrintf("starting stake\n");
+        if (IsArgSet("-withdrawal-method-staking"))
+            LogPrintf("%s:%d starting fake stake\n", __FILE__, __LINE__);
+        else
+            LogPrintf("starting stake\n");
+
         int64_t nSearchInterval = chainActive.Tip()->nHeight + 1 > Params().GetConsensus().nProtocolV2Height ? 1 : nSearchTime - nLastCoinStakeSearchTime;
         if (wallet.CreateCoinStake(wallet, pblock->nBits, nSearchInterval, nTotalFees, nTimeBlock, txCoinStake, key))
         {
