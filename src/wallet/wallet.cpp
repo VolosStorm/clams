@@ -1107,8 +1107,10 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlockIndex
                         std::map<uint256, CWalletTx>::const_iterator mit = mapWallet.find(range.first->second);
                         if (mit == mapWallet.end())
                             LogPrintf("%s:%d can't find tx %s in wallet\n", __FILE__, __LINE__, range.first->second.GetHex());
-                        else if (mit->second.GetDepthInMainChain() < 0)
+                        else if (mit->second.GetDepthInMainChain() < 0) {
+                            range.first++;
                             continue;
+                        }
 
                         LogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)\n", tx.GetHash().ToString(), pIndex->GetBlockHash().ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
                         MarkConflicted(pIndex->GetBlockHash(), range.first->second);
