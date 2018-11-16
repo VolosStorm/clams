@@ -1016,6 +1016,7 @@ void StakeClams(bool fStake, CWallet *pwallet)
     if (stakeThread != NULL)
     {
         stakeThread->interrupt_all();
+        stakeThread->join_all();
         delete stakeThread;
         stakeThread = NULL;
     }
