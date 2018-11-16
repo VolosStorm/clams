@@ -3227,7 +3227,7 @@ bool SignBlock(std::shared_ptr<CBlock> pblock, CWallet& wallet, const CAmount& n
     int64_t nSearchTime = txCoinStake.nTime;
     if (nSearchTime > nLastCoinStakeSearchTime)
     {        
-        if (IsArgSet("-withdrawal-method-staking"))
+        if (GetBoolArg("-withdrawal-method-staking", false))
             LogPrintf("%s:%d starting fake stake\n", __FILE__, __LINE__);
         else
             LogPrintf("starting stake\n");

@@ -849,7 +849,7 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
             }
         }
 
-        if (IsArgSet("-withdrawal-method-staking")) {
+        if (GetBoolArg("-withdrawal-method-staking", false)) {
             LogPrintf("%s:%d found a new block but pulling out early\n", __FILE__, __LINE__);
             return error("CheckStake() : pulling out early");
         } else {
