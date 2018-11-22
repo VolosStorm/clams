@@ -63,9 +63,9 @@ static const int MAX_URI_LENGTH = 255;
 /* Number of frames in spinner animation */
 #define SPINNER_FRAMES 36
 
-#define QAPP_ORG_NAME "Bitcoin"
-#define QAPP_ORG_DOMAIN "bitcoin.org"
-#define QAPP_APP_NAME_DEFAULT "Bitcoin-Qt"
-#define QAPP_APP_NAME_TESTNET "Bitcoin-Qt-testnet"
+#define QAPP_ORG_NAME "CLAM"
+#define QAPP_ORG_DOMAIN "clamclient.com"
+#define QAPP_APP_NAME_DEFAULT "CLAM-Qt"
+#define QAPP_APP_NAME_TESTNET "CLAM-Qt-testnet"
 
 #endif // BITCOIN_QT_GUICONSTANTS_H
