@@ -11,7 +11,7 @@
   </array>
 
   <key>CFBundleIconFile</key>
-  <string>bitcoin.icns</string>
+  <string>clam.icns</string>
 
   <key>CFBundlePackageType</key>
   <string>APPL</string>
@@ -29,10 +29,10 @@
   <string>????</string>
 
   <key>CFBundleExecutable</key>
-  <string>Bitcoin-Qt</string>
+  <string>CLAM-Qt</string>
   
   <key>CFBundleName</key>
-  <string>Bitcoin-Qt</string>
+  <string>CLAM-Qt</string>
 
   <key>LSHasLocalizedDisplayName</key>
   <true/>
@@ -49,7 +49,7 @@
       <string>org.bitcoin.BitcoinPayment</string>
       <key>CFBundleURLSchemes</key>
       <array>
-        <string>bitcoin</string>
+        <string>CLAM</string>
       </array>
     </dict>
   </array>
@@ -60,7 +60,7 @@
       <key>UTTypeIdentifier</key>
       <string>org.bitcoin.paymentrequest</string>
       <key>UTTypeDescription</key>
-      <string>Bitcoin payment request</string>
+      <string>CLAM payment request</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>

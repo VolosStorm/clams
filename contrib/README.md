@@ -22,14 +22,14 @@ Build Tools and Keys
 ---------------------
 
 ### [Debian](/contrib/debian) ###
-Contains files used to package bitcoind/bitcoin-qt
-for Debian-based Linux systems. If you compile bitcoind/bitcoin-qt yourself, there are some useful files here.
+Contains files used to package clamd/clam-qt
+for Debian-based Linux systems. If you compile clamd/clam-qt yourself, there are some useful files here.
 
 ### [Gitian-descriptors](/contrib/gitian-descriptors) ###
 Notes on getting Gitian builds up and running using KVM.
 
 ### [Gitian-keys](/contrib/gitian-keys)
-PGP keys used for signing Bitcoin Core [Gitian release](/doc/release-process.md) results.
+PGP keys used for signing CLAM [Gitian release](/doc/release-process.md) results.
 
 ### [MacDeploy](/contrib/macdeploy) ###
 Scripts and notes for Mac builds. 
