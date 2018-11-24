@@ -552,7 +552,7 @@ UniValue decoderawtransaction(const JSONRPCRequest& request)
             "         \"reqSigs\" : n,            (numeric) The required sigs\n"
             "         \"type\" : \"pubkeyhash\",  (string) The type, eg 'pubkeyhash'\n"
             "         \"addresses\" : [           (json array of string)\n"
-            "           \"12tvKAXCxZjSmdNbao16dKXC8tRWfcF5oc\"   (string) CLAM address\n"
+            "           \"xGB5wLT5J5hEwYfhEteRc1wLKEeBWtL2Bf\"   (string) CLAM address\n"
             "           ,...\n"
             "         ]\n"
             "       }\n"
