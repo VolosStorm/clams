@@ -369,7 +369,7 @@ static void SendMoney(const CTxDestination &address, CAmount nValue, int64_t nCo
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
 
-    // Parse Bitcoin address
+    // Parse CLAM address
     CScript scriptPubKey = GetScriptForDestination(address);
 
     // Create and send the transaction
@@ -616,7 +616,7 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
-    // Bitcoin address
+    // CLAM address
     CBitcoinAddress address = CBitcoinAddress(request.params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid CLAM address");
@@ -1278,7 +1278,7 @@ UniValue getstakedbyaddress(const JSONRPCRequest& request)
             "getstakedbyaddress <clamaddress|*> [minconf=1]\n"
             "Returns the total reward (including fees) earned from staking by <clamaddress> with at least [minconf] confirmations.");
 
-    // Bitcoin address
+    // CLAM address
     string strAddressParam = request.params[0].get_str();
     bool fAllAddresses = (strAddressParam == "*");
     CBitcoinAddress address;

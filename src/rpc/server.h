@@ -145,7 +145,7 @@ public:
 };
 
 /**
- * Bitcoin RPC command dispatcher.
+ * CLAM RPC command dispatcher.
  */
 class CRPCTable
 {
