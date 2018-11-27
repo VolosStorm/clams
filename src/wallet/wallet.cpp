@@ -2733,7 +2733,8 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                                 strFailReason = _("The transaction amount is too small to send after the fee has been deducted");
                         }
                         else
-                            strFailReason = _("Transaction amount too small");
+                            strFailReason = strprintf(_("Transaction amount too small (%s < %s)"),
+                                                      FormatMoney(txout.nValue), FormatMoney(txout.GetDustThreshold(dustRelayFee)));
                         return false;
                     }
                     txNew.vout.push_back(txout);
