@@ -309,7 +309,7 @@ Clone the git repositories for CLAM and Gitian.
 
 ```bash
 git clone https://github.com/devrandom/gitian-builder.git
-git clone https://github.com/nochowderforyou/clamd
+git clone https://github.com/nochowderforyou/clams
 git clone https://github.com/nochowderforyou/gitian.sigs.git
 ```
 
@@ -362,7 +362,7 @@ tail -f var/build.log
 
 Output from `gbuild` will look something like
 
-    Initialized empty Git repository in /home/debian/gitian-builder/inputs/clam/.git/
+    Initialized empty Git repository in /home/debian/gitian-builder/inputs/clams/.git/
     remote: Counting objects: 57959, done.
     remote: Total 57959 (delta 0), reused 0 (delta 0), pack-reused 57958
     Receiving objects: 100% (57959/57959), 53.76 MiB | 484.00 KiB/s, done.
@@ -395,9 +395,9 @@ For example:
 ```bash
 URL=https://github.com/laanwj/bitcoin.git
 COMMIT=2014_03_windows_unicode_path
-./bin/gbuild --commit clam=${COMMIT} --url clam=${URL} ../clam/contrib/gitian-descriptors/gitian-linux.yml
-./bin/gbuild --commit clam=${COMMIT} --url clam=${URL} ../clam/contrib/gitian-descriptors/gitian-win.yml
-./bin/gbuild --commit clam=${COMMIT} --url clam=${URL} ../clam/contrib/gitian-descriptors/gitian-osx.yml
+./bin/gbuild --commit clams=${COMMIT} --url clams=${URL} ../clams/contrib/gitian-descriptors/gitian-linux.yml
+./bin/gbuild --commit clams=${COMMIT} --url clams=${URL} ../clams/contrib/gitian-descriptors/gitian-win.yml
+./bin/gbuild --commit clams=${COMMIT} --url clams=${URL} ../clams/contrib/gitian-descriptors/gitian-osx.yml
 ```
 
 Building fully offline
@@ -423,7 +423,7 @@ cd /path/to/gitian-builder
 LXC_ARCH=amd64 LXC_SUITE=trusty on-target -u root apt-get update
 LXC_ARCH=amd64 LXC_SUITE=trusty on-target -u root \
   -e DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends -y install \
-  $( sed -ne '/^packages:/,/[^-] .*/ {/^- .*/{s/"//g;s/- //;p}}' ../clam/contrib/gitian-descriptors/*|sort|uniq )
+  $( sed -ne '/^packages:/,/[^-] .*/ {/^- .*/{s/"//g;s/- //;p}}' ../clams/contrib/gitian-descriptors/*|sort|uniq )
 LXC_ARCH=amd64 LXC_SUITE=trusty on-target -u root apt-get -q -y purge grub
 LXC_ARCH=amd64 LXC_SUITE=trusty on-target -u root -e DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade
 ```
@@ -445,10 +445,10 @@ Then when building, override the remote URLs that gbuild would otherwise pull fr
 cd /some/root/path/
 git clone https://github.com/nowochowderforyou/bitcoin-detached-sigs.git
 
-BTCPATH=/some/root/path/clam
-SIGPATH=/some/root/path/clam-detached-sigs
+BTCPATH=/some/root/path/clams
+SIGPATH=/some/root/path/clams-detached-sigs
 
-./bin/gbuild --url clam=${BTCPATH},signature=${SIGPATH} ../clam/contrib/gitian-descriptors/gitian-win-signer.yml
+./bin/gbuild --url clams=${BTCPATH},signature=${SIGPATH} ../clams/contrib/gitian-descriptors/gitian-win-signer.yml
 ```
 
 Signing externally
