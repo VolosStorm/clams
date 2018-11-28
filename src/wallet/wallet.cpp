@@ -3410,7 +3410,7 @@ string CWallet::SendCLAMSpeech(CWalletTx& wtxNew, string clamSpeech, string pref
 
     if (IsLocked())
     {
-        string strError = _("Error: Wallet locked, unable to create norary transaction!");
+        string strError = _("Error: Wallet locked, unable to create notary transaction!");
         LogPrintf("SendNotary() : %s", strError);
         return strError;
     }
