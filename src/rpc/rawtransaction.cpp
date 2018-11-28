@@ -952,6 +952,8 @@ UniValue sendrawtransaction(const JSONRPCRequest& request)
         fHaveChain = !existingCoin.IsSpent();
     }
     bool fHaveMempool = mempool.exists(hashTx);
+    if (GetBoolArg("-prevent-spending", false))
+        throw JSONRPCError(RPC_TRANSACTION_ERROR, "prevent-spending is set sendrawtransaction()");
     if (!fHaveMempool && !fHaveChain) {
         // push to local node and sync with wallets
         CValidationState state;

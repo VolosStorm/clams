@@ -356,6 +356,8 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QString &clamspeech, W
 
         CReserveKey *keyChange = transaction.getPossibleKeyChange();
         CValidationState state;
+        if (GetBoolArg("-prevent-spending", false))
+            return SendCoinsReturn(TransactionCommitFailed, "not sending because prevent-spending is set in SendCoinsReturn()");
         if(!wallet->CommitTransaction(*newTx, *keyChange, g_connman.get(), state))
             return SendCoinsReturn(TransactionCommitFailed, QString::fromStdString(state.GetRejectReason()));
 
