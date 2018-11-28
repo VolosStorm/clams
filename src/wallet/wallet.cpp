@@ -3388,7 +3388,6 @@ string CWallet::SendCLAMSpeech(CWalletTx& wtxNew, string clamSpeech, string pref
         uint256 hash;
         hash.SetHex(clamSpeech);
         clamSpeech = "notary " + hash.GetHex();
-
     } 
     else if (prefix == "clamour") 
     {
