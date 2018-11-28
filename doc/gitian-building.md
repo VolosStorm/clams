@@ -443,10 +443,10 @@ Then when building, override the remote URLs that gbuild would otherwise pull fr
 ```bash
 
 cd /some/root/path/
-git clone https://github.com/nowochowderforyou/bitcoin-detached-sigs.git
+git clone https://github.com/nowochowderforyou/clam-detached-sigs.git
 
 BTCPATH=/some/root/path/clams
-SIGPATH=/some/root/path/clams-detached-sigs
+SIGPATH=/some/root/path/clam-detached-sigs
 
 ./bin/gbuild --url clams=${BTCPATH},signature=${SIGPATH} ../clams/contrib/gitian-descriptors/gitian-win-signer.yml
 ```
