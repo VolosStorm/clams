@@ -3493,7 +3493,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::C
     }
 
     // Check transactions
-    for (const auto& tx : block.vtx)
+    for (const auto& tx : block.vtx) {
         if (!CheckTransaction(*tx, state, true))
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
@@ -4655,7 +4655,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     LogPrint("reindex", "Block Import: already had block %s at height %d\n", hash.ToString(), mapBlockIndex[hash]->nHeight);
                 }
 
-                // In Bitcoin this only needed to be done for genesis and at the end of block indexing
+                // In CLAM this only needed to be done for genesis and at the end of block indexing
                 // But for Clam PoS we need to sync this after every block to ensure txdb is populated for
                 // validating PoS proofs
                 {

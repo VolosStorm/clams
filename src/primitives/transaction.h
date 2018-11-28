@@ -203,7 +203,7 @@ public:
             nSize += (32 + 4 + 1 + 107 + 4); // the 148 mentioned above
         }
 
-        return 3 * minRelayTxFee.GetFee(nSize);
+        return minRelayTxFee.GetFee(3 * nSize, false); // don't round up to multiples of 1000 bytes because dust outputs can be combined later
     }
 
     bool IsDust(const CFeeRate &minRelayTxFee) const

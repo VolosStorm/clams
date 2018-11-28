@@ -146,7 +146,7 @@ bool ShutdownRequested()
 /**
  * This is a minimally invasive approach to shutdown on LevelDB read errors from the
  * chainstate, while keeping user interface out of the common library, which is shared
- * between bitcoind, and bitcoin-qt and non-server tools.
+ * between clamd, and clam-qt and non-server tools.
 */
 class CCoinsViewErrorCatcher : public CCoinsViewBacked
 {
@@ -685,7 +685,7 @@ void ThreadImport(std::vector<boost::filesystem::path> vImportFiles)
 }
 
 /** Sanity checks
- *  Ensure that Bitcoin is running in a usable environment with all
+ *  Ensure that CLAM is running in a usable environment with all
  *  necessary library support.
  */
 bool InitSanityCheck(void)
@@ -1121,7 +1121,7 @@ static bool LockDataDirectory(bool probeOnly)
 {
     std::string strDataDir = GetDataDir().string();
 
-    // Make sure only a single Bitcoin process is using the data directory.
+    // Make sure only a single CLAM process is using the data directory.
     boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
     FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.
     if (file) fclose(file);
