@@ -1904,6 +1904,56 @@ UniValue listtransactions(const JSONRPCRequest& request)
     return ret;
 }
 
+UniValue listbalances(const JSONRPCRequest& request)
+{
+    if (!EnsureWalletIsAvailable(request.fHelp))
+        return NullUniValue;
+
+    if (request.fHelp || request.params.size() > 3)
+        throw runtime_error(
+            "listbalances [minconf=1] [maxconf=9999999] [mature=1]\n"
+            "Returns Object that has addresses as keys, address balances as values.");
+
+    LOCK2(cs_main, pwalletMain->cs_wallet);
+
+    int nMinDepth = 1;
+    if (request.params.size() > 0)
+        nMinDepth = request.params[0].get_int();
+
+    int nMaxDepth = 9999999;
+    if (request.params.size() > 1)
+        nMaxDepth = request.params[1].get_int();
+
+    bool fMature = true;
+    if (request.params.size() > 2)
+        fMature = (request.params[2].get_int() != 0);
+
+    map<string, int64_t> mapAddressBalances;
+    vector<COutput> vecOutputs;
+    pwalletMain->AvailableCoins(vecOutputs, false, NULL, fMature);
+
+    BOOST_FOREACH(const COutput& out, vecOutputs) {
+        if (out.nDepth < nMinDepth || out.nDepth > nMaxDepth)
+            continue;
+
+        int64_t nValue = out.tx->tx->vout[out.i].nValue;
+        CTxDestination address;
+        if (ExtractDestination(out.tx->tx->vout[out.i].scriptPubKey, address)) {
+            string sAddress(CBitcoinAddress(address).ToString());
+            if (mapAddressBalances.count(sAddress) == 0)
+                mapAddressBalances[sAddress] = nValue;
+            else
+                mapAddressBalances[sAddress] += nValue;
+        }
+    }
+
+    UniValue ret(UniValue::VOBJ);
+    BOOST_FOREACH(const PAIRTYPE(string, int64_t)& addressBalance, mapAddressBalances)
+        ret.push_back(Pair(addressBalance.first, ValueFromAmount(addressBalance.second)));
+
+    return ret;
+}
+
 UniValue listaccounts(const JSONRPCRequest& request)
 {
     if (!EnsureWalletIsAvailable(request.fHelp))
@@ -3595,7 +3645,7 @@ extern UniValue importprivkey(const JSONRPCRequest& request);
 extern UniValue importaddress(const JSONRPCRequest& request);
 extern UniValue importpubkey(const JSONRPCRequest& request);
 extern UniValue dumpwallet(const JSONRPCRequest& request);
-extern UniValue importwallet(const JSONRPCRequest& request);
+extern UniValue importwalletdump(const JSONRPCRequest& request);
 extern UniValue importprunedfunds(const JSONRPCRequest& request);
 extern UniValue removeprunedfunds(const JSONRPCRequest& request);
 extern UniValue importmulti(const JSONRPCRequest& request);
@@ -3632,11 +3682,12 @@ static const CRPCCommand commands[] =
     { "wallet",             "getwalletinfo",            &getwalletinfo,            false,  {} },
     { "wallet",             "importmulti",              &importmulti,              true,   {"requests","options"} },
     { "wallet",             "importprivkey",            &importprivkey,            true,   {"privkey","label","rescan"} },
-    { "wallet",             "importwallet",             &importwallet,             true,   {"filename"} },
+    { "wallet",             "importwalletdump",         &importwalletdump,         true,   {"filename"} },
     { "wallet",             "importaddress",            &importaddress,            true,   {"address","label","rescan","p2sh"} },
     { "wallet",             "importprunedfunds",        &importprunedfunds,        true,   {"rawtransaction","txoutproof"} },
     { "wallet",             "importpubkey",             &importpubkey,             true,   {"pubkey","label","rescan"} },
     { "wallet",             "keypoolrefill",            &keypoolrefill,            true,   {"newsize"} },
+    { "wallet",             "listbalances",             &listbalances,             false,  {"minconf", "maxconf", "mature"} },
     { "wallet",             "listaccounts",             &listaccounts,             false,  {"minconf","include_watchonly"} },
     { "wallet",             "listaddressgroupings",     &listaddressgroupings,     false,  {} },
     { "wallet",             "listlockunspent",          &listlockunspent,          false,  {} },

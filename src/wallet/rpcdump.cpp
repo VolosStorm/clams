@@ -408,14 +408,14 @@ UniValue importpubkey(const JSONRPCRequest& request)
 }
 
 
-UniValue importwallet(const JSONRPCRequest& request)
+UniValue importwalletdump(const JSONRPCRequest& request)
 {
     if (!EnsureWalletIsAvailable(request.fHelp))
         return NullUniValue;
     
     if (request.fHelp || request.params.size() != 1)
         throw runtime_error(
-            "importwallet \"filename\"\n"
+            "importwalletdump \"filename\"\n"
             "\nImports keys from a wallet dump file (see dumpwallet).\n"
             "\nArguments:\n"
             "1. \"filename\"    (string, required) The wallet file\n"
@@ -423,9 +423,9 @@ UniValue importwallet(const JSONRPCRequest& request)
             "\nDump the wallet\n"
             + HelpExampleCli("dumpwallet", "\"test\"") +
             "\nImport the wallet\n"
-            + HelpExampleCli("importwallet", "\"test\"") +
+            + HelpExampleCli("importwalletdump", "\"test\"") +
             "\nImport using the json rpc call\n"
-            + HelpExampleRpc("importwallet", "\"test\"")
+            + HelpExampleRpc("importwalletdump", "\"test\"")
         );
 
     if (fPruneMode)
