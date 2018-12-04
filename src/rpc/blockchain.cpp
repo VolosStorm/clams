@@ -1623,10 +1623,10 @@ static const CRPCCommand commands[] =
     { "blockchain",         "dumpbootstrap",          &dumpbootstrap,          true,  {"destination", "endblock", "startblock"} },
 
     { "blockchain",         "preciousblock",          &preciousblock,          true,  {"blockhash"} },
+    { "blockchain",         "invalidateblock",        &invalidateblock,        true,  {"blockhash"} },
+    { "blockchain",         "reconsiderblock",        &reconsiderblock,        true,  {"blockhash"} },
 
     /* Not shown in help */
-    { "hidden",             "invalidateblock",        &invalidateblock,        true,  {"blockhash"} },
-    { "hidden",             "reconsiderblock",        &reconsiderblock,        true,  {"blockhash"} },
     { "hidden",             "waitfornewblock",        &waitfornewblock,        true,  {"timeout"} },
     { "hidden",             "waitforblock",           &waitforblock,           true,  {"blockhash","timeout"} },
     { "hidden",             "waitforblockheight",     &waitforblockheight,     true,  {"height","timeout"} },
