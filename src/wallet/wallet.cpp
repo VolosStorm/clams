@@ -2689,6 +2689,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
         set<pair<const CWalletTx*,unsigned int> > setCoins;
         vector<pair<const CWalletTx*,unsigned int>> vCoins;
         LOCK2(cs_main, cs_wallet);
+        unsigned int nBytes;
         {
             std::vector<COutput> vAvailableCoins;
             AvailableCoins(vAvailableCoins, true, coinControl);
@@ -2888,7 +2889,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                     return false;
                 }
 
-                unsigned int nBytes = GetVirtualTransactionSize(txNew);
+                nBytes = GetVirtualTransactionSize(txNew);
 
                 CTransaction txNewConst(txNew);
                 dPriority = txNewConst.ComputePriority(dPriority, nBytes);
@@ -2955,6 +2956,13 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 nFeeRet = nFeeNeeded;
                 continue;
             }
+        }
+
+        // check size limit before signing all the inputs because signing is relatively slow
+        if (nBytes * WITNESS_SCALE_FACTOR >= MAX_STANDARD_TX_WEIGHT)
+        {
+            strFailReason = _("Transaction too large");
+            return false;
         }
 
         if (sign)
