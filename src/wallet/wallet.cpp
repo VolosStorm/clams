@@ -62,6 +62,7 @@ int64_t nMaxStakeValue;
 int64_t nSplitSize;
 int64_t nCombineLimit;
 bool fCombineAny;
+bool fCreditStakesToAccounts;
 
 vector<CKeyID> vChangeAddresses;
 bool fStakeTo = false, fRewardTo = false;
@@ -4678,6 +4679,7 @@ bool CWallet::ParameterInteraction()
     if (IsArgSet("-combineany")) {
         fCombineAny    = GetBoolArg( "-combineany",    false );
     } 
+    fCreditStakesToAccounts = GetBoolArg( "-creditstakestoaccounts", false);
     if (IsArgSet("-mininput")) {
         if (GetArg("-mininput", "").substr(0, 1) == "-") {
             int64_t value;

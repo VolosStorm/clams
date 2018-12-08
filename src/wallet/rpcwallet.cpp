@@ -38,6 +38,7 @@ extern CKeyID rewardtokeyID;
 extern bool fStakeTo;
 extern bool fRewardTo;
 extern bool fCombineAny;
+extern bool fCreditStakesToAccounts;
 
 std::string HelpRequiringPassphrase()
 {
@@ -2005,11 +2006,28 @@ UniValue listaccounts(const JSONRPCRequest& request)
         string strSentAccount;
         list<COutputEntry> listReceived;
         list<COutputEntry> listSent;
+        CTxDestination td;
         int nDepth = wtx.GetDepthInMainChain();
         if (wtx.GetBlocksToMaturity() > 0 || nDepth < 0)
             continue;
         wtx.GetAmounts(listReceived, listSent, nFee, strSentAccount, includeWatchonly);
-        mapAccountBalances[strSentAccount] -= nFee;
+
+        // count staking reward in the appropriate account
+        if (wtx.IsCoinStake()) {
+            if (fCreditStakesToAccounts                              && // if we're crediting stakes to the account that owns the staking address,
+                wtx.tx->vout.size() > 1                              && // and we have a staking address
+                IsMine(*pwalletMain, wtx.tx->vout[1].scriptPubKey)   && // and we own it
+                ExtractDestination(wtx.tx->vout[1].scriptPubKey, td) && // and we can figure out the address
+                pwalletMain->mapAddressBook.count(td)                 ) // and it's in our address book
+                mapAccountBalances[pwalletMain->mapAddressBook[td].name] -= nFee; // then credit the reward to its account
+            else
+                mapAccountBalances[""] -= nFee;
+
+            // staking can change the wallet balance via -staketo or -rewardto; assign such changes to the "" account
+            strSentAccount = "";
+        } else
+            mapAccountBalances[strSentAccount] -= nFee;
+
         BOOST_FOREACH(const COutputEntry& s, listSent)
             mapAccountBalances[strSentAccount] -= s.amount;
         if (nDepth >= nMinDepth)
