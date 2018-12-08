@@ -89,7 +89,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "listunspent", 3, "include_unsafe" },
     { "listunspent", 4, "only_mature" },
     { "getblock", 1, "verbosity" },
-    { "getblock", 1, "verbose" },
     { "getblockheader", 1, "verbose" },
     { "gettransaction", 1, "include_watchonly" },
     { "getrawtransaction", 1, "verbose" },
