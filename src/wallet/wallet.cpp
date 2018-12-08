@@ -1549,6 +1549,7 @@ void CWalletTx::GetAmounts(list<COutputEntry>& listReceived,
     }
 
     // Sent/received.
+    bool fIsStake = IsCoinStake();
     for (unsigned int i = 0; i < tx->vout.size(); ++i)
     {
         const CTxOut& txout = tx->vout[i];
@@ -1573,7 +1574,9 @@ void CWalletTx::GetAmounts(list<COutputEntry>& listReceived,
         // In either case, we need to get the destination address
         CTxDestination address;
 
-        if (!ExtractDestination(txout.scriptPubKey, address) && !txout.scriptPubKey.IsUnspendable())
+        if (fIsStake)
+            address = CNoDestination();
+        else if (!ExtractDestination(txout.scriptPubKey, address) && !txout.scriptPubKey.IsUnspendable())
         {
             LogPrintf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
                      this->GetHash().ToString());
