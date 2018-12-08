@@ -1639,10 +1639,9 @@ static const CRPCCommand commands[] =
     { "blockchain",         "invalidateblock",        &invalidateblock,        true,  {"blockhash"} },
     { "blockchain",         "reconsiderblock",        &reconsiderblock,        true,  {"blockhash"} },
 
-    /* Not shown in help */
-    { "hidden",             "waitfornewblock",        &waitfornewblock,        true,  {"timeout"} },
-    { "hidden",             "waitforblock",           &waitforblock,           true,  {"blockhash","timeout"} },
-    { "hidden",             "waitforblockheight",     &waitforblockheight,     true,  {"height","timeout"} },
+    { "blockchain",         "waitfornewblock",        &waitfornewblock,        true,  {"timeout"} },
+    { "blockchain",         "waitforblock",           &waitforblock,           true,  {"blockhash","timeout"} },
+    { "blockchain",         "waitforblockheight",     &waitforblockheight,     true,  {"height","timeout"} },
 };
 
 void RegisterBlockchainRPCCommands(CRPCTable &t)
