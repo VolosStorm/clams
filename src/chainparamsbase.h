@@ -9,7 +9,7 @@
 #include <vector>
 
 /**
- * CBaseChainParams defines the base parameters (shared between bitcoin-cli and clamd)
+ * CBaseChainParams defines the base parameters (shared between clam-cli and clamd)
  * of a given instance of the CLAM system.
  */
 class CBaseChainParams
