@@ -3541,6 +3541,18 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
     return DB_LOAD_OK;
 }
 
+DBErrors CWallet::LoadWalletImport()
+{
+    if (!fFileBacked)
+        return DB_LOAD_OK;
+    DBErrors nLoadWalletRet = CWalletDB(strWalletFile,"r+").LoadWalletImport(this);
+    if (nLoadWalletRet != DB_LOAD_OK) {
+        return nLoadWalletRet;
+    }
+    
+    return DB_LOAD_OK;
+}
+
 DBErrors CWallet::ZapSelectTx(vector<uint256>& vHashIn, vector<uint256>& vHashOut)
 {
     if (!fFileBacked)

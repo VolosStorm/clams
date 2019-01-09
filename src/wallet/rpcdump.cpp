@@ -407,6 +407,132 @@ UniValue importpubkey(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+UniValue importwallet(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
+        throw runtime_error(
+            "importwallet <file> [walletpassword] [rescan=true]\n"
+            "Import wallet.dat from BTC/LTC/DOGE/CLAM \n"
+            "Password is only required if wallet is encrypted\n"
+        );
+
+    // Whether to perform rescan after import
+    bool fRescan = true;
+    if (request.params.size() > 2)
+        fRescan = request.params[2].get_bool();
+
+    EnsureWalletIsUnlocked();
+
+    CWallet* pwalletImport = new CWallet(request.params[0].get_str().c_str());
+    DBErrors nLoadWalletRet = pwalletImport->LoadWalletImport();
+
+    std::ostringstream strErrors;
+    if (nLoadWalletRet != DB_LOAD_OK)
+        {
+            if (nLoadWalletRet == DB_CORRUPT)
+                throw JSONRPCError(RPC_WALLET_ERROR, "Error loading wallet.dat: Wallet corrupted");
+            else if (nLoadWalletRet == DB_LOAD_FAIL)
+            {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Wallet failed to load");
+            }
+            else
+                LogPrintf("Non-fatal errors loading wallet file\n");
+    }
+
+    // Handle encrypted wallets. Wallets first need to be unlocked before the keys
+    // can be added into your clam wallet. 
+    if (pwalletImport->IsCrypted() && pwalletImport->IsLocked()) {
+        bool fGotWalletPass = true;
+        if (request.params.size() < 2)
+            fGotWalletPass = false;
+        else
+        {
+            // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
+            // Alternately, find a way to make params[0] mlock()'d to begin with.
+            SecureString strWalletPass;
+            strWalletPass.reserve(100);
+            strWalletPass = request.params[1].get_str().c_str();
+            if (strWalletPass.length() > 0)
+            {
+                if (!pwalletImport->Unlock(strWalletPass))
+                    throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The wallet passphrase entered was incorrect for the wallet you are attempting to import.");
+            } else
+                fGotWalletPass = false;
+        }
+
+        if (!fGotWalletPass)
+            throw runtime_error(
+                "importwallet <file> <walletpassword>\n"
+                "Import encrypted wallet from BTC/LTC/DOGE \n\n"
+                "You are attempting to import an encrypted wallet\n"
+                "The passphrase must be entered to import the wallet\n"
+                );
+    }
+
+    int nImported = 0;
+    int nSkipped = 0;
+
+    {
+        LOCK2(cs_main, pwalletMain->cs_wallet);
+        LOCK(pwalletImport->cs_wallet);
+
+        std::set<CKeyID> setKeys;
+        pwalletImport->GetKeys(setKeys);
+
+        BOOST_FOREACH(const CKeyID &keyid, setKeys) {
+            
+            int64_t nTime = GetTime();
+
+            std::string strAddr = CBitcoinAddress(keyid).ToString();
+            std::string strLabel = "importwallet";
+
+            CKey key;
+            if (pwalletImport->GetKey(keyid, key)) {
+
+                if (pwalletMain->HaveKey(keyid)) {
+                    if (fDebug) 
+                        LogPrintf("Skipping import of %s (key already present)\n", strAddr);
+                    nSkipped++;
+                    continue;
+                }
+        
+                if (fDebug) 
+                    LogPrintf("Importing %s...\n", strAddr);
+
+                pwalletMain->AddKey(key);
+                pwalletMain->SetAddressBook(keyid, strLabel, "receive");
+                pwalletMain->mapKeyMetadata[keyid].nCreateTime = nTime;
+                nImported++;
+            }
+        }
+    }
+    
+    // Clean up unregistered wallet
+    UnregisterValidationInterface(pwalletImport);
+    delete pwalletImport;
+
+    LogPrintf("walletimport imported %d and skipped %d key(s)\n", nImported, nSkipped);
+    //pwalletMain->MarkDirty();
+
+    if (nImported > 0) 
+    {
+        if (fRescan)
+        {
+            LogPrintf("Searching last %i blocks (from block %i) for dug Clams...\n", chainActive.Tip()->nHeight, 0);
+            pwalletMain->ScanForWalletTransactions(chainActive.Genesis(), true);
+            pwalletMain->ReacceptWalletTransactions();
+            pwalletMain->MarkDirty();
+            LogPrintf("Rescan complete\n");
+        }
+        else
+            LogPrintf("Not rescanning because user requested that it should be skipped\n");
+    } 
+    else
+        LogPrintf("Not rescanning because no new keys were imported\n");
+
+    return NullUniValue;
+}
+
 
 UniValue importwalletdump(const JSONRPCRequest& request)
 {
