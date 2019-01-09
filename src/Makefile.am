@@ -309,7 +309,6 @@ libclam_common_a_SOURCES = \
   amount.cpp \
   base58.cpp \
   chainparams.cpp \
-  clamspeech.cpp \
   coins.cpp \
   compressor.cpp \
   core_read.cpp \
