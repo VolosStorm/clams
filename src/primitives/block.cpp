@@ -11,6 +11,8 @@
 #include "crypto/common.h"
 #include "crypto/scrypt.h"
 
+#include <time.h>
+
 uint256 CBlockLegacyHeader::GetHash() const
 {
     time_t start_time, end_time;
