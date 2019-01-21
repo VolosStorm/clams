@@ -113,6 +113,7 @@ CLAM_CORE_H = \
   miner.h \
   net.h \
   net_processing.h \
+  netaddress.h \
   netbase.h \
   netmessagemaker.h \
   noui.h \
@@ -159,6 +160,7 @@ CLAM_CORE_H = \
   wallet/rpcwallet.h \
   wallet/wallet.h \
   wallet/walletdb.h \
+  warnings.h \
   zmq/zmqabstractnotifier.h \
   zmq/zmqconfig.h\
   zmq/zmqnotificationinterface.h \
@@ -175,8 +177,8 @@ libclam_util_a-clientversion.$(OBJEXT): obj/build.h
 libclam_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(CLAM_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
 libclam_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libclam_server_a_SOURCES = \
-  addrman.cpp \
   addrdb.cpp \
+  addrman.cpp \
   bloom.cpp \
   blockencodings.cpp \
   chain.cpp \
@@ -202,6 +204,7 @@ libclam_server_a_SOURCES = \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
   script/sigcache.cpp \
+  timedata.cpp \
   script/ismine.cpp \
   torcontrol.cpp \
   txdb.cpp \
@@ -300,6 +303,8 @@ libclam_consensus_a_SOURCES = \
   crypto/scrypt.h \
   uint256.cpp \
   uint256.h \
+  utilstrencodings.cpp \
+  utilstrencodings.h \
   version.h
 
 # common: shared between clamd, and clam-qt and non-server tools
@@ -320,6 +325,7 @@ libclam_common_a_SOURCES = \
   scheduler.cpp \
   script/sign.cpp \
   script/standard.cpp \
+  warnings.cpp \
   $(CLAM_CORE_H)
 
 # util: shared between all executables.
@@ -342,7 +348,6 @@ libclam_util_a_SOURCES = \
   util.cpp \
   utilmoneystr.cpp \
   utilstrencodings.cpp \
-  utilstrencodings.h \
   utiltime.cpp \
   $(CLAM_CORE_H)
 
