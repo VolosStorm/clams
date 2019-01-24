@@ -143,6 +143,7 @@ CLAM_CORE_H = \
   sync.h \
   threadsafety.h \
   threadinterrupt.h \
+  timedata.h \
   torcontrol.h \
   txdb.h \
   txmempool.h \
@@ -320,6 +321,7 @@ libclam_common_a_SOURCES = \
   core_write.cpp \
   key.cpp \
   keystore.cpp \
+  netaddress.cpp \
   netbase.cpp \
   protocol.cpp \
   scheduler.cpp \
