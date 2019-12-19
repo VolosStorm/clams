@@ -59,19 +59,28 @@ A host toolchain (`build-essential`) is necessary because some dependency
 packages (such as `protobuf`) need to build host utilities that are used in the
 build process.
 
+Note: due to an unsolved dependency issue its required to build libclam_util.a before you start the build
+
+
 ## Building for 64-bit Windows
 
 To build executables for Windows 64-bit, install the following dependencies:
 
     sudo apt-get install g++-mingw-w64-x86-64 mingw-w64-x86-64-dev
 
-Then build using:
+Switch compilers to postfix mode
+    sudo update-alternatives --config x86_64-w64-mingw32-g++
+    sudo update-alternatives --config x86_64-w64-mingw32-gcc
+
+
+Then build using:  
 
     cd depends
     make HOST=x86_64-w64-mingw32
     cd ..
     ./autogen.sh # not required when building from tarball
     CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
+    make src/libclam_util.a
     make
 
 ## Building for 32-bit Windows
@@ -80,6 +89,10 @@ To build executables for Windows 32-bit, install the following dependencies:
 
     sudo apt-get install g++-mingw-w64-i686 mingw-w64-i686-dev 
 
+Switch compilers to postfix mode
+  sudo update-alternatives --config i686-w64-mingw32-g++
+  sudo update-alternatives --config i686-w64-mingw32-gcc
+
 Then build using:
 
     cd depends
@@ -87,6 +100,7 @@ Then build using:
     cd ..
     ./autogen.sh # not required when building from tarball
     CONFIG_SITE=$PWD/depends/i686-w64-mingw32/share/config.site ./configure --prefix=/
+    make src/libclam_util.a
     make
 
 ## Depends system
