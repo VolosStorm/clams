@@ -447,17 +447,22 @@ if GLIBC_BACK_COMPAT
 endif
 
 
-if TARGET_WINDOWS
+if TARGET_WINDOWS 
 libclamconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS) $(LIBCLAM_UTIL)
 libclamconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS) $(BOOST_LIBS)
 libclamconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_CLAM_INTERNAL $(SSL_CFLAGS) $(BOOST_CPPFLAGS)
 else
+if TARGET_DARWIN
+libclamconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS) $(LIBCLAM_UTIL)
+libclamconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS) $(BOOST_LIBS)
+libclamconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_CLAM_INTERNAL $(SSL_CFLAGS) $(BOOST_CPPFLAGS)
+else 
 libclamconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 libclamconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS)
 libclamconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_CLAM_INTERNAL $(SSL_CFLAGS)
 endif
+endif
 libclamconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-
 endif
 #
 
