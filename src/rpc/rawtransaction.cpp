@@ -59,6 +59,15 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fInclud
     out.push_back(Pair("addresses", a));
 }
 
+bool invalidChar(char c)
+{
+    return !(c >= 0 && c < 128);
+}
+void stripUnicode(std::string& str)
+{
+    str.erase(remove_if(str.begin(), str.end(), invalidChar), str.end());
+}
+
 void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
 {
     entry.push_back(Pair("txid", tx.GetHash().GetHex()));
@@ -68,8 +77,12 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
     entry.push_back(Pair("weight", (int)::GetTransactionWeight(tx)));
     entry.push_back(Pair("version", tx.nVersion));
     entry.push_back(Pair("locktime", (int64_t)tx.nLockTime));
+
+
+    std::string clamSpeech = tx.strClamSpeech;
+    stripUnicode(clamSpeech);
     if(tx.nVersion > 1)
-        entry.push_back(Pair("strClamSpeech", tx.strClamSpeech));
+        entry.push_back(Pair("strClamSpeech", clamSpeech));
 
     UniValue vin(UniValue::VARR);
     for (unsigned int i = 0; i < tx.vin.size(); i++) {
