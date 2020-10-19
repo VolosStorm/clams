@@ -16,7 +16,8 @@ static const unsigned int MAX_BLOCK_WEIGHT = 4000000;
 static const unsigned int MAX_BLOCK_BASE_SIZE = 1000000;
 /** The maximum allowed number of signature check operations in a block (network rule) */
 static const int64_t MAX_BLOCK_SIGOPS_COST = 80000;
-
+/** The maximum size for mined blocks */
+static const unsigned int MAX_BLOCK_BASE_SIZE_GEN = MAX_BLOCK_BASE_SIZE / 2;
 
 /** Flags for nSequence and nLockTime locks */
 enum {

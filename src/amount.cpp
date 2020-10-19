@@ -4,8 +4,11 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "amount.h"
-
+#include "consensus/consensus.h"
 #include "tinyformat.h"
+
+#include "primitives/transaction.h"
+#include <boost/foreach.hpp>
 
 const std::string CURRENCY_UNIT = "CLAM";
 
@@ -20,22 +23,25 @@ CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_)
         nSatoshisPerK = 0;
 }
 
-CAmount CFeeRate::GetFee(size_t nBytes_, bool fRoundUp) const
+CAmount CFeeRate::GetFee(size_t nBytes_, unsigned int nBlockSize, bool fRoundUp) const
 {
     assert(nBytes_ <= uint64_t(std::numeric_limits<int64_t>::max()));
+    CAmount nBaseFee = 10000;
+
+    unsigned int nNewBlockSize = nBlockSize + nBytes_;
     int64_t nSize = int64_t(nBytes_);
+    CAmount nMinFee = (1 + (int64_t)nBytes_ / 1000) * nBaseFee;
 
-    CAmount nFee = fRoundUp ? (1 + nSize / 1000) * nSatoshisPerK : nSize * nSatoshisPerK / 1000;
-
-    if (nFee == 0 && nSize != 0) {
-        if (nSatoshisPerK > 0)
-            nFee = CAmount(1);
-        if (nSatoshisPerK < 0)
-            nFee = CAmount(-1);
+    //CAmount nFee = fRoundUp ? (1 + nSize / 1000) * nSatoshisPerK : nSize * nSatoshisPerK / 1000;
+    // Raise the price as the block approaches full
+    if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_BASE_SIZE_GEN / 2) {
+        if (nNewBlockSize >= MAX_BLOCK_BASE_SIZE_GEN)
+            return MAX_MONEY;
+        nMinFee *= MAX_BLOCK_BASE_SIZE_GEN / (MAX_BLOCK_BASE_SIZE_GEN - nNewBlockSize);
     }
-    if (fRoundUp && nFee < 10000)
-        nFee = CAmount(10000);
-    return nFee;
+    if (!MoneyRange(nMinFee))
+        nMinFee = MAX_MONEY;
+    return nMinFee;
 }
 
 std::string CFeeRate::ToString() const

@@ -3158,6 +3158,7 @@ int64_t CalculateMaximumSignedTxSize(const CTransaction &tx)
     return GetVirtualTransactionSize(txNew);
 }
 
+/*
 UniValue bumpfee(const JSONRPCRequest& request)
 {
     if (!EnsureWalletIsAvailable(request.fHelp)) {
@@ -3449,6 +3450,7 @@ UniValue bumpfee(const JSONRPCRequest& request)
 
     return result;
 }
+*/
 
 UniValue getrewardto(const JSONRPCRequest& request)
 {
@@ -3678,7 +3680,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "addmultisigaddress",       &addmultisigaddress,       true,   {"nrequired","keys","account"} },
     { "wallet",             "addwitnessaddress",        &addwitnessaddress,        true,   {"address"} },
     { "wallet",             "backupwallet",             &backupwallet,             true,   {"destination"} },
-    { "wallet",             "bumpfee",                  &bumpfee,                  true,   {"txid", "options"} },
+    //{ "wallet",             "bumpfee",                  &bumpfee,                  true,   {"txid", "options"} },
     { "wallet",             "createclamour",            &createclamour,            true,   {"clamourProposal", "url"} },
     { "wallet",             "dumpprivkey",              &dumpprivkey,              true,   {"address"}  },
     { "wallet",             "dumpwallet",               &dumpwallet,               true,   {"filename"} },

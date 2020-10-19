@@ -772,11 +772,16 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             return state.DoS(0, false, REJECT_NONSTANDARD, "bad-txns-too-many-sigops", false,
                 strprintf("%d", nSigOpsCost));
 
-        CAmount mempoolRejectFee = pool.GetMinFee(GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFee(nSize);
+        CAmount mempoolRejectFee = pool.GetMinFee(GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFee(nSize, 1);
+        if (mempoolRejectFee < DEFAULT_TRANSACTION_FEE) {
+            BOOST_FOREACH (const CTxOut& txout, tx.vout)
+                if (txout.nValue < CENT)
+                    mempoolRejectFee = DEFAULT_TRANSACTION_FEE;
+        }
         if (mempoolRejectFee > 0 && nModifiedFees < mempoolRejectFee) {
             LogPrintf("AcceptToMemoryPoolWorker : not enough fees (%d < %d)\n", nFees, mempoolRejectFee);
             return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "mempool min fee not met", false, strprintf("%d < %d", nFees, mempoolRejectFee));
-        } else if (GetBoolArg("-relaypriority", DEFAULT_RELAYPRIORITY) && nModifiedFees < ::minRelayTxFee.GetFee(nSize) && !AllowFree(entry.GetPriority(chainActive.Height() + 1))) {
+        } else if (GetBoolArg("-relaypriority", DEFAULT_RELAYPRIORITY) && nModifiedFees < ::minRelayTxFee.GetFee(nSize, 1) && !AllowFree(entry.GetPriority(chainActive.Height() + 1))) {
             // Require that free transactions have sufficient priority to be mined in the next block.
             return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "insufficient priority");
         }
@@ -784,7 +789,13 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
         // Continuously rate-limit free (really, very-low-fee) transactions
         // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
         // be annoying or make others' transactions take longer to confirm.
-        if (fLimitFree && nModifiedFees < ::minRelayTxFee.GetFee(nSize))
+        int64_t nMinFee = ::minRelayTxFee.GetFee(nSize, 1);
+        if (nMinFee < DEFAULT_TRANSACTION_FEE) {
+            BOOST_FOREACH (const CTxOut& txout, tx.vout)
+                if (txout.nValue < CENT)
+                    nMinFee = DEFAULT_TRANSACTION_FEE;
+        }
+        if (fLimitFree && nModifiedFees < nMinFee)
         {
             static CCriticalSection csFreeLimiter;
             static double dFreeCount;
@@ -953,14 +964,20 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             // Finally in addition to paying more fees than the conflicts the
             // new transaction must pay for its own bandwidth.
             CAmount nDeltaFees = nModifiedFees - nConflictingFees;
-            if (nDeltaFees < ::incrementalRelayFee.GetFee(nSize))
+            int64_t nMinFee = ::incrementalRelayFee.GetFee(nSize, 1);
+            if (nMinFee < DEFAULT_TRANSACTION_FEE) {
+                BOOST_FOREACH (const CTxOut& txout, tx.vout)
+                    if (txout.nValue < CENT)
+                        nMinFee = DEFAULT_TRANSACTION_FEE;
+            }
+            if (nDeltaFees < nMinFee)
             {
                 return state.DoS(0, false,
                         REJECT_INSUFFICIENTFEE, "insufficient fee", false,
                         strprintf("rejecting replacement %s, not enough additional fees to relay; %s < %s",
                               hash.ToString(),
                               FormatMoney(nDeltaFees),
-                              FormatMoney(::incrementalRelayFee.GetFee(nSize))));
+                              FormatMoney(nMinFee)));
             }
         }
 

@@ -20,6 +20,7 @@
 #include "wallet/rpcwallet.h"
 #include "wallet/coincontrol.h"
 #include "consensus/params.h"
+#include "consensus/consensus.h"
 #include <algorithm>
 #include <atomic>
 #include <map>
@@ -48,6 +49,8 @@ extern bool fSendFreeTransactions;
 extern bool fWalletRbf;
 extern bool fWalletUnlockStakingOnly;
 
+/** The maximum size for transactions we're willing to relay/mine **/
+static const unsigned int MAX_STANDARD_TX_SIZE = MAX_BLOCK_BASE_SIZE_GEN / 5;
 
 static const unsigned int DEFAULT_KEYPOOL_SIZE = 100;
 //! -paytxfee default

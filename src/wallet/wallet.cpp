@@ -2689,6 +2689,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
     assert(txNew.nLockTime <= (unsigned int)chainActive.Height());
     assert(txNew.nLockTime < LOCKTIME_THRESHOLD);
 
+
     {
         set<pair<const CWalletTx*,unsigned int> > setCoins;
         vector<pair<const CWalletTx*,unsigned int>> vCoins;
@@ -2698,7 +2699,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
             std::vector<COutput> vAvailableCoins;
             AvailableCoins(vAvailableCoins, true, coinControl);
 
-            nFeeRet = 0;
+            nFeeRet = nTransactionFee;
             // Start with no fee and loop until there is enough fee
             while (true)
             {
@@ -2767,7 +2768,13 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                     dPriority += (double)nCredit * age;
                 }
 
-                const CAmount nChange = nValueIn - nValueToSelect;
+                CAmount nChange = nValueIn - nValueToSelect;
+                if (nFeeRet < DEFAULT_TRANSACTION_FEE && nChange > 0 && nChange < CENT)
+                {
+                    int64_t nMoveToFee = min(nChange, DEFAULT_TRANSACTION_FEE - nFeeRet);
+                    nChange -= CAmount(nMoveToFee);
+                    nFeeRet += nMoveToFee;
+                }
                 if (nChange > 0)
                 {
                     // Fill a vout to ourself
@@ -2832,6 +2839,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                         }
                     }
 
+                    
                     // Never create dust outputs; if we would, just
                     // add the dust to the fee.
                     if (newTxOut.IsDust(dustRelayFee))
@@ -2873,6 +2881,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 }
                 }
 
+
                 // Fill vin
                 //
                 // Note how the sequence number is set to non-maxint so that
@@ -2905,7 +2914,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 }
 
                 // Allow to override the default confirmation target over the CoinControl instance
-                int currentConfirmationTarget = nTxConfirmTarget;
+               /* int currentConfirmationTarget = nTxConfirmTarget;
                 if (coinControl && coinControl->nConfirmTarget > 0)
                     currentConfirmationTarget = coinControl->nConfirmTarget;
 
@@ -2954,11 +2963,26 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                         nFeeRet += additionalFeeNeeded;
                         break; // Done, able to increase fee from change
                     }
+                }*/
+                CAmount nBaseFee = DEFAULT_TRANSACTION_FEE;
+                int64_t nMinFee = minTxFee.GetFee(1, nBytes);
+                int64_t nPayFee = nTransactionFee * (1 + (int64_t)nBytes / 1000);
+                if (nMinFee < nBaseFee) {
+                    BOOST_FOREACH (const CTxOut& txout, txNew.vout)
+                        if (txout.nValue < CENT)
+                            nMinFee = nBaseFee;
+                }
+                 
+                if (nFeeRet < max(nPayFee, nMinFee))
+                {
+                    LogPrintf("[FEE] so we increased fee to %s and loop again\n", FormatMoney(nFeeRet));
+                    nFeeRet = max(nPayFee, nMinFee);
+                    continue;
                 }
 
                 // Include more fee and try again.
-                nFeeRet = nFeeNeeded;
-                continue;
+                //nFeeRet = nMinFee;
+                break;
             }
         }
 
@@ -3342,6 +3366,10 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             return error("CreateCoinStake : failed to sign coinstake");
     }
 
+    unsigned int nBytes = ::GetSerializeSize(txNew, SER_NETWORK, PROTOCOL_VERSION);
+    if (nBytes >= MAX_BLOCK_BASE_SIZE_GEN/5)
+        return error("CreateCoinStake : exceeded coinstake size limit");
+
     // Successfully generated coinstake
     tx = CTransaction(txNew);
     return true;
@@ -3481,36 +3509,36 @@ bool CWallet::AddAccountingEntry(const CAccountingEntry& acentry, CWalletDB *pwa
 
 CAmount CWallet::GetRequiredFee(unsigned int nTxBytes)
 {
-    return std::max(minTxFee.GetFee(nTxBytes), ::minRelayTxFee.GetFee(nTxBytes));
+    return std::max(1, 1); //minTxFee.GetFee(nTxBytes), ::minRelayTxFee.GetFee(nTxBytes));
 }
+
 
 CAmount CWallet::GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool)
 {
     // payTxFee is the user-set global for desired feerate
-    return GetMinimumFee(nTxBytes, nConfirmTarget, pool, payTxFee.GetFee(nTxBytes));
+    return CAmount(10000); //etMinimumFee(nTxBytes, nConfirmTarget, pool, payTxFee.GetFee(nTxBytes));
 }
 
 CAmount CWallet::GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool, CAmount targetFee)
 {
     CAmount nFeeNeeded = targetFee;
     // User didn't set: use -txconfirmtarget to estimate...
-    if (nFeeNeeded == 0) {
+    /*if (nFeeNeeded == 0) {
         int estimateFoundTarget = nConfirmTarget;
         nFeeNeeded = pool.estimateSmartFee(nConfirmTarget, &estimateFoundTarget).GetFee(nTxBytes);
         // ... unless we don't have enough mempool data for estimatefee, then use fallbackFee
         if (nFeeNeeded == 0)
             nFeeNeeded = fallbackFee.GetFee(nTxBytes);
-    }
+    }*/
     // prevent user from paying a fee below minRelayTxFee or minTxFee
     nFeeNeeded = std::max(nFeeNeeded, GetRequiredFee(nTxBytes));
     // But always obey the maximum
     if (nFeeNeeded > maxTxFee)
         nFeeNeeded = maxTxFee;
-    if(nFeeNeeded < 10000)
+    if (nFeeNeeded < 10000)
         nFeeNeeded = CAmount(10000);
     return nFeeNeeded;
 }
-
 
 
 
