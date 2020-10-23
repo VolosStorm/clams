@@ -1931,7 +1931,7 @@ UniValue listbalances(const JSONRPCRequest& request)
 
     map<string, int64_t> mapAddressBalances;
     vector<COutput> vecOutputs;
-    pwalletMain->AvailableCoins(vecOutputs, false, NULL, fMature);
+    pwalletMain->AvailableCoins(vecOutputs, false, NULL, false, fMature);
 
     BOOST_FOREACH(const COutput& out, vecOutputs) {
         if (out.nDepth < nMinDepth || out.nDepth > nMaxDepth)
