@@ -277,10 +277,11 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(const QString &clam
             total += rcp.amount;
         }
     }
-    if(setAddress.size() != nAddresses)
-    {
-        return DuplicateAddress;
-    }
+    // Not necessary, user can send to the same address multiple times.
+    // if(setAddress.size() != nAddresses)
+    // {
+    //     return DuplicateAddress;
+    // }
 
     CAmount nBalance = getBalance(coinControl);
 
